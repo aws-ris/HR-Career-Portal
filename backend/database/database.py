@@ -6,11 +6,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# We pull URL from .env, but default to the local ris_db if not found
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL", 
     "postgresql://postgres:password@localhost/ris_db"
 )
+
+# Fix for SQLAlchemy 2.0 (Vercel provides postgres:// but needs postgresql://)
+if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # SQLite requires check_same_thread=False, Postgres does not!
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
