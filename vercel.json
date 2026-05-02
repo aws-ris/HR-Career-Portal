@@ -17,10 +17,6 @@
       "destination": "api/index.py"
     },
     {
-      "source": "/hr(.*)",
-      "destination": "/index.html"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
