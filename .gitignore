@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Node
+node_modules/
+dist/
+.DS_Store
+
+# Database
+*.db
+*.sqlite
+senior_official_export.xlsx
+
+# Logs
+*.log
+migration_output.txt
+verify_output.txt
+
+# OS
+.vscode/
+.idea/
+Thumbs.db
