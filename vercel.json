@@ -2,30 +2,23 @@
   "version": 2,
   "builds": [
     {
-      "src": "backend/main.py",
+      "src": "api/index.py",
       "use": "@vercel/python"
     },
     {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
-      "config": {
-        "installCommand": "npm install",
-        "buildCommand": "npm run build"
-      }
+      "config": { "distDir": "dist" }
     }
   ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "backend/main.py"
-    },
-    {
-      "source": "/hr(.*)",
-      "destination": "/index.html"
+      "destination": "api/index.py"
     },
     {
       "source": "/(.*)",
-      "destination": "/$1"
+      "destination": "frontend/$1"
     }
   ]
 }
