@@ -11,7 +11,7 @@ from typing import List, Optional
 
 # Note: In production, use Alembic migrations instead of create_all
 # create_all is safe here — it only creates tables that don't exist yet
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="RIS Hiring Portal API", version="2.0.0")
 
