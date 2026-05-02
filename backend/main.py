@@ -39,6 +39,22 @@ import os
 
 
 # ─────────────────────────────────────────────
+# DATABASE SYSTEM MIGRATION (TEMPORARY)
+# ─────────────────────────────────────────────
+@app.get("/api/v1/system/migrate")
+def trigger_migration():
+    """
+    Temporary endpoint to initialize the cloud database schema.
+    """
+    try:
+        from database.database import Base, engine
+        import database.models  # Ensure models are registered
+        Base.metadata.create_all(bind=engine)
+        return {"status": "success", "message": "Database schema initialized in the cloud."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# ─────────────────────────────────────────────
 # Candidate Application Submission
 # ─────────────────────────────────────────────
 @app.post(
