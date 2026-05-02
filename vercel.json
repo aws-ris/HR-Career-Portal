@@ -8,7 +8,10 @@
     {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
+      "config": {
+        "installCommand": "npm install",
+        "buildCommand": "npm run build"
+      }
     }
   ],
   "rewrites": [
@@ -17,8 +20,12 @@
       "destination": "backend/main.py"
     },
     {
-      "source": "/(.*)",
+      "source": "/hr(.*)",
       "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/$1"
     }
   ]
 }
