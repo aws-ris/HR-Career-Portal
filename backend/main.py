@@ -55,9 +55,23 @@ def upgrade_db():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# ─────────────────────────────────────────────
-# Internal Data Seeding (Temporary)
-# ─────────────────────────────────────────────
+@app.get("/api/v1/system/resume-health")
+def resume_health(db: Session = Depends(get_db)):
+    """
+    Diagnostic tool to verify Resume storage health.
+    """
+    total = db.query(models.CandidateResumePayload).count()
+    with_blob = db.query(models.CandidateResumePayload).filter(models.CandidateResumePayload.pdf_blob != None).count()
+    with_text = db.query(models.CandidateResumePayload).filter(models.CandidateResumePayload.raw_resume_text != None).count()
+    with_embedding = db.query(models.CandidateResumePayload).filter(models.CandidateResumePayload.resume_embedding != None).count()
+    
+    return {
+        "total_resumes": total,
+        "with_binary_blob": with_blob,
+        "with_extracted_text": with_text,
+        "with_ai_embedding": with_embedding,
+        "health_score": f"{(with_blob/total*100 if total > 0 else 0):.1f}%"
+    }
 
 @app.get("/api/v1/seed")
 def seed_test_data(db: Session = Depends(get_db)):

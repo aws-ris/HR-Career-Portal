@@ -155,7 +155,7 @@ export default function ApplicationForm() {
         }
         
         alert("Application Successfully Submitted!");
-        window.location.reload();
+        navigate("/");
       } else {
         const err = await res.json();
         setSubmitError("Database Rejection: " + JSON.stringify(err));
