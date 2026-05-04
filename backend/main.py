@@ -131,10 +131,25 @@ def seed_test_data(db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success", "message": f"Successfully seeded {created} professional jobs."}
 
+@app.get("/api/v1/wipe-c")
+def wipe_candidates(db: Session = Depends(get_db)):
+    """
+    Safely purges all candidates and their related data (Metadata, Apps, Resumes) 
+    while preserving the Job Postings.
+    """
+    try:
+        # Deleting from CandidateMetadata triggers cascading deletes for all related tables
+        count = db.query(models.CandidateMetadata).delete()
+        db.commit()
+        return {"status": "success", "message": f"Successfully wiped {count} candidates and all associated records."}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)}
+
 @app.get("/api/v1/seed-c")
 def seed_candidates(db: Session = Depends(get_db)):
     """
-    Final, schema-perfect seeder for Normalized Schema.
+    Final, schema-perfect seeder with Full Name support.
     """
     import os
     import random
@@ -158,18 +173,17 @@ def seed_candidates(db: Session = Depends(get_db)):
     all_resumes = [{"path": arjun_path, "domain": "International Trade & G20 Policy", "name": "Arjun Subramanian"}]
     for rf in resume_files:
         domain_name = random.choice(list(job_map.keys()))
-        all_resumes.append({"path": os.path.join(resume_dir, rf), "domain": domain_name, "name": rf.split("_")[2].replace(".pdf", "").replace("_", " ")})
+        # FIX: Capture FULL NAME including surname from filename logic (CV_idx_First_Last.pdf)
+        full_name_raw = " ".join(rf.split("_")[2:]).replace(".pdf", "").replace("_", " ")
+        all_resumes.append({"path": os.path.join(resume_dir, rf), "domain": domain_name, "name": full_name_raw})
 
     created_count = 0
     for idx, res in enumerate(all_resumes):
-        # Guarantee unique email even with duplicate names
         email = f"{res['name'].lower().replace(' ', '.')}.{idx}@policy-res.in"
-        
         if db.query(models.CandidateMetadata).filter(models.CandidateMetadata.email == email).first(): continue
 
         tier = random.choice(['phd', 'postgrad', 'undergrad'])
         
-        # 1. Metadata (dob is required)
         meta = models.CandidateMetadata(
             full_name=res['name'],
             email=email,
@@ -182,7 +196,6 @@ def seed_candidates(db: Session = Depends(get_db)):
         db.add(meta)
         db.flush()
 
-        # 2. Application Tracking
         app_track = models.ApplicationTracking(
             candidate_id=meta.id,
             job_id=job_map.get(res['domain']),
@@ -191,14 +204,12 @@ def seed_candidates(db: Session = Depends(get_db)):
         )
         db.add(app_track)
 
-        # 3. Resume Payload (matches schema columns)
         db.add(models.CandidateResumePayload(
             candidate_id=meta.id,
             resume_path=f"uploads/{os.path.basename(res['path'])}",
-            raw_resume_text=f"Synthetic resume for {res['name']} specializing in {res['domain']}"
+            raw_resume_text=f"Full Dossier for {res['name']} specializing in {res['domain']}"
         ))
 
-        # 4. Higher Education (matches 'chk_edu_level' and 'score_value')
         if tier == 'phd':
             db.add(models.CandidateHigherEducation(candidate_id=meta.id, level='phd', degree_name='Ph.D. Economics', university='JNU', score_type='CGPA', score_value=9.0, grad_year=2021, entry_order=1))
         if tier in ['phd', 'postgrad']:
@@ -206,7 +217,6 @@ def seed_candidates(db: Session = Depends(get_db)):
         
         db.add(models.CandidateHigherEducation(candidate_id=meta.id, level='undergrad', degree_name='B.A. Economics', university='DU', score_type='Percentage', score_value=75.0, grad_year=2014, entry_order=3))
 
-        # 5. Experience (start_date is required)
         db.add(models.CandidateWorkExperience(
             candidate_id=meta.id, 
             role="Research Fellow", 
@@ -215,7 +225,6 @@ def seed_candidates(db: Session = Depends(get_db)):
             entry_order=1
         ))
 
-        # 6. Publications (pub_type in 'book','chapter','paper' etc)
         db.add(models.CandidatePublication(
             candidate_id=meta.id, 
             pub_type='paper', 
@@ -226,7 +235,7 @@ def seed_candidates(db: Session = Depends(get_db)):
         created_count += 1
 
     db.commit()
-    return {"status": "success", "message": f"Successfully injected {created_count} candidates into the exact Normalized Schema."}
+    return {"status": "success", "message": f"Successfully injected {created_count} candidates with FULL NAMES into Normalized Schema."}
 
 # ─────────────────────────────────────────────
 # Public Job Board Access
