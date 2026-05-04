@@ -55,6 +55,82 @@ def trigger_migration():
         return {"status": "error", "message": str(e)}
 
 # ─────────────────────────────────────────────
+# Internal Data Seeding (Temporary)
+# ─────────────────────────────────────────────
+
+@app.get("/api/v1/system/seed-test-data")
+def seed_test_data(db: Session = Depends(get_db)):
+    """
+    Internal trigger to seed professional jobs directly in the cloud.
+    """
+    from datetime import date, timedelta
+    from backend.schemas import PositionType, DivisionType, JobStatus
+    
+    jobs = [
+        {
+            "title": "Consultant (International Trade & G20 Policy)",
+            "position": "Consultant",
+            "division": "RIS",
+            "status": "open",
+            "total_openings": 2,
+            "deadline": date.today() + timedelta(days=30),
+            "description": "Lead research initiatives focused on South-South cooperation, global value chains, and India's strategic positioning within the G20 framework.",
+            "requirements": "PhD in International Economics. 8+ years experience. Proficiency in STATA/R."
+        },
+        {
+            "title": "Consultant (Blue Economy & Maritime Security)",
+            "position": "Consultant",
+            "division": "CMEC",
+            "status": "open",
+            "total_openings": 1,
+            "deadline": date.today() + timedelta(days=25),
+            "description": "Provide strategic consulting for the Connectivity and Maritime Economic Cooperation (CMEC) division on IORA frameworks.",
+            "requirements": "Advanced degree in Strategic Studies. 10+ years experience."
+        },
+        {
+            "title": "Research Assistant (Traditional Medicine Systems)",
+            "position": "Research Assistant",
+            "division": "FITM",
+            "status": "open",
+            "total_openings": 3,
+            "deadline": date.today() + timedelta(days=15),
+            "description": "Support the Forum for Indian Traditional Medicine (FITM) in documenting global health protocols and AYUSH systems.",
+            "requirements": "Master's degree in Public Health or Social Sciences. Strong writing skills."
+        },
+        {
+            "title": "Research Assistant (ASEAN-India Regional Integration)",
+            "position": "Research Assistant",
+            "division": "AIC",
+            "status": "open",
+            "total_openings": 2,
+            "deadline": date.today() + timedelta(days=20),
+            "description": "Assist the ASEAN-India Centre (AIC) in monitoring regional trade agreements and connectivity corridors.",
+            "requirements": "Master's in International Relations. Proficiency in data visualization tools."
+        },
+        {
+            "title": "Research Assistant (Development Finance)",
+            "position": "Research Assistant",
+            "division": "DAKSHIN",
+            "status": "open",
+            "total_openings": 1,
+            "deadline": date.today() + timedelta(days=45),
+            "description": "Contribute to the DAKSHIN initiative by analyzing debt sustainability frameworks for Least Developed Countries (LDCs).",
+            "requirements": "Master's in Finance or Econometrics. Familiarity with IMF/World Bank data."
+        }
+    ]
+
+    created = 0
+    for j_data in jobs:
+        existing = db.query(models.JobPosting).filter(models.JobPosting.title == j_data["title"]).first()
+        if not existing:
+            job = models.JobPosting(**j_data)
+            db.add(job)
+            created += 1
+    
+    db.commit()
+    return {"status": "success", "message": f"Successfully seeded {created} professional jobs."}
+
+# ─────────────────────────────────────────────
 # Public Job Board Access
 # ─────────────────────────────────────────────
 
