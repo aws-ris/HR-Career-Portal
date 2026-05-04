@@ -134,11 +134,11 @@ def seed_test_data(db: Session = Depends(get_db)):
 @app.get("/api/v1/seed-c")
 def seed_candidates(db: Session = Depends(get_db)):
     """
-    Heavy-duty seeder to inject 41 high-fidelity candidates based on generated CVs.
+    Heavy-duty seeder to inject 41 high-fidelity candidates using the NORMALIZED schema.
     """
     import os
     import random
-    from datetime import date
+    from datetime import date, datetime
     import schemas
     
     # 1. Map domains to Job IDs
@@ -153,86 +153,70 @@ def seed_candidates(db: Session = Depends(get_db)):
 
     resume_dir = os.path.join(os.path.dirname(__file__), "test_resumes")
     resume_files = [f for f in os.listdir(resume_dir) if f.endswith(".pdf")]
-    # Add the lone Arjun resume
     arjun_path = os.path.join(os.path.dirname(__file__), "sample_resume_arjun.pdf")
     
     all_resumes = [{"path": arjun_path, "domain": "International Trade & G20 Policy", "name": "Arjun Subramanian"}]
     for rf in resume_files:
-        # Extract domain from filename or simple logic
-        domain_name = random.choice(list(job_map.keys())) # For seed, we spread them
+        domain_name = random.choice(list(job_map.keys()))
         all_resumes.append({"path": os.path.join(resume_dir, rf), "domain": domain_name, "name": rf.split("_")[2].replace(".pdf", "").replace("_", " ")})
 
     created_count = 0
     for res in all_resumes:
-        # Avoid duplicate emails (synthetic)
         email = f"{res['name'].lower().replace(' ', '.')}@policy-res.in"
-        existing = db.query(models.Candidate).filter(models.Candidate.email == email).first()
-        if existing: continue
+        if db.query(models.CandidateMetadata).filter(models.CandidateMetadata.email == email).first(): continue
 
-        # Read PDF binary
         with open(res['path'], "rb") as f:
             pdf_data = f.read()
 
-        # Create Candidate
         tier = random.choice(['PhD', 'Masters', 'Bachelors'])
-        candidate = models.Candidate(
+        
+        # 1. Metadata
+        meta = models.CandidateMetadata(
             full_name=res['name'],
             email=email,
-            mobile_number=f"+91 {random.randint(70000, 99999)} {random.randint(10000, 99999)}",
-            age=random.randint(24, 45),
+            mobile_no=f"+91{random.randint(7000000000, 9999999999)}",
+            dob=date(1990, 1, 1), # Default dob for seed
             gender=random.choice(["Male", "Female"]),
-            state=random.choice(["Delhi", "Maharashtra", "Karnataka", "Tamil Nadu", "Uttar Pradesh"]),
-            highest_education="PhD" if tier == 'PhD' else ("Postgraduate" if tier == 'Masters' else "Undergraduate"),
-            position_applied="Consultant" if tier == 'PhD' else "Research Assistant",
-            applied_job_id=job_map.get(res['domain']),
-            resume_data=pdf_data,
-            resume_filename=os.path.basename(res['path'])
+            state=random.choice(["Delhi", "Maharashtra", "Karnataka", "Tamil Nadu"]),
+            years_of_experience=float(random.randint(1, 15))
         )
-        db.add(candidate)
-        db.flush() # Get ID
+        db.add(meta)
+        db.flush()
 
-        # 1. Doctorate
-        if tier == 'PhD':
-            db.add(models.Doctorate(
-                candidate_id=candidate.id,
-                university="Jawaharlal Nehru University",
-                thesis_title=f"Advanced Analysis of {res['domain']}",
-                year_of_completion=2021
-            ))
-        
-        # 2. Postgraduate
-        if tier in ['PhD', 'Masters']:
-            db.add(models.Postgraduate(
-                candidate_id=candidate.id,
-                degree_name="M.A. Economics",
-                university="Delhi School of Economics",
-                score=82.5,
-                score_type="Percentage",
-                year_of_completion=2016
-            ))
-        
-        # 3. Graduation
-        db.add(models.Graduation(
-            candidate_id=candidate.id,
-            degree_name="B.A. Economics",
-            university="University of Delhi",
-            score=78.0,
-            score_type="Percentage",
-            year_of_completion=2014
+        # 2. Application Tracking
+        app_track = models.ApplicationTracking(
+            candidate_id=meta.id,
+            job_id=job_map.get(res['domain']),
+            position_applied="Consultant" if tier == 'PhD' else "Research Assistant",
+            current_status='received'
+        )
+        db.add(app_track)
+
+        # 3. Resume Payload
+        db.add(models.CandidateResumePayload(
+            candidate_id=meta.id,
+            pdf_blob=pdf_data,
+            filename=os.path.basename(res['path'])
         ))
 
-        # 4. Experience (2 entries)
-        db.add(models.WorkExperience(candidate_id=candidate.id, role="Senior Policy Analyst", company_name="Policy Think Tank", years=3))
-        db.add(models.WorkExperience(candidate_id=candidate.id, role="Research Intern", company_name="Regional Agency", years=1))
+        # 4. Education
+        if tier == 'PhD':
+            db.add(models.CandidateHigherEducation(candidate_id=meta.id, degree_level='Doctorate', degree_name='Ph.D. Economics', university='JNU', score=0, grad_year=2021, entry_order=1))
+        if tier in ['PhD', 'Masters']:
+            db.add(models.CandidateHigherEducation(candidate_id=meta.id, degree_level='Postgraduate', degree_name='M.A. Economics', university='DSE', score=80.0, grad_year=2016, entry_order=2))
+        db.add(models.CandidateHigherEducation(candidate_id=meta.id, degree_level='Graduation', degree_name='B.A. Economics', university='DU', score=75.0, grad_year=2014, entry_order=3))
 
-        # 5. Publications
-        db.add(models.Book(candidate_id=candidate.id, title=f"Future of {res['domain']}"))
-        db.add(models.ResearchPaper(candidate_id=candidate.id, title=f"Impact of GVCs on {res['domain']}"))
+        # 5. Experience & Pubs
+        db.add(models.CandidateWorkExperience(candidate_id=meta.id, role="Researcher", company_name="Policy Think Tank", years=2.0, entry_order=1))
+        db.add(models.CandidatePublication(candidate_id=meta.id, pub_type='Journal Paper', title=f"Analysis of {res['domain']}", entry_order=1))
 
         created_count += 1
 
     db.commit()
-    return {"status": "success", "message": f"Successfully injected {created_count} detailed candidates with resumes."}
+    return {"status": "success", "message": f"Successfully injected {created_count} candidates into Normalized Schema."}
+
+# ─────────────────────────────────────────────
+# Public Job Board Access
 
 # ─────────────────────────────────────────────
 # Public Job Board Access
