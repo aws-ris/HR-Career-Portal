@@ -161,8 +161,10 @@ def seed_candidates(db: Session = Depends(get_db)):
         all_resumes.append({"path": os.path.join(resume_dir, rf), "domain": domain_name, "name": rf.split("_")[2].replace(".pdf", "").replace("_", " ")})
 
     created_count = 0
-    for res in all_resumes:
-        email = f"{res['name'].lower().replace(' ', '.')}@policy-res.in"
+    for idx, res in enumerate(all_resumes):
+        # Guarantee unique email even with duplicate names
+        email = f"{res['name'].lower().replace(' ', '.')}.{idx}@policy-res.in"
+        
         if db.query(models.CandidateMetadata).filter(models.CandidateMetadata.email == email).first(): continue
 
         tier = random.choice(['phd', 'postgrad', 'undergrad'])
