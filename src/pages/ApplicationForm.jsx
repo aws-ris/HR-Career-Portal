@@ -23,8 +23,6 @@ export default function ApplicationForm() {
         .catch(err => console.error("Error fetching job:", err));
     }
   }, [jobId]);
-  const [submitError, setSubmitError] = useState('');
-
   // Step 1
   const [position_applied, setPosition] = useState('Professor');
   const [admin_department, setAdminDept] = useState('IT');
