@@ -8,6 +8,7 @@ export default function ApplicationForm() {
   const [step, setStep] = useState(1);
   const [submitError, setSubmitError] = useState('');
   const [jobDetail, setJobDetail] = useState(null);
+  const [triedSubmit, setTriedSubmit] = useState(false);
 
   // Fetch Job details if ID is present
   useEffect(() => {
@@ -17,12 +18,13 @@ export default function ApplicationForm() {
         .then(data => {
           if (data.id) {
             setJobDetail(data);
-            setPosition(data.position); // Lock to the job's position
+            setPosition(data.position);
           }
         })
         .catch(err => console.error("Error fetching job:", err));
     }
   }, [jobId]);
+
   // Step 1
   const [position_applied, setPosition] = useState('Professor');
   const [admin_department, setAdminDept] = useState('IT');
@@ -48,15 +50,16 @@ export default function ApplicationForm() {
   const [chapters, setChapters] = useState([{ title: '', parent_title: '' }]);
   const [papers, setPapers] = useState([{ title: '' }]);
   const [scholarLink, setScholarLink] = useState('');
-  const [totalExperienceYears, setTotalExperienceYears] = useState('');
+  const [expYears, setExpYears] = useState('');
+  const [expMonths, setExpMonths] = useState('');
   const [resumeFile, setResumeFile] = useState(null);
 
   // Step 4
   const [hasWork, setHasWork] = useState(false);
   const [workExps, setWorkExps] = useState([{ company_name: '', start_date: '', end_date: '', role: '', description: '' }]);
 
-  const addEntry = (setter, state, max) => {
-    if (state.length < max) setter([...state, { ...state[0] }]);
+  const addEntry = (setter, state, max, template) => {
+    if (state.length < max) setter([...state, { ...template }]);
   };
 
   const updateEntry = (setter, state, index, field, value) => {
@@ -69,12 +72,23 @@ export default function ApplicationForm() {
 
   const handleNext = (e) => {
     e.preventDefault();
-    if (step === 1 && countWords(description) > 100) return alert("Description must not exceed 100 words.");
+    setTriedSubmit(true);
+    
+    // Check required fields for Step 1
+    if (step === 1) {
+      if (!full_name || !email || !mobile_number || !dob || !gender || !candidateState || !description) {
+         return; // Let CSS handle the red borders
+      }
+      if (countWords(description) > 100) return alert("Description must not exceed 100 words.");
+    }
+    
     setStep(step + 1);
+    setTriedSubmit(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setTriedSubmit(true);
     setSubmitError("");
     
     let educations = [];
@@ -97,16 +111,19 @@ export default function ApplicationForm() {
       workExps.forEach(w => { if(w.company_name) works.push({...w, entry_order: workOrder++}) });
     }
 
+    // Convert Years/Months to Float
+    const totalYrs = (parseFloat(expYears) || 0) + ((parseFloat(expMonths) || 0) / 12);
+
     const payload = {
       job_id: jobId || null,
       full_name, 
       dob, 
       email, 
-      mobile_no: mobile_number, // Backend expects mobile_no
-      about: description,       // Backend expects about
+      mobile_no: mobile_number, 
+      about: description,
       gender: gender || null,
       state: candidateState || null,
-      years_of_experience: totalExperienceYears ? parseFloat(totalExperienceYears) : 0,
+      years_of_experience: totalYrs,
       position_applied, 
       admin_department: position_applied === 'Admin' ? admin_department : null,
       schooling: {
@@ -118,7 +135,7 @@ export default function ApplicationForm() {
         level: e.level === 'Bachelors' ? 'undergrad' : (e.level === 'Masters' ? 'postgrad' : 'phd')
       })),
       publications: publications.map(p => ({
-        pub_type: p.type.toLowerCase(), // Backend expects enum values
+        pub_type: p.type.toLowerCase(),
         title: p.title,
         parent_book: p.parent_title || null,
         entry_order: p.entry_order
@@ -138,22 +155,16 @@ export default function ApplicationForm() {
       });
       if(res.ok) {
         const data = await res.json();
-        
-        // Upload resume if selected
         if (resumeFile && data.id) {
           const formData = new FormData();
           formData.append("file", resumeFile);
-          
           try {
             await fetch(`${API}/applications/${data.id}/resume`, {
               method: 'POST',
               body: formData
             });
-          } catch(err) {
-            console.error("Resume upload failed:", err);
-          }
+          } catch(err) { console.error("Resume upload failed:", err); }
         }
-        
         alert("Application Successfully Submitted!");
         navigate("/");
       } else {
@@ -236,26 +247,55 @@ export default function ApplicationForm() {
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">Full Name</label>
-                  <input required className="form-input" value={full_name} onChange={e => setFullName(e.target.value)} />
+                  <input 
+                    required 
+                    className={`form-input ${(triedSubmit && !full_name) ? 'faulty-input' : ''}`} 
+                    value={full_name} 
+                    onChange={e => setFullName(e.target.value)} 
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Email ID</label>
-                  <input required type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} />
+                  <input 
+                    required 
+                    type="email" 
+                    className={`form-input ${(triedSubmit && !email) ? 'faulty-input' : ''}`} 
+                    value={email} 
+                    onChange={e => setEmail(e.target.value)} 
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Mobile Number (10 Digits)</label>
-                  <input required className="form-input" pattern="^\d{10}$" value={mobile_number} onChange={e => setMobile(e.target.value)} />
+                  <input 
+                    required 
+                    className={`form-input ${(triedSubmit && !mobile_number) ? 'faulty-input' : ''}`} 
+                    pattern="^\d{10}$" 
+                    value={mobile_number} 
+                    onChange={e => setMobile(e.target.value)} 
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Date of Birth</label>
-                  <input required type="date" className="form-input" value={dob} onChange={e => setDob(e.target.value)} />
+                  <input 
+                    required 
+                    type="date" 
+                    className={`form-input ${(triedSubmit && !dob) ? 'faulty-input' : ''}`} 
+                    max={new Date().toISOString().split("T")[0]}
+                    value={dob} 
+                    onChange={e => setDob(e.target.value)} 
+                  />
                 </div>
               </div>
 
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">Gender</label>
-                  <select required className="form-input" value={gender} onChange={e => setGender(e.target.value)}>
+                  <select 
+                    required 
+                    className={`form-input ${(triedSubmit && !gender) ? 'faulty-input' : ''}`} 
+                    value={gender} 
+                    onChange={e => setGender(e.target.value)}
+                  >
                     <option value="">Select Gender</option>
                     <option>Male</option>
                     <option>Female</option>
@@ -265,7 +305,12 @@ export default function ApplicationForm() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">State / Union Territory</label>
-                  <select required className="form-input" value={candidateState} onChange={e => setCandidateState(e.target.value)}>
+                  <select 
+                    required 
+                    className={`form-input ${(triedSubmit && !candidateState) ? 'faulty-input' : ''}`} 
+                    value={candidateState} 
+                    onChange={e => setCandidateState(e.target.value)}
+                  >
                     <option value="">Select State / UT</option>
                     {['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry'].map(s => (
                       <option key={s} value={s}>{s}</option>
@@ -276,7 +321,12 @@ export default function ApplicationForm() {
 
               <div className="form-group">
                 <label className="form-label">Tell Us About Yourself (Max 100 Words)</label>
-                <textarea required className="form-input" value={description} onChange={e => setDesc(e.target.value)} />
+                <textarea 
+                  required 
+                  className={`form-input ${(triedSubmit && !description) ? 'faulty-input' : ''}`} 
+                  value={description} 
+                  onChange={e => setDesc(e.target.value)} 
+                />
                 <div className="error-text">Current Word Count: {countWords(description)}/100</div>
               </div>
 
@@ -309,7 +359,7 @@ export default function ApplicationForm() {
                   <div className="form-group"><label className="form-label">Score (&lt;= {g.score_type==='Percentage' ? '100' : '10'})</label><input required type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setGrads, grads, i, 'score_value', e.target.value)} /></div>
                 </div>
               ))}
-              <button type="button" className="btn-secondary" disabled={grads.length>=3} onClick={() => addEntry(setGrads, grads, 3)}>+ Add Graduation Detail</button>
+              <button type="button" className="btn-secondary" disabled={grads.length>=3} onClick={() => addEntry(setGrads, grads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '' })}>+ Add Graduation Detail</button>
 
               <hr style={dividerStyle} />
 
@@ -322,7 +372,7 @@ export default function ApplicationForm() {
                   <div className="form-group"><label className="form-label">Score</label><input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_value', e.target.value)} /></div>
                 </div>
               ))}
-              <button type="button" className="btn-secondary" disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3)}>+ Add Post Graduation</button>
+              <button type="button" className="btn-secondary" disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '' })}>+ Add Post Graduation</button>
 
               <hr style={dividerStyle} />
 
@@ -335,7 +385,7 @@ export default function ApplicationForm() {
                   <div className="form-group"><label className="form-label">Score</label><input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_value', e.target.value)} /></div>
                 </div>
               ))}
-              <button type="button" className="btn-secondary" disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3)}>+ Add Doctorate</button>
+              <button type="button" className="btn-secondary" disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3, { university: '', thesis_title: '', score_type: 'Percentage', score_value: '' })}>+ Add Doctorate</button>
 
               <div style={{display: 'flex'}}>
                 <button type="button" className="btn-secondary" onClick={() => setStep(1)}>Back</button>
@@ -361,7 +411,7 @@ export default function ApplicationForm() {
                   {books.map((b, i) => (
                     <div className="form-group" key={i}><input className="form-input" placeholder="Book Title" value={b.title} onChange={e => updateEntry(setBooks, books, i, 'title', e.target.value)} /></div>
                   ))}
-                  <button type="button" className="btn-secondary" disabled={books.length>=3} onClick={() => addEntry(setBooks, books, 3)}>+ Add Book</button>
+                  <button type="button" className="btn-secondary" disabled={books.length>=3} onClick={() => addEntry(setBooks, books, 3, { title: '' })}>+ Add Book</button>
                 </div>
               )}
 
@@ -374,7 +424,7 @@ export default function ApplicationForm() {
                       <div className="form-group"><input className="form-input" placeholder="Corresponding Book" value={c.parent_title} onChange={e => updateEntry(setChapters, chapters, i, 'parent_title', e.target.value)} /></div>
                     </div>
                   ))}
-                  <button type="button" className="btn-secondary" disabled={chapters.length>=3} onClick={() => addEntry(setChapters, chapters, 3)}>+ Add Chapter</button>
+                  <button type="button" className="btn-secondary" disabled={chapters.length>=3} onClick={() => addEntry(setChapters, chapters, 3, { title: '', parent_title: '' })}>+ Add Chapter</button>
                 </div>
               )}
 
@@ -384,7 +434,7 @@ export default function ApplicationForm() {
                   {papers.map((p, i) => (
                     <div className="form-group" key={i}><input className="form-input" placeholder="Paper Title" value={p.title} onChange={e => updateEntry(setPapers, papers, i, 'title', e.target.value)} /></div>
                   ))}
-                  <button type="button" className="btn-secondary" disabled={papers.length>=3} onClick={() => addEntry(setPapers, papers, 3)}>+ Add Paper</button>
+                  <button type="button" className="btn-secondary" disabled={papers.length>=3} onClick={() => addEntry(setPapers, papers, 3, { title: '' })}>+ Add Paper</button>
                 </div>
               )}
 
@@ -410,13 +460,37 @@ export default function ApplicationForm() {
                   <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
                   Upload Resume (PDF) - REQUIRED FOR AI MATCHING
                 </label>
-                <input required type="file" accept=".pdf" className="form-input" onChange={e => setResumeFile(e.target.files[0])} />
+                <input required type="file" accept=".pdf" className={`form-input ${(triedSubmit && !resumeFile) ? 'faulty-input' : ''}`} onChange={e => setResumeFile(e.target.files[0])} />
                 <div style={{fontSize: '12px', color: '#64748b', marginTop: '4px'}}>Your resume will be parsed by our AI system for semantic matching.</div>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Total Years of Experience</label>
-                <input required type="number" step="0.5" min="0" className="form-input" placeholder="e.g. 5.5" value={totalExperienceYears} onChange={e => setTotalExperienceYears(e.target.value)} />
+                <label className="form-label">Total Professional Experience</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div className="form-group">
+                    <input 
+                      required 
+                      type="number" 
+                      min="0" 
+                      className={`form-input ${(triedSubmit && !expYears && !expMonths) ? 'faulty-input' : ''}`} 
+                      placeholder="Years" 
+                      value={expYears} 
+                      onChange={e => setExpYears(e.target.value)} 
+                    />
+                  </div>
+                  <div className="form-group">
+                    <input 
+                      required 
+                      type="number" 
+                      min="0" 
+                      max="11" 
+                      className={`form-input ${(triedSubmit && !expYears && !expMonths) ? 'faulty-input' : ''}`} 
+                      placeholder="Months" 
+                      value={expMonths} 
+                      onChange={e => setExpMonths(e.target.value)} 
+                    />
+                  </div>
+                </div>
               </div>
 
               <p style={{marginBottom: '1rem'}}>Do you want to add specific detailed work entries below?</p>
@@ -442,7 +516,7 @@ export default function ApplicationForm() {
                       </div>
                     </div>
                   ))}
-                  <button type="button" className="btn-secondary" disabled={workExps.length>=3} onClick={() => addEntry(setWorkExps, workExps, 3)}>+ Add Recent Work Experience</button>
+                  <button type="button" className="btn-secondary" disabled={workExps.length>=3} onClick={() => addEntry(setWorkExps, workExps, 3, { company_name: '', start_date: '', end_date: '', role: '', description: '' })}>+ Add Recent Work Experience</button>
                 </div>
               )}
 
