@@ -58,13 +58,14 @@ def trigger_migration():
 # Internal Data Seeding (Temporary)
 # ─────────────────────────────────────────────
 
-@app.get("/api/v1/system/seed-test-data")
+@app.get("/api/v1/seed")
 def seed_test_data(db: Session = Depends(get_db)):
     """
     Internal trigger to seed professional jobs directly in the cloud.
     """
     from datetime import date, timedelta
-    from backend.schemas import PositionType, DivisionType, JobStatus
+    # Use local imports since we are in backend directory context
+    import schemas
     
     jobs = [
         {
