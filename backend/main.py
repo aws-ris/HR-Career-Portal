@@ -213,12 +213,27 @@ def seed_candidates(db: Session = Depends(get_db)):
         )
         db.add(app_track)
 
-        db.add(models.CandidateResumePayload(
+        # 3. Resume Payload (Persistent Binary Storage)
+        payload = models.CandidateResumePayload(
             candidate_id=meta.id,
             resume_path=f"uploads/{os.path.basename(res['path'])}",
             pdf_blob=pdf_data,
-            raw_resume_text=f"Full Dossier for {res['name']} specializing in {res['domain']}"
-        ))
+            raw_resume_text=f"Initial record for {res['name']}"
+        )
+        db.add(payload)
+        db.flush()
+
+        # 4. IMMEDIATE AI PROCESSING (Bypass Disk)
+        from ai_service import extract_text_from_pdf, compute_embedding
+        if pdf_data:
+            try:
+                # Extract text directly from the memory stream
+                extracted_text = extract_text_from_pdf(pdf_stream=pdf_data)
+                payload.raw_resume_text = extracted_text
+                # Generate AI embeddings for Semantic Matching
+                payload.resume_embedding = compute_embedding(extracted_text[:2000])
+            except Exception as e:
+                print(f"AI Pre-processing error for {res['name']}: {e}")
 
         if tier == 'phd':
             db.add(models.CandidateHigherEducation(candidate_id=meta.id, level='phd', degree_name='Ph.D. Economics', university='JNU', score_type='CGPA', score_value=9.0, grad_year=2021, entry_order=1))
