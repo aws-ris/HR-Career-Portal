@@ -131,7 +131,7 @@ def seed_test_data(db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success", "message": f"Successfully seeded {created} professional jobs."}
 
-@app.get("/api/v1/seed-candidates")
+@app.get("/api/v1/seed-c")
 def seed_candidates(db: Session = Depends(get_db)):
     """
     Heavy-duty seeder to inject 41 high-fidelity candidates based on generated CVs.
