@@ -152,6 +152,7 @@ def semantic_search_candidates(db: Session, job_id: str, query: str, threshold: 
 
     query_vector = compute_embedding(query)
     if not query_vector:
+        print(f"[AI] Search aborted: Query vectorization failed (check HF_TOKEN).")
         return [(c, 0.0) for c in candidates]
 
     results = []
@@ -162,7 +163,9 @@ def semantic_search_candidates(db: Session, job_id: str, query: str, threshold: 
             continue
 
         similarity = cosine_similarity(query_vector, payload.resume_embedding)
-        boosted = similarity * 2.5
+        # Boost similarity for a better human-readable percentage
+        # 0.45 becomes ~100%, 0.2 becomes ~44%
+        boosted = similarity * 2.2
         match_score = max(0.0, min(100.0, boosted * 100))
         results.append((c, round(match_score, 1)))
 

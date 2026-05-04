@@ -58,8 +58,10 @@ def upgrade_db():
 @app.get("/api/v1/system/resume-health")
 def resume_health(db: Session = Depends(get_db)):
     """
-    Diagnostic tool to verify Resume storage health.
+    Diagnostic tool to verify Resume storage and AI health.
     """
+    from ai_service import HF_TOKEN, client
+    
     total = db.query(models.CandidateResumePayload).count()
     with_blob = db.query(models.CandidateResumePayload).filter(models.CandidateResumePayload.pdf_blob != None).count()
     with_text = db.query(models.CandidateResumePayload).filter(models.CandidateResumePayload.raw_resume_text != None).count()
@@ -70,6 +72,8 @@ def resume_health(db: Session = Depends(get_db)):
         "with_binary_blob": with_blob,
         "with_extracted_text": with_text,
         "with_ai_embedding": with_embedding,
+        "ai_token_status": "Present" if HF_TOKEN else "MISSING (Check Environment Variables)",
+        "ai_engine_status": "ONLINE" if client else "OFFLINE",
         "health_score": f"{(with_blob/total*100 if total > 0 else 0):.1f}%"
     }
 
