@@ -109,9 +109,9 @@ export default function FilterCenter({ job_id, onFilterChange }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
           <h3 style={{ fontSize: '14px', fontWeight: '900', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-            <Filter size={18} /> DATA EXTRACTION CONSOLE
+            <Filter size={18} /> CANDIDATE FILTERS
           </h3>
-          <p style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Schema-Aware Filtering Engine v4.0</p>
+          <p style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>Advanced Search & Selection</p>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button onClick={() => {
