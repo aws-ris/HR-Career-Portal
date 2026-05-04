@@ -131,6 +131,109 @@ def seed_test_data(db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success", "message": f"Successfully seeded {created} professional jobs."}
 
+@app.get("/api/v1/seed-candidates")
+def seed_candidates(db: Session = Depends(get_db)):
+    """
+    Heavy-duty seeder to inject 41 high-fidelity candidates based on generated CVs.
+    """
+    import os
+    import random
+    from datetime import date
+    import schemas
+    
+    # 1. Map domains to Job IDs
+    job_map = {}
+    jobs = db.query(models.JobPosting).all()
+    for j in jobs:
+        if "G20" in j.title: job_map["International Trade & G20 Policy"] = j.id
+        elif "Blue Economy" in j.title: job_map["Blue Economy & CMEC"] = j.id
+        elif "Traditional Medicine" in j.title: job_map["Traditional Medicine (FITM)"] = j.id
+        elif "ASEAN" in j.title: job_map["ASEAN-India (AIC)"] = j.id
+        elif "Development Finance" in j.title: job_map["Dev Finance (DAKSHIN)"] = j.id
+
+    resume_dir = os.path.join(os.path.dirname(__file__), "test_resumes")
+    resume_files = [f for f in os.listdir(resume_dir) if f.endswith(".pdf")]
+    # Add the lone Arjun resume
+    arjun_path = os.path.join(os.path.dirname(__file__), "sample_resume_arjun.pdf")
+    
+    all_resumes = [{"path": arjun_path, "domain": "International Trade & G20 Policy", "name": "Arjun Subramanian"}]
+    for rf in resume_files:
+        # Extract domain from filename or simple logic
+        domain_name = random.choice(list(job_map.keys())) # For seed, we spread them
+        all_resumes.append({"path": os.path.join(resume_dir, rf), "domain": domain_name, "name": rf.split("_")[2].replace(".pdf", "").replace("_", " ")})
+
+    created_count = 0
+    for res in all_resumes:
+        # Avoid duplicate emails (synthetic)
+        email = f"{res['name'].lower().replace(' ', '.')}@policy-res.in"
+        existing = db.query(models.Candidate).filter(models.Candidate.email == email).first()
+        if existing: continue
+
+        # Read PDF binary
+        with open(res['path'], "rb") as f:
+            pdf_data = f.read()
+
+        # Create Candidate
+        tier = random.choice(['PhD', 'Masters', 'Bachelors'])
+        candidate = models.Candidate(
+            full_name=res['name'],
+            email=email,
+            mobile_number=f"+91 {random.randint(70000, 99999)} {random.randint(10000, 99999)}",
+            age=random.randint(24, 45),
+            gender=random.choice(["Male", "Female"]),
+            state=random.choice(["Delhi", "Maharashtra", "Karnataka", "Tamil Nadu", "Uttar Pradesh"]),
+            highest_education="PhD" if tier == 'PhD' else ("Postgraduate" if tier == 'Masters' else "Undergraduate"),
+            position_applied="Consultant" if tier == 'PhD' else "Research Assistant",
+            applied_job_id=job_map.get(res['domain']),
+            resume_data=pdf_data,
+            resume_filename=os.path.basename(res['path'])
+        )
+        db.add(candidate)
+        db.flush() # Get ID
+
+        # 1. Doctorate
+        if tier == 'PhD':
+            db.add(models.Doctorate(
+                candidate_id=candidate.id,
+                university="Jawaharlal Nehru University",
+                thesis_title=f"Advanced Analysis of {res['domain']}",
+                year_of_completion=2021
+            ))
+        
+        # 2. Postgraduate
+        if tier in ['PhD', 'Masters']:
+            db.add(models.Postgraduate(
+                candidate_id=candidate.id,
+                degree_name="M.A. Economics",
+                university="Delhi School of Economics",
+                score=82.5,
+                score_type="Percentage",
+                year_of_completion=2016
+            ))
+        
+        # 3. Graduation
+        db.add(models.Graduation(
+            candidate_id=candidate.id,
+            degree_name="B.A. Economics",
+            university="University of Delhi",
+            score=78.0,
+            score_type="Percentage",
+            year_of_completion=2014
+        ))
+
+        # 4. Experience (2 entries)
+        db.add(models.WorkExperience(candidate_id=candidate.id, role="Senior Policy Analyst", company_name="Policy Think Tank", years=3))
+        db.add(models.WorkExperience(candidate_id=candidate.id, role="Research Intern", company_name="Regional Agency", years=1))
+
+        # 5. Publications
+        db.add(models.Book(candidate_id=candidate.id, title=f"Future of {res['domain']}"))
+        db.add(models.ResearchPaper(candidate_id=candidate.id, title=f"Impact of GVCs on {res['domain']}"))
+
+        created_count += 1
+
+    db.commit()
+    return {"status": "success", "message": f"Successfully injected {created_count} detailed candidates with resumes."}
+
 # ─────────────────────────────────────────────
 # Public Job Board Access
 # ─────────────────────────────────────────────
