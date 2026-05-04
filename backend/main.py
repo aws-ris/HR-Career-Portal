@@ -705,20 +705,35 @@ def get_full_profile(candidate_id: str, db: Session = Depends(get_db)):
 
 @app.get("/api/v1/applications/{candidate_id}/resume/download")
 def download_resume(candidate_id: str, preview: bool = False, db: Session = Depends(get_db)):
+    from fastapi import Response
     payload = db.query(models.CandidateResumePayload).filter(
         models.CandidateResumePayload.candidate_id == candidate_id
     ).first()
     
-    if not payload or not payload.resume_path or not os.path.exists(payload.resume_path):
-        raise HTTPException(status_code=404, detail="Resume not found")
-    
-    headers = {}
-    if preview:
-        headers["Content-Disposition"] = f'inline; filename="{os.path.basename(payload.resume_path)}"'
-    else:
-        headers["Content-Disposition"] = f'attachment; filename="{os.path.basename(payload.resume_path)}"'
+    # Check if we have the blob (Database-First Storage)
+    if not payload or not payload.pdf_blob:
+        # Fallback to path if blob is missing for some reason
+        if payload and payload.resume_path and os.path.exists(payload.resume_path):
+            headers = {}
+            if preview:
+                headers["Content-Disposition"] = f'inline; filename="{os.path.basename(payload.resume_path)}"'
+            else:
+                headers["Content-Disposition"] = f'attachment; filename="{os.path.basename(payload.resume_path)}"'
+            return FileResponse(path=payload.resume_path, headers=headers, media_type="application/pdf")
         
-    return FileResponse(path=payload.resume_path, headers=headers, media_type="application/pdf")
+        raise HTTPException(status_code=404, detail="Resume not found in persistent storage")
+    
+    # STREAM DIRECTLY FROM DATABASE BLOB
+    filename = os.path.basename(payload.resume_path) if payload.resume_path else "resume.pdf"
+    disposition = "inline" if preview else "attachment"
+    
+    return Response(
+        content=payload.pdf_blob,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'{disposition}; filename="{filename}"'
+        }
+    )
 
 
 @app.post("/api/v1/applications/{candidate_id}/resume")

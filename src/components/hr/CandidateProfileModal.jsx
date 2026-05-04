@@ -72,7 +72,7 @@ export default function CandidateProfileModal({ candidateId, onClose }) {
           
           <div style={{ display: 'flex', gap: '12px' }}>
             <button 
-              onClick={() => window.open(`${API}/applications/${data?.id}/resume/download?preview=true`, '_blank')}
+              onClick={() => window.open(`${API}/applications/${candidateId}/resume/download?preview=true`, '_blank')}
               style={{ 
               display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', 
               background: '#f8fafc', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: '8px', 
@@ -81,7 +81,7 @@ export default function CandidateProfileModal({ candidateId, onClose }) {
               <ExternalLink size={18} /> Preview CV
             </button>
             <button 
-              onClick={() => window.open(`${API}/applications/${data?.id}/resume/download`, '_blank')}
+              onClick={() => window.open(`${API}/applications/${candidateId}/resume/download`, '_blank')}
               style={{ 
               display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', 
               background: '#1e293b', color: 'white', border: 'none', borderRadius: '8px', 
@@ -122,7 +122,7 @@ export default function CandidateProfileModal({ candidateId, onClose }) {
                     <Mail size={16} /> {data.email}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px' }}>
-                    <Phone size={16} /> {data.mobile_number}
+                    <Phone size={16} /> {data.mobile_no}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px' }}>
                     <MapPin size={16} /> {data.state}, India
