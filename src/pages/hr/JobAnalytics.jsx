@@ -90,6 +90,37 @@ export default function JobAnalytics() {
     }
   };
 
+  const handleExport = async (format) => {
+    setDebugStatus(`Generating ${format.toUpperCase()}...`);
+    try {
+      const res = await fetch(`${API}/jobs/${id}/candidates/export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filters: currentFilters,
+          format: format,
+          columns: activeCols
+        })
+      });
+
+      if (!res.ok) throw new Error("Export failed");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `applicants_${job.title.replace(/\s+/g, '_')}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setDebugStatus("Export Complete.");
+    } catch (e) {
+      console.error("Export error:", e);
+      setDebugStatus("Export Failed.");
+      alert("Failed to generate export file.");
+    }
+  };
+
   useEffect(() => {
     const t = new Date().getTime();
     fetch(`${API}/jobs/${id}?t=${t}`)
@@ -232,14 +263,34 @@ export default function JobAnalytics() {
             )}
           </div>
         </div>
-        <div className="hr-search">
-          <Search size={16} className="hr-search-icon" />
-          <input 
-            type="text" placeholder="Search by name or email..." 
-            className="hr-search-input"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+        
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div className="hr-search">
+            <Search size={16} className="hr-search-icon" />
+            <input 
+              type="text" placeholder="Search by name or email..." 
+              className="hr-search-input"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          
+          <button 
+            onClick={() => handleExport('csv')}
+            className="hr-btn-refresh" 
+            title="Download as CSV"
+            style={{ fontSize: '12px', fontWeight: '700', padding: '0.6rem 1rem', gap: '6px' }}
+          >
+            CSV
+          </button>
+          <button 
+            onClick={() => handleExport('xlsx')}
+            className="hr-btn-refresh" 
+            title="Download as Excel"
+            style={{ fontSize: '12px', fontWeight: '700', padding: '0.6rem 1rem', gap: '6px', color: '#16a34a', borderColor: '#16a34a22' }}
+          >
+            XLSX
+          </button>
         </div>
       </div>
 
