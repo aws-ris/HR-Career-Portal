@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { API_BASE } from '../../api';
 import { Search, ChevronDown, User, GraduationCap, Briefcase, BookOpen, X, SlidersHorizontal, CheckCircle2, Circle, Filter, Sparkles, Brain } from 'lucide-react';
 
 const INDIAN_STATES = [
@@ -42,8 +43,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
     publication_keyword: '',
     semantic_query: ''
   });
-  const API_HOST = window.location.hostname;
-  const API_BASE = `http://${API_HOST}:8000/api/v1`;
+  // API is now managed via centralization
 
   useEffect(() => {
     if (job_id) {

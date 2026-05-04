@@ -196,8 +196,14 @@ export default function ApplicationForm() {
           {step === 1 && (
             <>
               <div className="form-group">
-                <label className="form-label">Position Applied For</label>
-                <select className="form-input" value={position_applied} onChange={e => setPosition(e.target.value)}>
+                <label className="form-label">Position Applied For {jobId && <span style={{fontSize: '10px', color: '#6366f1'}}>(Locked for this Job Link)</span>}</label>
+                <select 
+                  className="form-input" 
+                  value={position_applied} 
+                  onChange={e => setPosition(e.target.value)}
+                  disabled={!!jobId}
+                  style={jobId ? { backgroundColor: '#f8fafc', cursor: 'not-allowed' } : {}}
+                >
                   <option>Professor</option>
                   <option>Associate Professor</option>
                   <option>Assistant Professor</option>
@@ -210,7 +216,12 @@ export default function ApplicationForm() {
               {position_applied === 'Admin' && (
                 <div className="form-group" style={{marginTop: '-0.5rem'}}>
                   <label className="form-label">Department</label>
-                  <select className="form-input" value={admin_department} onChange={e => setAdminDept(e.target.value)}>
+                  <select 
+                    className="form-input" 
+                    value={admin_department} 
+                    onChange={e => setAdminDept(e.target.value)}
+                    disabled={!!jobId}
+                  >
                     <option>IT</option>
                     <option>HR</option>
                     <option>Finance</option>

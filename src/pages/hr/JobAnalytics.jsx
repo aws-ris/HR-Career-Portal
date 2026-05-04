@@ -6,8 +6,7 @@ import { Users, Globe, GraduationCap, ChevronLeft, Search, CheckCircle2, Circle,
 import CandidateProfileModal from '../../components/hr/CandidateProfileModal';
 import FilterCenter from '../../components/hr/FilterCenter';
 
-const API_HOST = window.location.hostname;
-const API = `http://${API_HOST}:8000/api/v1`;
+import { API_BASE as API } from '../../api';
 const COLORS = {
   edu: { 'PhD': '#7c3aed', 'Masters': '#2563eb', 'Bachelors': '#059669' },
   gender: { 'Male': '#3b82f6', 'Female': '#db2777', 'Other': '#64748b' },
