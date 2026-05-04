@@ -774,127 +774,126 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
     from io import StringIO, BytesIO
     import csv
     from fastapi.responses import StreamingResponse
-    import pandas as pd
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Font, PatternFill
 
     try:
-        # Reuse existing filter logic (extracted for consistency)
+        # 1. Fetch filtered candidates using the existing engine
         candidates_data = filter_job_candidates(job_id, req.filters, db)
+        if not candidates_data:
+            # Return empty response with headers
+            if req.format == 'csv':
+                return StreamingResponse(iter(["No candidates found"]), media_type="text/csv")
+            else:
+                output = BytesIO()
+                wb = Workbook()
+                wb.save(output)
+                output.seek(0)
+                return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        # 2. Define our professional header structure
+        # Basic Info, Grad(1-3), PG(1-3), PhD(1-3), Books(1-3), Chapters(1-3), Papers(1-3), Work(1-3)
+        headers = ["Full Name", "Email", "Mobile", "DOB", "Gender", "State", "Exp (Yrs)", "Highest Edu", "Status", "AI Match %", "Class X %", "Class XII %"]
         
-        # Prepare the flattened data for export
-        flat_data = []
+        # Add Triple-Entry Headers
+        for label in ["Grad", "PG", "PhD"]:
+            for i in range(1, 4):
+                headers.extend([f"{label} {i} Univ", f"{label} {i} Degree", f"{label} {i} Score"])
+        
+        for label in ["Book", "Chapter", "Paper"]:
+            for i in range(1, 4):
+                headers.append(f"{label} {i} Title")
+                if label == "Chapter": headers.append(f"{label} {i} Source")
+
+        for i in range(1, 4):
+            headers.extend([f"Work {i} Co", f"Work {i} Role", f"Work {i} Start", f"Work {i} End"])
+
+        # 3. Build Rows
+        rows = []
         for c in candidates_data:
-            # Re-fetch full object to get detailed entries (filter logic returns summarized dicts)
             full_c = db.query(models.CandidateMetadata).filter(models.CandidateMetadata.id == c['id']).first()
             if not full_c: continue
             
-            row = {
-                "Full Name": full_c.full_name,
-                "Email": full_c.email,
-                "Mobile Number": full_c.mobile_no,
-                "DOB": str(full_c.dob),
-                "Gender": full_c.gender,
-                "State": full_c.state,
-                "Experience (Yrs)": full_c.years_of_experience,
-                "Highest Education": c['highest_education'],
-                "Current Status": c['current_status'],
-                "AI Match Score": f"{c['ai_match_score']}%" if c['ai_match_score'] is not None else "N/A"
-            }
+            row = [
+                full_c.full_name, full_c.email, full_c.mobile_no, str(full_c.dob),
+                full_c.gender, full_c.state, full_c.years_of_experience,
+                c['highest_education'], c['current_status'],
+                f"{c['ai_match_score']}%" if c.get('ai_match_score') is not None else "N/A",
+                full_c.schooling.class_x_percentage if full_c.schooling else 0,
+                full_c.schooling.class_xii_percentage if full_c.schooling else 0
+            ]
             
-            # Schooling
-            if full_c.schooling:
-                row["Class X (%)"] = full_c.schooling.class_x_percentage
-                row["Class XII (%)"] = full_c.schooling.class_xii_percentage
-
-            # Triple-Entry Education
-            for level_name, level_key, label in [('undergrad', 'Graduation', 'Grad'), ('postgrad', 'Masters', 'PG'), ('phd', 'Doctorate', 'PhD')]:
-                entries = [e for e in full_c.higher_education if e.level == level_name][:3]
+            # Education (Grad, PG, PhD)
+            for level in ['undergrad', 'postgrad', 'phd']:
+                entries = [e for e in full_c.higher_education if e.level == level][:3]
                 for i in range(3):
-                    idx = i + 1
                     if i < len(entries):
-                        row[f"{label} {idx} University"] = entries[i].university
-                        row[f"{label} {idx} Degree"] = entries[i].degree_name
-                        row[f"{label} {idx} Score"] = f"{entries[i].score_value} {entries[i].score_type}"
+                        row.extend([entries[i].university, entries[i].degree_name, f"{entries[i].score_value} {entries[i].score_type}"])
                     else:
-                        row[f"{label} {idx} University"] = ""
-                        row[f"{label} {idx} Degree"] = ""
-                        row[f"{label} {idx} Score"] = ""
+                        row.extend(["", "", ""])
 
-            # Triple-Entry Publications
-            for pub_type, label in [('book', 'Book'), ('chapter', 'Chapter'), ('paper', 'Paper')]:
-                entries = [p for p in full_c.publications if p.pub_type == pub_type][:3]
+            # Publications
+            for ptype in ['book', 'chapter', 'paper']:
+                entries = [p for p in full_c.publications if p.pub_type == ptype][:3]
                 for i in range(3):
-                    idx = i + 1
                     if i < len(entries):
-                        row[f"{label} {idx} Title"] = entries[i].title
-                        if pub_type == 'chapter':
-                            row[f"{label} {idx} Source"] = entries[i].parent_book
+                        row.append(entries[i].title)
+                        if ptype == 'chapter': row.append(entries[i].parent_book or "")
                     else:
-                        row[f"{label} {idx} Title"] = ""
-                        if pub_type == 'chapter':
-                            row[f"{label} {idx} Source"] = ""
+                        row.append("")
+                        if ptype == 'chapter': row.append("")
 
-            # Triple-Entry Work Experience
+            # Work Experience
             entries = sorted(full_c.work_experiences, key=lambda x: x.entry_order)[:3]
             for i in range(3):
-                idx = i + 1
                 if i < len(entries):
-                    row[f"Work {idx} Company"] = entries[i].company_name
-                    row[f"Work {idx} Role"] = entries[i].role
-                    row[f"Work {idx} Start"] = str(entries[i].start_date)
-                    row[f"Work {idx} End"] = str(entries[i].end_date) if entries[i].end_date else "Present"
+                    row.extend([entries[i].company_name, entries[i].role, str(entries[i].start_date), str(entries[i].end_date or "Present")])
                 else:
-                    row[f"Work {idx} Company"] = ""
-                    row[f"Work {idx} Role"] = ""
-                    row[f"Work {idx} Start"] = ""
-                    row[f"Work {idx} End"] = ""
+                    row.extend(["", "", "", ""])
+            
+            rows.append(row)
 
-            flat_data.append(row)
-
-        df = pd.DataFrame(flat_data)
-        
-        # Filter columns based on requested columns (simplified mapping)
-        # In a production app, we'd map activeCols to specific sets of DF columns.
-        # For now, we return the full flattened professional row.
-
+        # 4. Generate Output
         if req.format == 'csv':
-            stream = StringIO()
-            df.to_csv(stream, index=False)
-            response = StreamingResponse(
-                iter([stream.getvalue()]),
+            si = StringIO()
+            cw = csv.writer(si)
+            cw.writerow(headers)
+            cw.writerows(rows)
+            si.seek(0)
+            return StreamingResponse(
+                iter([si.getvalue()]),
                 media_type="text/csv",
                 headers={"Content-Disposition": f"attachment; filename=applicants_{job_id}.csv"}
             )
-            return response
         else:
-            # XLSX with Premium Styling
+            # XLSX using openpyxl directly (no pandas)
             output = BytesIO()
-            with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                df.to_excel(writer, index=False, sheet_name='Applicants')
-                workbook = writer.book
-                worksheet = writer.sheets['Applicants']
-                
-                # Apply Header Styles (Senior Official Friendly)
-                header_fill = PatternFill(start_color='1E3A8A', end_color='1E3A8A', fill_type='solid')
-                header_font = Font(bold=True, color='FFFFFF')
-                
-                for cell in worksheet[1]:
-                    cell.fill = header_fill
-                    cell.font = header_font
-                    cell.alignment = Alignment(horizontal='center')
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Applicants"
+            
+            # Styling
+            header_fill = PatternFill(start_color='1E3A8A', end_color='1E3A8A', fill_type='solid')
+            header_font = Font(bold=True, color='FFFFFF')
+            
+            # Write Headers
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=header)
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal='center')
 
-                # Auto-adjust column width
-                for col in worksheet.columns:
-                    max_length = 0
-                    column = col[0].column_letter
-                    for cell in col:
-                        try:
-                            if len(str(cell.value)) > max_length:
-                                max_length = len(str(cell.value))
-                        except: pass
-                    worksheet.column_dimensions[column].width = min(max_length + 2, 50)
+            # Write Data
+            for r_idx, row_data in enumerate(rows, 2):
+                for c_idx, value in enumerate(row_data, 1):
+                    ws.cell(row=r_idx, column=c_idx, value=value)
 
+            # Auto-width
+            from openpyxl.utils import get_column_letter
+            for col_idx in range(1, len(headers) + 1):
+                ws.column_dimensions[get_column_letter(col_idx)].width = 20
+
+            wb.save(output)
             output.seek(0)
             return StreamingResponse(
                 output,
