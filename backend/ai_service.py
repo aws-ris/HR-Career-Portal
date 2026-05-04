@@ -61,14 +61,19 @@ def cosine_similarity(vec1: list, vec2: list) -> float:
         return 0.0
     return dot_product / (norm_a * norm_b)
 
-def extract_text_from_pdf(pdf_path: str) -> str:
+def extract_text_from_pdf(pdf_path: str = None, pdf_stream: bytes = None) -> str:
     text = ""
     try:
-        with fitz.open(pdf_path) as doc:
-            for page in doc:
-                text += page.get_text("text") + "\n"
+        if pdf_path and os.path.exists(pdf_path):
+            with fitz.open(pdf_path) as doc:
+                for page in doc:
+                    text += page.get_text("text") + "\n"
+        elif pdf_stream:
+            with fitz.open(stream=pdf_stream, filetype="pdf") as doc:
+                for page in doc:
+                    text += page.get_text("text") + "\n"
     except Exception as e:
-        print(f"Error extracting PDF {pdf_path}: {e}")
+        print(f"Error extracting PDF: {e}")
     return text.strip()
 
 def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, filename: str):
@@ -76,22 +81,25 @@ def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, f
     if not candidate:
         raise ValueError(f"Candidate {candidate_id} not found")
 
+    # Local save (fallback/legacy)
     upload_dir = os.path.join(os.path.dirname(__file__), "uploads", "resumes")
     os.makedirs(upload_dir, exist_ok=True)
-
     safe_filename = f"{candidate_id}_{filename}"
     file_path = os.path.join(upload_dir, safe_filename)
-
-    with open(file_path, "wb") as f:
-        f.write(file_bytes)
+    try:
+        with open(file_path, "wb") as f:
+            f.write(file_bytes)
+    except:
+        pass # Vercel might deny write access in some contexts
 
     rel_path = os.path.join("uploads", "resumes", safe_filename).replace("\\", "/")
 
     payload = db.query(CandidateResumePayload).filter(CandidateResumePayload.candidate_id == candidate_id).first()
     if payload:
         payload.resume_path = rel_path
+        payload.pdf_blob = file_bytes # STORE IN DB
     else:
-        payload = CandidateResumePayload(candidate_id=candidate_id, resume_path=rel_path)
+        payload = CandidateResumePayload(candidate_id=candidate_id, resume_path=rel_path, pdf_blob=file_bytes)
         db.add(payload)
 
     db.commit()
@@ -103,10 +111,10 @@ def background_vectorize_resume(candidate_id: str, file_path: str):
     try:
         payload = db.query(CandidateResumePayload).filter(CandidateResumePayload.candidate_id == candidate_id).first()
         if not payload:
-            payload = CandidateResumePayload(candidate_id=candidate_id)
-            db.add(payload)
+            return
 
-        raw_text = extract_text_from_pdf(file_path)
+        # Try file first, then fallback to DB stream
+        raw_text = extract_text_from_pdf(pdf_path=file_path, pdf_stream=payload.pdf_blob)
         # Limit text for API if necessary, but MiniLM handles up to 512 tokens
         embedding = compute_embedding(raw_text[:2000]) 
 

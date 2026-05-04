@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import (
     Column, String, Text, Float, Boolean, Integer,
-    Date, DateTime, ForeignKey, CheckConstraint, ARRAY
+    Date, DateTime, ForeignKey, CheckConstraint, ARRAY, LargeBinary
 )
 from sqlalchemy.orm import relationship
 from database.database import Base
@@ -216,6 +216,7 @@ class CandidateResumePayload(Base):
 
     candidate_id     = Column(String(36),   ForeignKey('candidate_metadata.id', ondelete='CASCADE'), primary_key=True)
     resume_path      = Column(String(500),  nullable=True)
+    pdf_blob         = Column(LargeBinary,  nullable=True)
     raw_resume_text  = Column(Text,         nullable=True)
     resume_embedding = Column(ARRAY(Float), nullable=True)
 

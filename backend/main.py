@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, extract, or_
@@ -41,16 +41,17 @@ import os
 # ─────────────────────────────────────────────
 # DATABASE SYSTEM MIGRATION (TEMPORARY)
 # ─────────────────────────────────────────────
-@app.get("/api/v1/system/migrate")
-def trigger_migration():
+@app.get("/api/v1/system/upgrade")
+def upgrade_db():
     """
-    Temporary endpoint to initialize the cloud database schema.
+    Manual migration to add pdf_blob column to existing table.
     """
+    from sqlalchemy import text
     try:
-        from database.database import Base, engine
-        import database.models  # Ensure models are registered
-        Base.metadata.create_all(bind=engine)
-        return {"status": "success", "message": "Database schema initialized in the cloud."}
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE candidate_resume_payload ADD COLUMN IF NOT EXISTS pdf_blob BYTEA;"))
+            conn.commit()
+        return {"status": "success", "message": "Column 'pdf_blob' added to CandidateResumePayload table."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -182,6 +183,14 @@ def seed_candidates(db: Session = Depends(get_db)):
         email = f"{res['name'].lower().replace(' ', '.')}.{idx}@policy-res.in"
         if db.query(models.CandidateMetadata).filter(models.CandidateMetadata.email == email).first(): continue
 
+        # READ THE ACTUAL PDF BYTES
+        pdf_data = None
+        try:
+            with open(res['path'], "rb") as f:
+                pdf_data = f.read()
+        except:
+            pass
+
         tier = random.choice(['phd', 'postgrad', 'undergrad'])
         
         meta = models.CandidateMetadata(
@@ -207,6 +216,7 @@ def seed_candidates(db: Session = Depends(get_db)):
         db.add(models.CandidateResumePayload(
             candidate_id=meta.id,
             resume_path=f"uploads/{os.path.basename(res['path'])}",
+            pdf_blob=pdf_data,
             raw_resume_text=f"Full Dossier for {res['name']} specializing in {res['domain']}"
         ))
 
