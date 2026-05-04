@@ -1069,7 +1069,8 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
         if filters.semantic_query:
             from ai_service import semantic_search_candidates
             ai_results = semantic_search_candidates(db, clean_job_id, filters.semantic_query)
-            ai_score_map = {c.id: score for c, score in ai_results}
+            ai_score_map = {str(c.id): score for c, score in ai_results}
+            print(f"[AI] Generated {len(ai_score_map)} scores for query: '{filters.semantic_query}'")
 
         if not matching_ids:
             return []
@@ -1115,7 +1116,7 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
                 "years_of_experience": c.years_of_experience,
                 "highest_education": highest_edu,
                 "current_status": track.current_status if track else 'received',
-                "ai_match_score": ai_score_map.get(c.id, None),
+                "ai_match_score": ai_score_map.get(str(c.id), None),
                 "graduation": [{"degree_name": g.degree_name, "university": g.university, "score": f"{g.score_value} {g.score_type}"} for g in grad],
                 "postgraduate": [{"degree_name": p.degree_name, "university": p.university, "score": f"{p.score_value} {p.score_type}"} for p in postgrad],
                 "doctorate": [{"university": d.university, "thesis_title": d.degree_name, "score": f"{d.score_value} {d.score_type}"} for d in phd],

@@ -163,10 +163,10 @@ def semantic_search_candidates(db: Session, job_id: str, query: str, threshold: 
             continue
 
         similarity = cosine_similarity(query_vector, payload.resume_embedding)
-        # Boost similarity for a better human-readable percentage
-        # 0.45 becomes ~100%, 0.2 becomes ~44%
-        boosted = similarity * 2.2
-        match_score = max(0.0, min(100.0, boosted * 100))
+        # More generous scaling for human-readable percentages
+        # Raw cosine of 0.2 now becomes ~48%
+        boosted = similarity * 2.4
+        match_score = max(0.5, min(100.0, boosted * 100)) # 0.5 baseline for data-integrity check
         results.append((c, round(match_score, 1)))
 
     results.sort(key=lambda x: x[1], reverse=True)
