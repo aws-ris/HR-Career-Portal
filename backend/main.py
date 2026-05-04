@@ -55,6 +55,55 @@ def trigger_migration():
         return {"status": "error", "message": str(e)}
 
 # ─────────────────────────────────────────────
+# Public Job Board Access
+# ─────────────────────────────────────────────
+
+@app.get("/api/v1/public/jobs")
+def get_public_jobs(db: Session = Depends(get_db)):
+    """
+    Returns only 'open' jobs for the candidate landing page.
+    Hides internal metadata.
+    """
+    jobs = db.query(models.JobPosting).filter(
+        models.JobPosting.status == 'open',
+        models.JobPosting.is_deleted == False
+    ).order_by(models.JobPosting.deadline.asc()).all()
+    
+    return [{
+        "id": j.id,
+        "title": j.title,
+        "position": j.position,
+        "division": j.division,
+        "location": j.location,
+        "deadline": j.deadline,
+        "description": j.description,
+        "requirements": j.requirements
+    } for j in jobs]
+
+@app.get("/api/v1/public/jobs/{job_id}")
+def get_public_job_detail(job_id: str, db: Session = Depends(get_db)):
+    """
+    Returns full public details for a specific job.
+    """
+    job = db.query(models.JobPosting).filter(
+        models.JobPosting.id == job_id,
+        models.JobPosting.is_deleted == False
+    ).first()
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+        
+    return {
+        "id": job.id,
+        "title": job.title,
+        "position": job.position,
+        "division": job.division,
+        "description": job.description,
+        "requirements": job.requirements,
+        "deadline": job.deadline
+    }
+
+# ─────────────────────────────────────────────
 # Candidate Application Submission
 # ─────────────────────────────────────────────
 @app.post(

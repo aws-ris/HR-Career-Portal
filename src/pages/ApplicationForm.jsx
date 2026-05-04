@@ -1,9 +1,28 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE as API } from '../api';
 
 export default function ApplicationForm() {
+  const { jobId } = useParams();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [submitError, setSubmitError] = useState('');
+  const [jobDetail, setJobDetail] = useState(null);
+
+  // Fetch Job details if ID is present
+  useEffect(() => {
+    if (jobId) {
+      fetch(`${API}/public/jobs/${jobId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.id) {
+            setJobDetail(data);
+            setPosition(data.position); // Lock to the job's position
+          }
+        })
+        .catch(err => console.error("Error fetching job:", err));
+    }
+  }, [jobId]);
   const [submitError, setSubmitError] = useState('');
 
   // Step 1
@@ -81,18 +100,36 @@ export default function ApplicationForm() {
     }
 
     const payload = {
-      full_name, dob, email, mobile_number, description,
+      job_id: jobId || null,
+      full_name, 
+      dob, 
+      email, 
+      mobile_no: mobile_number, // Backend expects mobile_no
+      about: description,       // Backend expects about
       gender: gender || null,
       state: candidateState || null,
+      years_of_experience: totalExperienceYears ? parseFloat(totalExperienceYears) : 0,
       position_applied, 
       admin_department: position_applied === 'Admin' ? admin_department : null,
-      class_x_percentage: parseFloat(classX), 
-      class_xii_percentage: parseFloat(classXII),
-      google_scholar_link: scholarLink || null,
-      total_experience_years: totalExperienceYears ? parseFloat(totalExperienceYears) : null,
-      educations,
-      publications,
-      work_experiences: works
+      schooling: {
+        class_x_percentage: parseFloat(classX), 
+        class_xii_percentage: parseFloat(classXII)
+      },
+      higher_education: educations.map(e => ({
+        ...e,
+        level: e.level === 'Bachelors' ? 'undergrad' : (e.level === 'Masters' ? 'postgrad' : 'phd')
+      })),
+      publications: publications.map(p => ({
+        pub_type: p.type.toLowerCase(), // Backend expects enum values
+        title: p.title,
+        parent_book: p.parent_title || null,
+        entry_order: p.entry_order
+      })),
+      work_experiences: works.map(w => ({
+        ...w,
+        start_date: w.start_date,
+        end_date: w.end_date || null
+      }))
     };
 
     try {
@@ -137,7 +174,14 @@ export default function ApplicationForm() {
       <header className="app-header">
         <img src="/logo.jpg" alt="RIS Logo" className="header-logo" />
         <h1 className="header-title">Apply to the RIS</h1>
-        <p className="header-subtitle">Thank you for showing interest in joining our institution.</p>
+        {jobDetail ? (
+          <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '10px', borderRadius: '8px', marginTop: '10px' }}>
+             <p style={{ margin: 0, fontWeight: 700, color: '#0369a1' }}>Applying for: {jobDetail.title}</p>
+             <p style={{ margin: 0, fontSize: '0.875rem', color: '#0c4a6e' }}>Division: {jobDetail.division}</p>
+          </div>
+        ) : (
+          <p className="header-subtitle">Thank you for showing interest in joining our institution.</p>
+        )}
       </header>
 
       <main className="main-container">
