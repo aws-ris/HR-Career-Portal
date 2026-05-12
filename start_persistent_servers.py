@@ -4,7 +4,7 @@ import time
 
 def launch():
     base = r"c:\Users\Viraal\Desktop\HRForm"
-    frontend_path = os.path.join(base, "frontend")
+    frontend_path = base
     backend_path = os.path.join(base, "backend")
     
     python_exe = os.path.join(backend_path, "venv", "Scripts", "python.exe")

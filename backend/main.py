@@ -60,12 +60,31 @@ def resume_health(db: Session = Depends(get_db)):
     """
     Diagnostic tool to verify Resume storage and AI health.
     """
-    from ai_service import HF_TOKEN, client
+    from ai_service import HF_TOKEN, client, compute_embedding
     
     total = db.query(models.CandidateResumePayload).count()
     with_blob = db.query(models.CandidateResumePayload).filter(models.CandidateResumePayload.pdf_blob != None).count()
     with_text = db.query(models.CandidateResumePayload).filter(models.CandidateResumePayload.raw_resume_text != None).count()
     with_embedding = db.query(models.CandidateResumePayload).filter(models.CandidateResumePayload.resume_embedding != None).count()
+    
+    # Live Ping Test
+    api_ping_status = "Skipped"
+    if HF_TOKEN:
+        try:
+            import requests
+            response = requests.post(
+                "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2",
+                headers={"Authorization": f"Bearer {HF_TOKEN}"},
+                json={"inputs": "ping"}
+            )
+            if response.status_code == 200:
+                api_ping_status = "Ready (200)"
+            elif response.status_code == 503:
+                api_ping_status = f"Loading (503) - Estimated: {response.json().get('estimated_time', 'Unknown')}s"
+            else:
+                api_ping_status = f"Error ({response.status_code})"
+        except Exception as e:
+            api_ping_status = f"Failed to ping: {str(e)}"
     
     return {
         "total_resumes": total,
@@ -73,8 +92,42 @@ def resume_health(db: Session = Depends(get_db)):
         "with_extracted_text": with_text,
         "with_ai_embedding": with_embedding,
         "ai_token_status": "Present" if HF_TOKEN else "MISSING (Check Environment Variables)",
-        "ai_engine_status": "ONLINE" if client else "OFFLINE",
+        "ai_api_ping": api_ping_status,
         "health_score": f"{(with_blob/total*100 if total > 0 else 0):.1f}%"
+    }
+
+@app.post("/api/v1/system/process_pending_resumes")
+def process_pending_resumes(db: Session = Depends(get_db)):
+    """
+    Cron-triggerable endpoint to catch up on any resumes that failed to 
+    process in the background due to serverless execution limits.
+    """
+    from ai_service import background_vectorize_resume
+    import threading
+    
+    # Find up to 5 pending resumes
+    pending = db.query(models.CandidateResumePayload).filter(
+        models.CandidateResumePayload.resume_embedding == None,
+        models.CandidateResumePayload.pdf_blob != None
+    ).limit(5).all()
+    
+    if not pending:
+        return {"status": "success", "message": "No pending resumes to process."}
+        
+    processed_ids = []
+    for p in pending:
+        # Run it directly in this thread since Vercel might kill background threads
+        # We process a small batch (5) to avoid hitting the 10s API gateway timeout
+        try:
+            background_vectorize_resume(p.candidate_id, p.resume_path)
+            processed_ids.append(p.candidate_id)
+        except Exception as e:
+            print(f"Failed to process pending resume {p.candidate_id}: {e}")
+            
+    return {
+        "status": "success", 
+        "message": f"Processed {len(processed_ids)} resumes.",
+        "processed_ids": processed_ids
     }
 
 @app.get("/api/v1/seed")

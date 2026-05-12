@@ -23,28 +23,51 @@ def compute_embedding(text: str) -> list:
         print("Warning: HF_TOKEN not found or client not initialized. AI search will return zero matches.")
         return []
 
-    try:
-        # feature_extraction returns a list of floats or a numpy array
-        embedding = client.feature_extraction(
-            text, 
-            model="sentence-transformers/all-MiniLM-L6-v2"
-        )
-        
-        # Handle if it comes back as a numpy-like object
-        if hasattr(embedding, "tolist"):
-            embedding = embedding.tolist()
+    API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
 
-        if isinstance(embedding, list) and len(embedding) > 0:
-            # Flatten if nested (batch of 1)
-            if isinstance(embedding[0], list):
-                return embedding[0]
-            return embedding
-        
-        print(f"Unexpected result format from HF: {type(embedding)}")
-        return []
-    except Exception as e:
-        print(f"AI API Error via Client: {e}")
-        return []
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            # We explicitly pass wait_for_model=True, but also handle 503s just in case
+            response = requests.post(
+                API_URL, 
+                headers=headers, 
+                json={"inputs": text, "options": {"wait_for_model": True}},
+                timeout=20
+            )
+            
+            if response.status_code == 200:
+                embedding = response.json()
+                if isinstance(embedding, list) and len(embedding) > 0:
+                    # Flatten if nested (batch of 1)
+                    if isinstance(embedding[0], list):
+                        return embedding[0]
+                    return embedding
+                print(f"Unexpected result format from HF: {type(embedding)}")
+                return []
+                
+            elif response.status_code == 503:
+                # Model is loading (Cold Start)
+                data = response.json()
+                wait_time = data.get("estimated_time", 15.0)
+                print(f"[AI] Model loading (503). Waking up HF... Waiting {wait_time}s (Attempt {attempt+1}/{max_retries})")
+                # Wait up to 10 seconds to avoid Vercel severing the connection
+                time.sleep(min(wait_time, 10))
+                continue
+            else:
+                print(f"[AI] HTTP Error {response.status_code}: {response.text}")
+                return []
+                
+        except requests.exceptions.Timeout:
+            print(f"[AI] Timeout waiting for HF API (Attempt {attempt+1})")
+            continue
+        except Exception as e:
+            print(f"AI API Error: {e}")
+            return []
+            
+    print("[AI] Failed to vectorize query after retries.")
+    return []
 
 def cosine_similarity(vec1: list, vec2: list) -> float:
     """
