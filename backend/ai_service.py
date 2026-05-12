@@ -23,47 +23,38 @@ def compute_embedding(text: str) -> list:
         print("Warning: HF_TOKEN not found or client not initialized. AI search will return zero matches.")
         return []
 
-    API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
-    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
-
+    from huggingface_hub.utils import HfHubHTTPError
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            # We explicitly pass wait_for_model=True, but also handle 503s just in case
-            response = requests.post(
-                API_URL, 
-                headers=headers, 
-                json={"inputs": text, "options": {"wait_for_model": True}},
-                timeout=20
-            )
+            embedding = client.feature_extraction(text, model="sentence-transformers/all-MiniLM-L6-v2")
             
-            if response.status_code == 200:
-                embedding = response.json()
-                if isinstance(embedding, list) and len(embedding) > 0:
-                    # Flatten if nested (batch of 1)
-                    if isinstance(embedding[0], list):
-                        return embedding[0]
-                    return embedding
-                print(f"Unexpected result format from HF: {type(embedding)}")
-                return []
-                
-            elif response.status_code == 503:
-                # Model is loading (Cold Start)
-                data = response.json()
-                wait_time = data.get("estimated_time", 15.0)
-                print(f"[AI] Model loading (503). Waking up HF... Waiting {wait_time}s (Attempt {attempt+1}/{max_retries})")
-                # Wait up to 10 seconds to avoid Vercel severing the connection
+            if hasattr(embedding, "tolist"):
+                embedding = embedding.tolist()
+
+            if isinstance(embedding, list) and len(embedding) > 0:
+                if isinstance(embedding[0], list):
+                    return embedding[0]
+                return embedding
+            
+            print(f"Unexpected result format from HF: {type(embedding)}")
+            return []
+            
+        except HfHubHTTPError as e:
+            if hasattr(e, 'response') and e.response.status_code == 503:
+                try:
+                    data = e.response.json()
+                    wait_time = data.get("estimated_time", 15.0)
+                except:
+                    wait_time = 15.0
+                print(f"[AI] Model loading (503). Waiting {wait_time}s... (Attempt {attempt+1}/{max_retries})")
                 time.sleep(min(wait_time, 10))
                 continue
             else:
-                print(f"[AI] HTTP Error {response.status_code}: {response.text}")
+                print(f"[AI] HTTP Error via Client: {e}")
                 return []
-                
-        except requests.exceptions.Timeout:
-            print(f"[AI] Timeout waiting for HF API (Attempt {attempt+1})")
-            continue
         except Exception as e:
-            print(f"AI API Error: {e}")
+            print(f"AI API Error via Client: {e}")
             return []
             
     print("[AI] Failed to vectorize query after retries.")

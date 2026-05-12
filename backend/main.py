@@ -69,22 +69,24 @@ def resume_health(db: Session = Depends(get_db)):
     
     # Live Ping Test
     api_ping_status = "Skipped"
-    if HF_TOKEN:
+    if client:
         try:
-            import requests
-            response = requests.post(
-                "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2",
-                headers={"Authorization": f"Bearer {HF_TOKEN}"},
-                json={"inputs": "ping"}
-            )
-            if response.status_code == 200:
-                api_ping_status = "Ready (200)"
-            elif response.status_code == 503:
-                api_ping_status = f"Loading (503) - Estimated: {response.json().get('estimated_time', 'Unknown')}s"
+            from huggingface_hub.utils import HfHubHTTPError
+            client.feature_extraction("ping", model="sentence-transformers/all-MiniLM-L6-v2")
+            api_ping_status = "Ready (200)"
+        except HfHubHTTPError as e:
+            if hasattr(e, 'response') and e.response.status_code == 503:
+                try:
+                    data = e.response.json()
+                    est = data.get('estimated_time', 'Unknown')
+                except:
+                    est = 'Unknown'
+                api_ping_status = f"Loading (503) - Estimated: {est}s"
             else:
-                api_ping_status = f"Error ({response.status_code})"
+                api_ping_status = f"Error ({getattr(e, 'response', None) and e.response.status_code})"
         except Exception as e:
             api_ping_status = f"Failed to ping: {str(e)}"
+
     
     return {
         "total_resumes": total,
