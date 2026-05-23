@@ -55,6 +55,31 @@ def upgrade_db():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@app.get("/api/v1/system/migrate-job-terms")
+def migrate_job_terms(db: Session = Depends(get_db)):
+    """Temporary endpoint to migrate the job_postings table on Vercel."""
+    from sqlalchemy import text
+    try:
+        queries = [
+            "ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS min_pay INTEGER;",
+            "ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS max_pay INTEGER;",
+            "ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS min_experience INTEGER;",
+            "ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS max_experience INTEGER;",
+            "ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS contract_period INTEGER;",
+            "ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS job_mode VARCHAR(50);"
+        ]
+        for q in queries:
+            try:
+                db.execute(text(q))
+            except Exception as e:
+                print(f"Migration step error: {e}")
+        db.commit()
+        return {"status": "success", "message": "Successfully migrated job_postings table"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/v1/system/resume-health")
 def resume_health(db: Session = Depends(get_db)):
     """
