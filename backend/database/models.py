@@ -33,6 +33,14 @@ class JobPosting(Base):
     created_at     = Column(DateTime,    nullable=False, default=datetime.utcnow)
     updated_at     = Column(DateTime,    nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_deleted     = Column(Boolean,     nullable=False, default=False)
+    
+    # Dynamic Job Constraints
+    min_pay        = Column(Integer,     nullable=True)
+    max_pay        = Column(Integer,     nullable=True)
+    min_experience = Column(Integer,     nullable=True)
+    max_experience = Column(Integer,     nullable=True)
+    contract_period = Column(Integer,    nullable=True)
+    job_mode       = Column(String(50),  nullable=True)
 
     applications   = relationship("ApplicationTracking", back_populates="job", cascade="all, delete-orphan")
     token_registry = relationship("TokenRegistry",       cascade="all, delete-orphan")

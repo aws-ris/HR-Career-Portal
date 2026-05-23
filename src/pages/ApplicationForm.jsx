@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE as API } from '../api';
+import { CheckCircle2 } from 'lucide-react';
 
 export default function ApplicationForm() {
   const { jobId } = useParams();
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(jobId ? 0 : 1);
   const [submitError, setSubmitError] = useState('');
   const [jobDetail, setJobDetail] = useState(null);
   const [triedSubmit, setTriedSubmit] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Fetch Job details if ID is present
   useEffect(() => {
@@ -194,7 +196,7 @@ export default function ApplicationForm() {
       </header>
 
       <main className="main-container">
-        <div className="step-indicator">
+        <div className="step-indicator" style={{ display: step === 0 ? 'none' : 'flex' }}>
           <span className={`step-pill ${step >= 1 ? 'active' : ''}`}>1. Info</span>
           <span className={`step-pill ${step >= 2 ? 'active' : ''}`}>2. Education</span>
           <span className={`step-pill ${step >= 3 ? 'active' : ''}`}>3. Publications</span>
@@ -203,7 +205,42 @@ export default function ApplicationForm() {
 
         {submitError && <div style={{background: '#fef2f2', color: '#ef4444', padding: '1rem', borderRadius: '8px', marginBottom: '1rem'}}>{submitError}</div>}
 
-        <form onSubmit={step === 4 ? handleSubmit : handleNext}>
+        {jobDetail && (step === 0 || step >= 1) && (
+          <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '24px', marginBottom: '32px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '16px' }}>Terms & Conditions of Employment</h2>
+            <p style={{ fontSize: '14px', color: '#475569', marginBottom: '16px' }}>
+              Please review the specific constraints and offerings for the <strong>{jobDetail.title}</strong> position:
+            </p>
+            <ul style={{ fontSize: '14px', color: '#0f172a', fontWeight: '600', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+              <li><strong>Remuneration (Pay Band):</strong> ₹{(jobDetail.min_pay || 20000).toLocaleString()} to ₹{(jobDetail.max_pay || 40000).toLocaleString()} per month.</li>
+              <li><strong>Required Experience:</strong> {jobDetail.min_experience || 0} to {jobDetail.max_experience || 2} years of relevant experience.</li>
+              <li><strong>Contract Duration:</strong> Offered as a {jobDetail.contract_period || 1}-year contract.</li>
+              <li><strong>Job Mode:</strong> {jobDetail.job_mode || 'Hybrid'} working model.</li>
+            </ul>
+            
+            {step === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#0f172a', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#0f172a' }} />
+                  <strong>I have read and accept these terms and conditions.</strong>
+                </label>
+                <button 
+                  onClick={() => setStep(1)} 
+                  disabled={!termsAccepted}
+                  style={{ background: termsAccepted ? '#0f172a' : '#cbd5e1', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: termsAccepted ? 'pointer' : 'not-allowed', alignSelf: 'flex-start' }}
+                >
+                  Proceed to Application
+                </button>
+              </div>
+            ) : (
+              <div style={{ fontSize: '12px', color: '#10b981', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <CheckCircle2 size={14} /> Terms Accepted
+              </div>
+            )}
+          </div>
+        )}
+
+        <form onSubmit={step === 4 ? handleSubmit : handleNext} style={{ display: step === 0 ? 'none' : 'block' }}>
           {step === 1 && (
             <>
               <div className="form-group">

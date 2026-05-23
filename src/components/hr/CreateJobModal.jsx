@@ -14,6 +14,12 @@ const EMPTY = {
   requirements: '',
   deadline: '',
   total_openings: 1,
+  min_pay: 20000,
+  max_pay: 40000,
+  min_experience: 0,
+  max_experience: 2,
+  contract_period: 1,
+  job_mode: 'Hybrid',
 };
 
 export default function CreateJobModal({ job, onClose, onSave }) {
@@ -32,6 +38,12 @@ export default function CreateJobModal({ job, onClose, onSave }) {
         requirements:   job.requirements || '',
         deadline:       job.deadline ? job.deadline.substring(0, 10) : '',
         total_openings: job.total_openings || 1,
+        min_pay:        job.min_pay || 20000,
+        max_pay:        job.max_pay || 40000,
+        min_experience: job.min_experience !== null ? job.min_experience : 0,
+        max_experience: job.max_experience !== null ? job.max_experience : 2,
+        contract_period:job.contract_period || 1,
+        job_mode:       job.job_mode || 'Hybrid',
       });
     } else {
       setForm(EMPTY);
@@ -57,6 +69,12 @@ export default function CreateJobModal({ job, onClose, onSave }) {
       deadline:       form.deadline || null,
       total_openings: parseInt(form.total_openings) || 1,
       status:         publishNow ? 'open' : 'draft',
+      min_pay:        parseInt(form.min_pay) || 20000,
+      max_pay:        parseInt(form.max_pay) || 40000,
+      min_experience: parseInt(form.min_experience) || 0,
+      max_experience: parseInt(form.max_experience) || 0,
+      contract_period:parseInt(form.contract_period) || 1,
+      job_mode:       form.job_mode || 'Hybrid',
     };
 
     try {
@@ -175,6 +193,58 @@ export default function CreateJobModal({ job, onClose, onSave }) {
                 value={form.total_openings}
                 onChange={e => set('total_openings', e.target.value)}
               />
+            </div>
+          </div>
+
+          {/* Dynamic Terms Configuration */}
+          <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              Candidate Terms & Conditions Configuration
+            </h4>
+            
+            <div className="hr-form-row">
+              <div className="hr-form-group">
+                <label className="hr-form-label">Pay Band (Min) ₹</label>
+                <select className="hr-form-input" value={form.min_pay} onChange={e => set('min_pay', e.target.value)}>
+                  {Array.from({ length: 40 }, (_, i) => 20000 + i * 5000).map(val => (
+                    <option key={`min-${val}`} value={val}>{val.toLocaleString()}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="hr-form-group">
+                <label className="hr-form-label">Pay Band (Max) ₹</label>
+                <select className="hr-form-input" value={form.max_pay} onChange={e => set('max_pay', e.target.value)}>
+                  {Array.from({ length: 40 }, (_, i) => 20000 + i * 5000).map(val => (
+                    <option key={`max-${val}`} value={val}>{val.toLocaleString()}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="hr-form-row">
+              <div className="hr-form-group">
+                <label className="hr-form-label">Min Experience (Years)</label>
+                <input type="number" min="0" className="hr-form-input" value={form.min_experience} onChange={e => set('min_experience', e.target.value)} />
+              </div>
+              <div className="hr-form-group">
+                <label className="hr-form-label">Max Experience (Years)</label>
+                <input type="number" min="0" className="hr-form-input" value={form.max_experience} onChange={e => set('max_experience', e.target.value)} />
+              </div>
+            </div>
+
+            <div className="hr-form-row">
+              <div className="hr-form-group">
+                <label className="hr-form-label">Contract Period (Years)</label>
+                <select className="hr-form-input" value={form.contract_period} onChange={e => set('contract_period', e.target.value)}>
+                  {[1, 2, 3, 4, 5].map(y => <option key={y} value={y}>{y} Year{y > 1 ? 's' : ''}</option>)}
+                </select>
+              </div>
+              <div className="hr-form-group">
+                <label className="hr-form-label">Job Mode</label>
+                <select className="hr-form-input" value={form.job_mode} onChange={e => set('job_mode', e.target.value)}>
+                  {['Hybrid', 'Online', 'Offline'].map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
             </div>
           </div>
 

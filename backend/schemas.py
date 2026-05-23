@@ -278,6 +278,14 @@ class JobPostingCreate(BaseModel):
     total_openings: int               = Field(1, ge=1)
     deadline:       Optional[date]    = None
     created_by:     Optional[str]     = None
+    
+    # Dynamic Job Constraints
+    min_pay:        Optional[int]     = None
+    max_pay:        Optional[int]     = None
+    min_experience: Optional[int]     = None
+    max_experience: Optional[int]     = None
+    contract_period:Optional[int]     = None
+    job_mode:       Optional[str]     = None
 
 class JobPostingResponse(JobPostingCreate):
     id:         str
