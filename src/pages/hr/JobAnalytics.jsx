@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Users, Globe, GraduationCap, ChevronLeft, Search, CheckCircle2, Circle, Brain } from 'lucide-react';
+import { Users, Globe, GraduationCap, ChevronLeft, Search, CheckCircle2, Circle } from 'lucide-react';
 import CandidateProfileModal from '../../components/hr/CandidateProfileModal';
 import FilterCenter from '../../components/hr/FilterCenter';
 
@@ -340,11 +340,6 @@ export default function JobAnalytics() {
                         <>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <div className="hr-c-name" style={{ fontWeight: '800', color: '#0f172a', fontSize: '13px' }}>{c.full_name}</div>
-                            {c.ai_match_score !== null && c.ai_match_score !== undefined && (
-                              <div style={{ padding: '2px 6px', background: '#f5f3ff', color: '#8b5cf6', borderRadius: '6px', fontSize: '10px', fontWeight: '900', border: '1px solid #ddd6fe', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Brain size={10} /> {c.ai_match_score}% Match
-                              </div>
-                            )}
                           </div>
                           <div className="hr-c-meta" style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>
                             {c.gender} • <span style={{ color: '#f59e0b' }}>{c.age} Yrs</span> • {c.state}

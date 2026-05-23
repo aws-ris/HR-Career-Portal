@@ -829,8 +829,6 @@ class CandidateFilter(BaseModel):
     role_keyword: Optional[str] = None
     company_keyword: Optional[str] = None
     publication_keyword: Optional[str] = None
-    semantic_query: Optional[str] = None
-    ai_match_threshold: Optional[float] = 0.0
     # Score type awareness for education filters
     ug_score_type: Optional[str] = None    # 'Percentage' or 'CGPA'
     pg_score_type: Optional[str] = None
@@ -867,7 +865,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
 
         # 2. Define our professional header structure
         # Basic Info, Grad(1-3), PG(1-3), PhD(1-3), Books(1-3), Chapters(1-3), Papers(1-3), Work(1-3)
-        headers = ["Full Name", "Email", "Mobile", "DOB", "Gender", "State", "Exp (Yrs)", "Highest Edu", "Status", "AI Match %", "Class X %", "Class XII %"]
+        headers = ["Full Name", "Email", "Mobile", "DOB", "Gender", "State", "Exp (Yrs)", "Highest Edu", "Status", "Class X %", "Class XII %"]
         
         # Add Triple-Entry Headers
         for label in ["Grad", "PG", "PhD"]:
@@ -892,7 +890,6 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 full_c.full_name, full_c.email, full_c.mobile_no, str(full_c.dob),
                 full_c.gender, full_c.state, full_c.years_of_experience,
                 c['highest_education'], c['current_status'],
-                f"{c['ai_match_score']}%" if c.get('ai_match_score') is not None else "N/A",
                 full_c.schooling.class_x_percentage if full_c.schooling else 0,
                 full_c.schooling.class_xii_percentage if full_c.schooling else 0
             ]
@@ -1119,13 +1116,6 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
 
         # 2. Get the final list of matching IDs
         matching_ids = [r[0] for r in id_query.all()]
-        
-        ai_score_map = {}
-        if filters.semantic_query:
-            from ai_service import semantic_search_candidates
-            ai_results = semantic_search_candidates(db, clean_job_id, filters.semantic_query)
-            ai_score_map = {str(c.id): score for c, score in ai_results}
-            print(f"[AI] Generated {len(ai_score_map)} scores for query: '{filters.semantic_query}'")
 
         if not matching_ids:
             return []
@@ -1171,7 +1161,6 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
                 "years_of_experience": c.years_of_experience,
                 "highest_education": highest_edu,
                 "current_status": track.current_status if track else 'received',
-                "ai_match_score": ai_score_map.get(str(c.id), None),
                 "graduation": [{"degree_name": g.degree_name, "university": g.university, "score": f"{g.score_value} {g.score_type}"} for g in grad],
                 "postgraduate": [{"degree_name": p.degree_name, "university": p.university, "score": f"{p.score_value} {p.score_type}"} for p in postgrad],
                 "doctorate": [{"university": d.university, "thesis_title": d.degree_name, "score": f"{d.score_value} {d.score_type}"} for d in phd],
@@ -1182,10 +1171,7 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
             }
             result.append(d)
         
-        if filters.semantic_query:
-            result.sort(key=lambda x: x['ai_match_score'] or 0, reverse=True)
-        else:
-            result.sort(key=lambda x: x['full_name'])
+        result.sort(key=lambda x: x['full_name'])
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

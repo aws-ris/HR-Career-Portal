@@ -40,8 +40,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
     min_xii_score: null,
     role_keyword: '',
     company_keyword: '',
-    publication_keyword: '',
-    semantic_query: ''
+    publication_keyword: ''
   });
   // API is now managed via centralization
 
@@ -74,7 +73,6 @@ export default function FilterCenter({ job_id, onFilterChange }) {
   };
 
   const categories = [
-    { id: 'ai_match', label: 'AI Semantic Match', icon: Brain, color: '#8b5cf6' },
     { id: 'bio', label: 'Biographical', icon: User, color: '#f59e0b' },
     { id: 'schooling', label: 'Early Academics', icon: GraduationCap, color: '#10b981' },
     { id: 'higher_edu', label: 'Higher Education', icon: GraduationCap, color: '#3b82f6' },
@@ -84,7 +82,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
 
   const updateFilter = (key, value) => {
     let finalValue = value;
-    if (['min_ug_score', 'min_experience_years', 'min_age', 'max_age', 'min_x_score', 'min_xii_score', 'pg_min_score', 'phd_min_score', 'ai_match_threshold'].includes(key)) {
+    if (['min_ug_score', 'min_experience_years', 'min_age', 'max_age', 'min_x_score', 'min_xii_score', 'pg_min_score', 'phd_min_score'].includes(key)) {
       if (value === '' || value === null) finalValue = null;
       else finalValue = parseFloat(value);
     }
@@ -115,7 +113,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button onClick={() => {
-             const reset = { states: [], genders: [], ug_uni: '', min_ug_score: null, pg_uni: '', pg_min_score: null, phd_uni: '', phd_thesis: '', phd_min_score: null, min_experience_years: 0, min_papers: 0, min_books: 0, min_chapters: 0, min_age: 18, max_age: 65, min_x_score: null, min_xii_score: null, role_keyword: '', company_keyword: '', publication_keyword: '', semantic_query: '', ai_match_threshold: 0.0 };
+             const reset = { states: [], genders: [], ug_uni: '', min_ug_score: null, pg_uni: '', pg_min_score: null, phd_uni: '', phd_thesis: '', phd_min_score: null, min_experience_years: 0, min_papers: 0, min_books: 0, min_chapters: 0, min_age: 18, max_age: 65, min_x_score: null, min_xii_score: null, role_keyword: '', company_keyword: '', publication_keyword: '' };
              setFilters(reset);
              onFilterChange(reset);
           }} style={{ fontSize: '12px', color: '#94a3b8', background: 'none', border: 'none', fontWeight: '700', cursor: 'pointer' }}>
@@ -180,18 +178,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
           marginTop: '20px', padding: '24px', background: '#f1f5f9', border: '1.5px solid #e2e8f0', 
           borderRadius: '12px', animation: 'fadeIn 0.2s ease-out'
         }}>
-          {activeCategory === 'ai_match' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Semantic Profile Match (AI)</label>
-                  <input type="text" placeholder="Type any skills or domain e.g. 'Supply Chain Logistics'..." value={filters.semantic_query} onChange={(e) => updateFilter('semantic_query', e.target.value)}
-                    style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none', fontSize: '14px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }} />
-                  <div style={{fontSize: '10px', color: '#94a3b8', marginTop: '10px'}}>Candidates will be automatically sorted by AI Match Score if a query is entered.</div>
-                </div>
-              </div>
-            </div>
-          )}
+
           {activeCategory === 'bio' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '30px' }}>
               <div>
