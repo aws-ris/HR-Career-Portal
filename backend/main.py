@@ -389,7 +389,13 @@ def get_public_jobs(db: Session = Depends(get_db)):
         "location": j.location,
         "deadline": j.deadline,
         "description": j.description,
-        "requirements": j.requirements
+        "requirements": j.requirements,
+        "min_pay": j.min_pay,
+        "max_pay": j.max_pay,
+        "min_experience": j.min_experience,
+        "max_experience": j.max_experience,
+        "contract_period": j.contract_period,
+        "job_mode": j.job_mode
     } for j in jobs]
 
 @app.get("/api/v1/public/jobs/{job_id}")
@@ -412,7 +418,13 @@ def get_public_job_detail(job_id: str, db: Session = Depends(get_db)):
         "division": job.division,
         "description": job.description,
         "requirements": job.requirements,
-        "deadline": job.deadline
+        "deadline": job.deadline,
+        "min_pay": job.min_pay,
+        "max_pay": job.max_pay,
+        "min_experience": job.min_experience,
+        "max_experience": job.max_experience,
+        "contract_period": job.contract_period,
+        "job_mode": job.job_mode
     }
 
 # ─────────────────────────────────────────────
@@ -1336,6 +1348,12 @@ def list_jobs(db: Session = Depends(get_db)):
             "updated_at":     job.updated_at.isoformat(),
             "is_deleted":     job.is_deleted,
             "application_count": app_count,
+            "min_pay":        job.min_pay,
+            "max_pay":        job.max_pay,
+            "min_experience": job.min_experience,
+            "max_experience": job.max_experience,
+            "contract_period": job.contract_period,
+            "job_mode":       job.job_mode
         })
     return result
 
