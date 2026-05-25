@@ -65,6 +65,7 @@ class CandidateMetadata(Base):
     gender               = Column(String(30),  nullable=True)
     city                 = Column(String(100), nullable=True)
     state                = Column(String(100), nullable=True)
+    pincode              = Column(String(20),  nullable=True)
     years_of_experience  = Column(Float,       nullable=True)
 
     # Relationships
@@ -210,6 +211,7 @@ class CandidateLinksAbout(Base):
 
     candidate_id   = Column(String(36), ForeignKey('candidate_metadata.id', ondelete='CASCADE'), primary_key=True)
     about          = Column(Text,        nullable=True)
+    extracurriculars = Column(Text,      nullable=True)
     google_scholar = Column(String(500), nullable=True)
     linkedin       = Column(String(500), nullable=True)
 

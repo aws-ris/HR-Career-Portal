@@ -19,7 +19,7 @@ const EMPTY = {
   min_experience: 0,
   max_experience: 2,
   contract_period: 1,
-  job_mode: 'Hybrid',
+  job_mode: 'Offline',
 };
 
 export default function CreateJobModal({ job, onClose, onSave }) {
@@ -43,7 +43,7 @@ export default function CreateJobModal({ job, onClose, onSave }) {
         min_experience: job.min_experience !== null ? job.min_experience : 0,
         max_experience: job.max_experience !== null ? job.max_experience : 2,
         contract_period:job.contract_period || 1,
-        job_mode:       job.job_mode || 'Hybrid',
+        job_mode:       job.job_mode || 'Offline',
       });
     } else {
       setForm(EMPTY);
@@ -74,7 +74,7 @@ export default function CreateJobModal({ job, onClose, onSave }) {
       min_experience: parseInt(form.min_experience) || 0,
       max_experience: parseInt(form.max_experience) || 0,
       contract_period:parseInt(form.contract_period) || 1,
-      job_mode:       form.job_mode || 'Hybrid',
+      job_mode:       'Offline',
     };
 
     try {
@@ -237,12 +237,6 @@ export default function CreateJobModal({ job, onClose, onSave }) {
                 <label className="hr-form-label">Contract Period (Years)</label>
                 <select className="hr-form-input" value={form.contract_period} onChange={e => set('contract_period', e.target.value)}>
                   {[1, 2, 3, 4, 5].map(y => <option key={y} value={y}>{y} Year{y > 1 ? 's' : ''}</option>)}
-                </select>
-              </div>
-              <div className="hr-form-group">
-                <label className="hr-form-label">Job Mode</label>
-                <select className="hr-form-input" value={form.job_mode} onChange={e => set('job_mode', e.target.value)}>
-                  {['Hybrid', 'Online', 'Offline'].map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
             </div>

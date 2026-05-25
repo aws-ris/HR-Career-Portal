@@ -36,7 +36,26 @@ export default function ApplicationForm() {
   const [dob, setDob] = useState('');
   const [gender, setGender] = useState('');
   const [candidateState, setCandidateState] = useState('');
+  const [city, setCity] = useState('');
+  const [pincode, setPincode] = useState('');
   const [description, setDesc] = useState('');
+  const [extracurriculars, setExtracurriculars] = useState('');
+
+  // Date of Birth auto-formatting typing mask
+  const handleDobChange = (e) => {
+    let val = e.target.value;
+    let cleaned = val.replace(/\D/g, '');
+    let parts = [];
+    if (cleaned.length > 0) parts.push(cleaned.slice(0, 2));
+    if (cleaned.length > 2) parts.push(cleaned.slice(2, 4));
+    if (cleaned.length > 4) parts.push(cleaned.slice(4, 8));
+    
+    let formatted = parts.join('/');
+    if (formatted.length > 10) {
+      formatted = formatted.slice(0, 10);
+    }
+    setDob(formatted);
+  };
 
   // Step 2
   const [classX, setClassX] = useState('');
@@ -78,10 +97,42 @@ export default function ApplicationForm() {
     
     // Check required fields for Step 1
     if (step === 1) {
-      if (!full_name || !email || !mobile_number || !dob || !gender || !candidateState || !description) {
+      if (!full_name || !email || !mobile_number || !dob || !gender || !candidateState || !city || !pincode || !description || !extracurriculars) {
          return; // Let CSS handle the red borders
       }
+      
+      // DOB Validation
+      const dobParts = dob.split('/');
+      if (dobParts.length !== 3 || dobParts[0].length !== 2 || dobParts[1].length !== 2 || dobParts[2].length !== 4) {
+        return alert("Please enter Date of Birth in DD/MM/YYYY format.");
+      }
+      const day = parseInt(dobParts[0], 10);
+      const month = parseInt(dobParts[1], 10);
+      const year = parseInt(dobParts[2], 10);
+      if (isNaN(day) || isNaN(month) || isNaN(year) || month < 1 || month > 12 || day < 1 || day > 31) {
+        return alert("Please enter a valid Date of Birth.");
+      }
+      const maxDays = new Date(year, month, 0).getDate();
+      if (day > maxDays) {
+        return alert("Please enter a valid Date of Birth for the given month.");
+      }
+      const formattedDob = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      if (new Date(formattedDob) > new Date()) {
+        return alert("Date of Birth cannot be in the future.");
+      }
+
+      // Pincode validation
+      if (!/^\d{6}$/.test(pincode)) {
+        return alert("Pincode must be exactly 6 digits.");
+      }
+
+      // City validation (min 2 chars, letters and spaces only)
+      if (!/^[a-zA-Z\s]{2,100}$/.test(city.trim())) {
+        return alert("City must be at least 2 characters and contain only letters.");
+      }
+
       if (countWords(description) > 100) return alert("Description must not exceed 100 words.");
+      if (countWords(extracurriculars) > 100) return alert("Extracurriculars must not exceed 100 words.");
     }
     
     setStep(step + 1);
@@ -116,15 +167,22 @@ export default function ApplicationForm() {
     // Convert Years/Months to Float
     const totalYrs = (parseFloat(expYears) || 0) + ((parseFloat(expMonths) || 0) / 12);
 
+    // Convert DD/MM/YYYY to YYYY-MM-DD
+    const dobParts = dob.split('/');
+    const formattedDob = `${dobParts[2]}-${dobParts[1].padStart(2, '0')}-${dobParts[0].padStart(2, '0')}`;
+
     const payload = {
       job_id: jobId || null,
       full_name, 
-      dob, 
+      dob: formattedDob, 
       email, 
       mobile_no: mobile_number, 
       about: description,
+      extracurriculars: extracurriculars || null,
       gender: gender || null,
       state: candidateState || null,
+      city: city || null,
+      pincode: pincode || null,
       years_of_experience: totalYrs,
       position_applied, 
       admin_department: position_applied === 'Admin' ? admin_department : null,
@@ -213,9 +271,9 @@ export default function ApplicationForm() {
             </p>
             <ul style={{ fontSize: '14px', color: '#0f172a', fontWeight: '600', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
               <li><strong>Remuneration (Pay Band):</strong> ₹{(jobDetail.min_pay || 20000).toLocaleString()} to ₹{(jobDetail.max_pay || 40000).toLocaleString()} per month.</li>
-              <li><strong>Required Experience:</strong> {jobDetail.min_experience || 0} to {jobDetail.max_experience || 2} years of relevant experience.</li>
-              <li><strong>Contract Duration:</strong> Offered as a {jobDetail.contract_period || 1}-year contract.</li>
-              <li><strong>Job Mode:</strong> {jobDetail.job_mode || 'Hybrid'} working model.</li>
+              <li><strong>Required Experience:</strong> {jobDetail.min_experience || 0} to {jobDetail.max_experience || 2} years of experience.</li>
+              <li><strong>Contract Duration:</strong> {jobDetail.contract_period || 1} {jobDetail.contract_period === 1 ? 'year' : 'years'}</li>
+              <li><strong>Job Mode:</strong> Offline</li>
             </ul>
             
             {step === 0 ? (
@@ -312,18 +370,17 @@ export default function ApplicationForm() {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Date of Birth</label>
+                  <label className="form-label">Date of Birth (DD/MM/YYYY)</label>
                   <input 
                     required 
-                    type="date" 
+                    placeholder="DD/MM/YYYY"
                     className={`form-input ${(triedSubmit && !dob) ? 'faulty-input' : ''}`} 
-                    max={new Date().toISOString().split("T")[0]}
                     value={dob} 
-                    onChange={e => setDob(e.target.value)} 
+                    onChange={handleDobChange} 
                   />
                 </div>
               </div>
-
+ 
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">Gender</label>
@@ -354,8 +411,28 @@ export default function ApplicationForm() {
                     ))}
                   </select>
                 </div>
+                <div className="form-group">
+                  <label className="form-label">City</label>
+                  <input 
+                    required 
+                    className={`form-input ${(triedSubmit && !city) ? 'faulty-input' : ''}`} 
+                    value={city} 
+                    onChange={e => setCity(e.target.value)} 
+                    placeholder="e.g. New Delhi"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Pincode (6 Digits)</label>
+                  <input 
+                    required 
+                    className={`form-input ${(triedSubmit && !pincode) ? 'faulty-input' : ''}`} 
+                    value={pincode} 
+                    onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} 
+                    placeholder="e.g. 110001"
+                  />
+                </div>
               </div>
-
+ 
               <div className="form-group">
                 <label className="form-label">Tell Us About Yourself (Max 100 Words)</label>
                 <textarea 
@@ -363,8 +440,21 @@ export default function ApplicationForm() {
                   className={`form-input ${(triedSubmit && !description) ? 'faulty-input' : ''}`} 
                   value={description} 
                   onChange={e => setDesc(e.target.value)} 
+                  placeholder="Summarize your academic focus, career goals, and key achievements..."
                 />
                 <div className="error-text">Current Word Count: {countWords(description)}/100</div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Extracurriculars & Miscellaneous Interests (Max 100 Words)</label>
+                <textarea 
+                  required 
+                  className={`form-input ${(triedSubmit && !extracurriculars) ? 'faulty-input' : ''}`} 
+                  value={extracurriculars} 
+                  onChange={e => setExtracurriculars(e.target.value)} 
+                  placeholder="Tell us about your hobbies, sports, volunteering, or other interests..."
+                />
+                <div className="error-text">Current Word Count: {countWords(extracurriculars)}/100</div>
               </div>
 
               <button type="submit" className="btn-primary" style={{width: '100%'}}>Proceed to Education Options</button>

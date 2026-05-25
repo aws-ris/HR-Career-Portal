@@ -79,6 +79,29 @@ def migrate_job_terms(db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/v1/system/migrate-v2")
+def migrate_v2_endpoint(db: Session = Depends(get_db)):
+    """Temporary endpoint to migrate candidate tables for City/Pincode/Extracurriculars on Vercel."""
+    from sqlalchemy import text
+    try:
+        # 1. candidate_metadata
+        try:
+            db.execute(text("ALTER TABLE candidate_metadata ADD COLUMN IF NOT EXISTS pincode VARCHAR(20);"))
+        except Exception as e:
+            print(f"Postgres migration metadata warning: {e}")
+        
+        # 2. candidate_links_about
+        try:
+            db.execute(text("ALTER TABLE candidate_links_about ADD COLUMN IF NOT EXISTS extracurriculars TEXT;"))
+        except Exception as e:
+            print(f"Postgres migration links warning: {e}")
+            
+        db.commit()
+        return {"status": "success", "message": "Successfully migrated candidate_metadata and candidate_links_about tables to V2."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/api/v1/system/resume-health")
 def resume_health(db: Session = Depends(get_db)):
@@ -297,11 +320,22 @@ def seed_candidates(db: Session = Depends(get_db)):
             mobile_no=f"9{random.randint(100000000, 999999999)}",
             dob=date(1995, 5, 20),
             gender=random.choice(["Male", "Female"]),
+            city=random.choice(["New Delhi", "Mumbai", "Bengaluru", "Chennai"]),
             state=random.choice(["Delhi", "Maharashtra", "Karnataka", "Tamil Nadu"]),
+            pincode=random.choice(["110001", "400001", "560001", "600001"]),
             years_of_experience=float(random.randint(1, 12))
         )
         db.add(meta)
         db.flush()
+
+        links_about = models.CandidateLinksAbout(
+            candidate_id=meta.id,
+            about=f"Initial record for {res['name']}",
+            extracurriculars="Volunteered at community center, played varsity badminton.",
+            google_scholar="https://scholar.google.com/citations?user=xyz",
+            linkedin="https://linkedin.com/in/xyz"
+        )
+        db.add(links_about)
 
         app_track = models.ApplicationTracking(
             candidate_id=meta.id,
@@ -445,6 +479,7 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
         gender              = payload.gender,
         city                = payload.city,
         state               = payload.state,
+        pincode             = payload.pincode,
         years_of_experience = payload.years_of_experience
     )
     db.add(candidate)
@@ -465,6 +500,7 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
     links_about = models.CandidateLinksAbout(
         candidate_id   = candidate.id,
         about          = payload.about,
+        extracurriculars = payload.extracurriculars,
         google_scholar = payload.google_scholar,
         linkedin       = payload.linkedin
     )
@@ -779,8 +815,10 @@ def get_full_profile(candidate_id: str, db: Session = Depends(get_db)):
         "gender": candidate.gender,
         "state": candidate.state,
         "city": candidate.city,
+        "pincode": candidate.pincode,
         "years_of_experience": candidate.years_of_experience,
         "about": candidate.links_about.about if candidate.links_about else None,
+        "extracurriculars": candidate.links_about.extracurriculars if candidate.links_about else None,
         "google_scholar": candidate.links_about.google_scholar if candidate.links_about else None,
         "linkedin": candidate.links_about.linkedin if candidate.links_about else None,
         "schooling": schooling_data,
@@ -902,7 +940,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
 
         # 2. Define our professional header structure
         # Basic Info, Grad(1-3), PG(1-3), PhD(1-3), Books(1-3), Chapters(1-3), Papers(1-3), Work(1-3)
-        headers = ["Full Name", "Email", "Mobile", "DOB", "Gender", "State", "Exp (Yrs)", "Highest Edu", "Status", "Class X %", "Class XII %"]
+        headers = ["Full Name", "Email", "Mobile", "DOB", "Gender", "State", "City", "Pincode", "Extracurriculars", "Exp (Yrs)", "Highest Edu", "Status", "Class X %", "Class XII %"]
         
         # Add Triple-Entry Headers
         for label in ["Grad", "PG", "PhD"]:
@@ -925,7 +963,9 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             
             row = [
                 full_c.full_name, full_c.email, full_c.mobile_no, str(full_c.dob),
-                full_c.gender, full_c.state, full_c.years_of_experience,
+                full_c.gender, full_c.state, full_c.city, full_c.pincode,
+                (full_c.links_about.extracurriculars if full_c.links_about else "") or "",
+                full_c.years_of_experience,
                 c['highest_education'], c['current_status'],
                 full_c.schooling.class_x_percentage if full_c.schooling else 0,
                 full_c.schooling.class_xii_percentage if full_c.schooling else 0
