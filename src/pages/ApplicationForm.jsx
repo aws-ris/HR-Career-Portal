@@ -534,7 +534,7 @@ export default function ApplicationForm() {
               </div>
  
               <div className="form-group">
-                <label className="form-label">Extracurriculars (if nay)</label>
+                <label className="form-label">Extracurriculars (if any)</label>
                 <textarea 
                   className="form-input" 
                   value={extracurriculars} 
