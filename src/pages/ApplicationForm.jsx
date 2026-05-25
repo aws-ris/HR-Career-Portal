@@ -38,23 +38,108 @@ export default function ApplicationForm() {
   const [candidateState, setCandidateState] = useState('');
   const [city, setCity] = useState('');
   const [pincode, setPincode] = useState('');
-  const [description, setDesc] = useState('');
   const [extracurriculars, setExtracurriculars] = useState('');
+  const [dobError, setDobError] = useState('');
+
+  const validateDob = (val) => {
+    if (!val) return '';
+    const parts = val.split('/');
+    
+    // Day validation
+    if (parts[0]) {
+      const dayStr = parts[0];
+      if (dayStr.length === 2) {
+        const d = parseInt(dayStr, 10);
+        if (isNaN(d) || d < 1 || d > 31) {
+          return 'Day (DD) must be between 01 and 31.';
+        }
+      }
+    }
+    
+    // Month validation
+    if (parts[1]) {
+      const monthStr = parts[1];
+      if (monthStr.length === 2) {
+        const m = parseInt(monthStr, 10);
+        if (isNaN(m) || m < 1 || m > 12) {
+          return 'Month (MM) must be between 01 and 12.';
+        }
+      }
+    }
+    
+    // Year validation
+    if (parts[2]) {
+      const yearStr = parts[2];
+      if (yearStr.length === 4) {
+        const y = parseInt(yearStr, 10);
+        const currentYear = new Date().getFullYear();
+        if (isNaN(y) || y < 1900) {
+          return 'Year (YYYY) must be 1900 or later.';
+        }
+        if (y > currentYear) {
+          return `Year (YYYY) cannot be greater than the current year (${currentYear}).`;
+        }
+        
+        // Calendar date validation
+        const d = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        const maxDays = new Date(y, m, 0).getDate();
+        if (d > maxDays) {
+          return `Invalid date: ${parts[0]} is not a valid day for month ${parts[1]} in ${y}.`;
+        }
+        
+        // Future date check
+        const formatted = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        if (new Date(formatted) > new Date()) {
+          return 'Date of Birth cannot be in the future.';
+        }
+      }
+    }
+    
+    if (val.length === 10) {
+      if (parts.length !== 3 || parts[0].length !== 2 || parts[1].length !== 2 || parts[2].length !== 4) {
+        return 'Please enter Date of Birth in DD/MM/YYYY format.';
+      }
+    }
+    
+    return '';
+  };
 
   // Date of Birth auto-formatting typing mask
   const handleDobChange = (e) => {
-    let val = e.target.value;
-    let cleaned = val.replace(/\D/g, '');
-    let parts = [];
-    if (cleaned.length > 0) parts.push(cleaned.slice(0, 2));
-    if (cleaned.length > 2) parts.push(cleaned.slice(2, 4));
-    if (cleaned.length > 4) parts.push(cleaned.slice(4, 8));
+    const val = e.target.value;
+    const isDeleting = val.length < dob.length;
     
-    let formatted = parts.join('/');
+    if (isDeleting) {
+      if (dob.endsWith('/') && val.length === dob.length - 1) {
+        const nextVal = val.slice(0, -1);
+        setDob(nextVal);
+        setDobError(validateDob(nextVal));
+      } else {
+        setDob(val);
+        setDobError(validateDob(val));
+      }
+      return;
+    }
+    
+    let cleaned = val.replace(/\D/g, '');
+    let formatted = cleaned;
+    
+    if (cleaned.length === 2) {
+      formatted = cleaned + '/';
+    } else if (cleaned.length > 2 && cleaned.length < 4) {
+      formatted = cleaned.slice(0, 2) + '/' + cleaned.slice(2);
+    } else if (cleaned.length === 4) {
+      formatted = cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4) + '/';
+    } else if (cleaned.length > 4) {
+      formatted = cleaned.slice(0, 2) + '/' + cleaned.slice(2, 4) + '/' + cleaned.slice(4, 8);
+    }
+    
     if (formatted.length > 10) {
       formatted = formatted.slice(0, 10);
     }
     setDob(formatted);
+    setDobError(validateDob(formatted));
   };
 
   // Step 2
@@ -95,9 +180,9 @@ export default function ApplicationForm() {
     e.preventDefault();
     setTriedSubmit(true);
     
-    // Check required fields for Step 1
+    // Check required fields for Step 1 (extracurriculars is optional)
     if (step === 1) {
-      if (!full_name || !email || !mobile_number || !dob || !gender || !candidateState || !city || !pincode || !description || !extracurriculars) {
+      if (!full_name || !email || !mobile_number || !dob || !gender || !candidateState || !city || !pincode) {
          return; // Let CSS handle the red borders
       }
       
@@ -106,11 +191,24 @@ export default function ApplicationForm() {
       if (dobParts.length !== 3 || dobParts[0].length !== 2 || dobParts[1].length !== 2 || dobParts[2].length !== 4) {
         return alert("Please enter Date of Birth in DD/MM/YYYY format.");
       }
+      const dobErr = validateDob(dob);
+      if (dobErr) {
+        setDobError(dobErr);
+        return alert(dobErr);
+      }
       const day = parseInt(dobParts[0], 10);
       const month = parseInt(dobParts[1], 10);
       const year = parseInt(dobParts[2], 10);
-      if (isNaN(day) || isNaN(month) || isNaN(year) || month < 1 || month > 12 || day < 1 || day > 31) {
-        return alert("Please enter a valid Date of Birth.");
+      
+      if (isNaN(day) || day < 1 || day > 31) {
+        return alert("Day (DD) must be between 01 and 31.");
+      }
+      if (isNaN(month) || month < 1 || month > 12) {
+        return alert("Month (MM) must be between 01 and 12.");
+      }
+      const currentYear = new Date().getFullYear();
+      if (isNaN(year) || year < 1900 || year > currentYear) {
+        return alert(`Year (YYYY) must be between 1900 and ${currentYear}.`);
       }
       const maxDays = new Date(year, month, 0).getDate();
       if (day > maxDays) {
@@ -131,8 +229,9 @@ export default function ApplicationForm() {
         return alert("City must be at least 2 characters and contain only letters.");
       }
 
-      if (countWords(description) > 100) return alert("Description must not exceed 100 words.");
-      if (countWords(extracurriculars) > 100) return alert("Extracurriculars must not exceed 100 words.");
+      if (extracurriculars && countWords(extracurriculars) > 100) {
+        return alert("Extracurriculars must not exceed 100 words.");
+      }
     }
     
     setStep(step + 1);
@@ -177,8 +276,8 @@ export default function ApplicationForm() {
       dob: formattedDob, 
       email, 
       mobile_no: mobile_number, 
-      about: description,
-      extracurriculars: extracurriculars || null,
+      about: null,
+      extracurriculars: extracurriculars.trim() || null,
       gender: gender || null,
       state: candidateState || null,
       city: city || null,
@@ -374,10 +473,11 @@ export default function ApplicationForm() {
                   <input 
                     required 
                     placeholder="DD/MM/YYYY"
-                    className={`form-input ${(triedSubmit && !dob) ? 'faulty-input' : ''}`} 
+                    className={`form-input ${(triedSubmit && (!dob || dobError)) ? 'faulty-input' : ''}`} 
                     value={dob} 
                     onChange={handleDobChange} 
                   />
+                  {dobError && <div className="error-text">{dobError}</div>}
                 </div>
               </div>
  
@@ -434,22 +534,9 @@ export default function ApplicationForm() {
               </div>
  
               <div className="form-group">
-                <label className="form-label">Tell Us About Yourself (Max 100 Words)</label>
+                <label className="form-label">Extracurriculars (if nay)</label>
                 <textarea 
-                  required 
-                  className={`form-input ${(triedSubmit && !description) ? 'faulty-input' : ''}`} 
-                  value={description} 
-                  onChange={e => setDesc(e.target.value)} 
-                  placeholder="Summarize your academic focus, career goals, and key achievements..."
-                />
-                <div className="error-text">Current Word Count: {countWords(description)}/100</div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Extracurriculars & Miscellaneous Interests (Max 100 Words)</label>
-                <textarea 
-                  required 
-                  className={`form-input ${(triedSubmit && !extracurriculars) ? 'faulty-input' : ''}`} 
+                  className="form-input" 
                   value={extracurriculars} 
                   onChange={e => setExtracurriculars(e.target.value)} 
                   placeholder="Tell us about your hobbies, sports, volunteering, or other interests..."

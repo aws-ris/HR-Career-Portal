@@ -149,17 +149,13 @@ export default function CandidateProfileModal({ candidateId, onClose }) {
                 </div>
               </div>
 
-              {/* About & Extracurriculars */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginBottom: '32px', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                <div>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>About Candidate</h4>
-                  <p style={{ margin: 0, fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>{data.about || "No statement provided."}</p>
-                </div>
-                <div>
+              {/* Extracurriculars */}
+              {data.extracurriculars && (
+                <div style={{ marginBottom: '32px', background: '#f8fafc', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
                   <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>Extracurricular Activities</h4>
-                  <p style={{ margin: 0, fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>{data.extracurriculars || "No extracurriculars listed."}</p>
+                  <p style={{ margin: 0, fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>{data.extracurriculars}</p>
                 </div>
-              </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '40px' }}>
                 <div>
