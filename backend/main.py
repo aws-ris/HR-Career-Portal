@@ -435,15 +435,16 @@ def get_public_jobs(db: Session = Depends(get_db)):
 @app.get("/api/v1/public/jobs/{job_id}")
 def get_public_job_detail(job_id: str, db: Session = Depends(get_db)):
     """
-    Returns full public details for a specific job.
+    Returns full public details for a specific job if it is open.
     """
     job = db.query(models.JobPosting).filter(
         models.JobPosting.id == job_id,
+        models.JobPosting.status == 'open',
         models.JobPosting.is_deleted == False
     ).first()
     
     if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise HTTPException(status_code=404, detail="Job not found or closed")
         
     return {
         "id": job.id,
@@ -470,6 +471,18 @@ def get_public_job_detail(job_id: str, db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED
 )
 def create_application(payload: schemas.CandidateCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    # Validate that the job is open and accepts applications
+    if payload.job_id:
+        job = db.query(models.JobPosting).filter(
+            models.JobPosting.id == payload.job_id,
+            models.JobPosting.is_deleted == False
+        ).first()
+        if not job or job.status != 'open':
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This job posting is closed or no longer accepting applications."
+            )
+
     # 1. Create Lean Candidate Metadata (Persona)
     candidate = models.CandidateMetadata(
         full_name           = payload.full_name,

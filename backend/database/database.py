@@ -38,6 +38,26 @@ Base = declarative_base()
 def get_db():
     db = SessionLocal()
     try:
+        # Auto-close expired jobs dynamically
+        from database import models
+        import datetime
+        today = datetime.date.today()
+        try:
+            expired_jobs = db.query(models.JobPosting).filter(
+                models.JobPosting.status == 'open',
+                models.JobPosting.deadline != None,
+                models.JobPosting.deadline < today,
+                models.JobPosting.is_deleted == False
+            ).all()
+            if expired_jobs:
+                for job in expired_jobs:
+                    job.status = 'closed'
+                    job.updated_at = datetime.datetime.utcnow()
+                db.commit()
+        except Exception as e:
+            print(f"Error auto-closing expired jobs: {e}")
+            db.rollback()
+            
         yield db
     finally:
         db.close()
