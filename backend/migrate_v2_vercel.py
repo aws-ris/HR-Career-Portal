@@ -34,6 +34,13 @@ def migrate():
         except Exception as e:
             print(f"Vercel Postgres Error adding extracurriculars: {e}")
             
+        # 3. age column
+        try:
+            cursor.execute("ALTER TABLE candidate_metadata ADD COLUMN IF NOT EXISTS age INTEGER;")
+            print("Vercel Postgres: Added column 'age' to 'candidate_metadata'")
+        except Exception as e:
+            print(f"Vercel Postgres Error adding age: {e}")
+            
         conn.close()
         print("Vercel Postgres Migration Complete!")
     except Exception as e:

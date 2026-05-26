@@ -81,23 +81,42 @@ def migrate_job_terms(db: Session = Depends(get_db)):
 
 @app.get("/api/v1/system/migrate-v2")
 def migrate_v2_endpoint(db: Session = Depends(get_db)):
-    """Temporary endpoint to migrate candidate tables for City/Pincode/Extracurriculars on Vercel."""
+    """Temporary endpoint to migrate candidate tables for City/Pincode/Extracurriculars/Age on Vercel."""
     from sqlalchemy import text
     try:
-        # 1. candidate_metadata
+        # 1. candidate_metadata pincode
         try:
             db.execute(text("ALTER TABLE candidate_metadata ADD COLUMN IF NOT EXISTS pincode VARCHAR(20);"))
         except Exception as e:
             print(f"Postgres migration metadata warning: {e}")
         
-        # 2. candidate_links_about
+        # 2. candidate_links_about extracurriculars
         try:
             db.execute(text("ALTER TABLE candidate_links_about ADD COLUMN IF NOT EXISTS extracurriculars TEXT;"))
         except Exception as e:
             print(f"Postgres migration links warning: {e}")
             
+        # 3. candidate_metadata age
+        try:
+            db.execute(text("ALTER TABLE candidate_metadata ADD COLUMN IF NOT EXISTS age INTEGER;"))
+        except Exception as e:
+            print(f"Postgres migration age warning: {e}")
+            
         db.commit()
-        return {"status": "success", "message": "Successfully migrated candidate_metadata and candidate_links_about tables to V2."}
+        
+        # 4. Backfill calculated ages for existing candidates
+        try:
+            candidates = db.query(models.CandidateMetadata).all()
+            today = datetime.date.today()
+            for cand in candidates:
+                if cand.dob and cand.age is None:
+                    cand.age = today.year - cand.dob.year - ((today.month, today.day) < (cand.dob.month, cand.dob.day))
+            db.commit()
+        except Exception as e:
+            print(f"Postgres migration age backfill warning: {e}")
+            db.rollback()
+
+        return {"status": "success", "message": "Successfully migrated candidate_metadata and candidate_links_about tables to V2, and populated candidate ages."}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -829,6 +848,10 @@ def get_full_profile(candidate_id: str, db: Session = Depends(get_db)):
         "state": candidate.state,
         "city": candidate.city,
         "pincode": candidate.pincode,
+        "age": candidate.age or (
+            (datetime.date.today().year - candidate.dob.year - ((datetime.date.today().month, datetime.date.today().day) < (candidate.dob.month, candidate.dob.day)))
+            if candidate.dob else None
+        ),
         "years_of_experience": candidate.years_of_experience,
         "about": candidate.links_about.about if candidate.links_about else None,
         "extracurriculars": candidate.links_about.extracurriculars if candidate.links_about else None,
@@ -1117,6 +1140,12 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
         if filters.min_experience_years is not None:
             id_query = id_query.filter(models.CandidateMetadata.years_of_experience >= float(filters.min_experience_years))
 
+        if filters.min_age is not None:
+            id_query = id_query.filter(models.CandidateMetadata.age >= filters.min_age)
+
+        if filters.max_age is not None:
+            id_query = id_query.filter(models.CandidateMetadata.age <= filters.max_age)
+
         # Higher Education filters (UG/PG/PhD)
         if filters.ug_uni:
             sub = db.query(models.CandidateHigherEducation.candidate_id).filter(
@@ -1248,6 +1277,10 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
                 "email": c.email,
                 "gender": c.gender,
                 "state": c.state,
+                "age": c.age or (
+                    (datetime.date.today().year - c.dob.year - ((datetime.date.today().month, datetime.date.today().day) < (c.dob.month, c.dob.day)))
+                    if c.dob else None
+                ),
                 "years_of_experience": c.years_of_experience,
                 "highest_education": highest_edu,
                 "current_status": track.current_status if track else 'received',

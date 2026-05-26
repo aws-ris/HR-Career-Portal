@@ -268,6 +268,7 @@ class CandidateFullResponse(BaseModel):
     email:               str
     mobile_no:           str
     dob:                 date
+    age:                 Optional[int] = None
     gender:              Optional[str]
     city:                Optional[str]
     state:               Optional[str]

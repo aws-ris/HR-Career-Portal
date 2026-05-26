@@ -4,7 +4,7 @@ from sqlalchemy import (
     Column, String, Text, Float, Boolean, Integer,
     Date, DateTime, ForeignKey, CheckConstraint, ARRAY, LargeBinary
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 from database.database import Base
 
 
@@ -62,11 +62,20 @@ class CandidateMetadata(Base):
     email                = Column(String(200), nullable=False, unique=True)
     mobile_no            = Column(String(20),  nullable=False)
     dob                  = Column(Date,        nullable=False)
+    age                  = Column(Integer,     nullable=True)
     gender               = Column(String(30),  nullable=True)
     city                 = Column(String(100), nullable=True)
     state                = Column(String(100), nullable=True)
     pincode              = Column(String(20),  nullable=True)
     years_of_experience  = Column(Float,       nullable=True)
+
+    @validates('dob')
+    def update_age(self, key, dob_value):
+        if dob_value:
+            import datetime
+            today = datetime.date.today()
+            self.age = today.year - dob_value.year - ((today.month, today.day) < (dob_value.month, dob_value.day))
+        return dob_value
 
     # Relationships
     applications         = relationship("ApplicationTracking",    back_populates="candidate", cascade="all, delete-orphan")
