@@ -94,8 +94,14 @@ export default function CreateJobModal({ job, onClose, onSave }) {
       }
 
       if (!res.ok) {
-        const err = await res.json();
-        setError(JSON.stringify(err.detail || err));
+        let errMessage = "Unknown Error";
+        try {
+          const err = await res.json();
+          errMessage = err.detail || JSON.stringify(err);
+        } catch (jsonErr) {
+          errMessage = `Status ${res.status}: ${res.statusText || 'Internal Server Error'}`;
+        }
+        setError("Error: " + errMessage);
         return;
       }
 
@@ -106,7 +112,11 @@ export default function CreateJobModal({ job, onClose, onSave }) {
 
       onSave();
     } catch (e) {
-      setError('Could not connect to backend.');
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        setError('Could not connect to backend. Ensure uvicorn is running on port 8000.');
+      } else {
+        setError('Could not connect to the server. Please check your internet connection or try again later.');
+      }
     } finally {
       setLoading(false);
     }

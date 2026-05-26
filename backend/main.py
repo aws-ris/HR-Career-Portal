@@ -72,7 +72,11 @@ def startup_migration():
             "ALTER TABLE candidate_links_about ADD COLUMN IF NOT EXISTS extracurriculars TEXT;",
             
             # Candidate Resume Payload columns
-            "ALTER TABLE candidate_resume_payload ADD COLUMN IF NOT EXISTS pdf_blob BYTEA;"
+            "ALTER TABLE candidate_resume_payload ADD COLUMN IF NOT EXISTS pdf_blob BYTEA;",
+
+            # Application Status History columns
+            "ALTER TABLE application_status_history ADD COLUMN IF NOT EXISTS application_tracking_id VARCHAR(36);",
+            "ALTER TABLE application_status_history ALTER COLUMN candidate_id DROP NOT NULL;"
         ]
         
         for query in migrations:
@@ -577,93 +581,136 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
                 detail="This job posting is closed or no longer accepting applications."
             )
 
-    # 1. Create Lean Candidate Metadata (Persona)
-    candidate = models.CandidateMetadata(
-        full_name           = payload.full_name,
-        email               = payload.email,
-        mobile_no           = payload.mobile_no,
-        dob                 = payload.dob,
-        gender              = payload.gender,
-        city                = payload.city,
-        state               = payload.state,
-        pincode             = payload.pincode,
-        years_of_experience = payload.years_of_experience
-    )
-    db.add(candidate)
-    db.flush()
-
-    # 2. Create Application Tracking record
-    app_tracking = models.ApplicationTracking(
-        candidate_id     = candidate.id,
-        job_id           = payload.job_id,
-        position_applied = payload.position_applied,
-        admin_department = payload.admin_department,
-        current_status   = 'received'
-    )
-    db.add(app_tracking)
-    db.flush()
-
-    # 3. Candidate Links & About
-    links_about = models.CandidateLinksAbout(
-        candidate_id   = candidate.id,
-        about          = payload.about,
-        extracurriculars = payload.extracurriculars,
-        google_scholar = payload.google_scholar,
-        linkedin       = payload.linkedin
-    )
-    db.add(links_about)
-
-    # 4. Schooling (1:1)
-    db.add(models.CandidateSchooling(
-        candidate_id         = candidate.id,
-        class_x_percentage   = payload.schooling.class_x_percentage,
-        class_xii_percentage = payload.schooling.class_xii_percentage,
-    ))
-
-    # 5. Higher Education (1:N)
-    for edu in payload.higher_education:
-        db.add(models.CandidateHigherEducation(
-            candidate_id = candidate.id,
-            level        = edu.level,
-            university   = edu.university,
-            degree_name  = edu.degree_name,
-            score_type   = edu.score_type,
-            score_value  = edu.score_value,
-            grad_year    = edu.grad_year,
-            entry_order  = edu.entry_order,
-        ))
-
-    # 6. Publications (1:N)
-    for pub in payload.publications:
-        db.add(models.CandidatePublication(
-            candidate_id = candidate.id,
-            pub_type     = pub.pub_type,
-            title        = pub.title,
-            parent_book  = pub.parent_book,
-            entry_order  = pub.entry_order,
-        ))
-
-    # 7. Work Experiences (1:N)
-    for w in payload.work_experiences:
-        db.add(models.CandidateWorkExperience(
-            candidate_id = candidate.id,
-            company_name = w.company_name,
-            role         = w.role,
-            start_date   = w.start_date,
-            end_date     = w.end_date,
-            is_current   = w.is_current,
-            entry_order  = w.entry_order,
-        ))
-
-    # 8. Seed status history
-    db.add(models.ApplicationStatusHistory(
-        application_tracking_id = app_tracking.id,
-        status                 = 'received',
-        changed_by             = 'SYSTEM',
-        notes                  = 'Application submitted',
-    ))
-
     try:
+        # Check if candidate email already exists (Error prevention & hassle-free submission)
+        candidate = db.query(models.CandidateMetadata).filter(
+            models.CandidateMetadata.email == payload.email
+        ).first()
+        
+        is_new_candidate = False
+        if candidate:
+            # Update existing candidate details
+            candidate.full_name = payload.full_name
+            candidate.mobile_no = payload.mobile_no
+            candidate.dob = payload.dob
+            candidate.gender = payload.gender
+            candidate.city = payload.city
+            candidate.state = payload.state
+            candidate.pincode = payload.pincode
+            candidate.years_of_experience = payload.years_of_experience
+            
+            # Clean up old relations to prevent duplicates
+            if candidate.schooling:
+                db.delete(candidate.schooling)
+            if candidate.links_about:
+                db.delete(candidate.links_about)
+            
+            db.query(models.CandidateHigherEducation).filter_by(candidate_id=candidate.id).delete()
+            db.query(models.CandidatePublication).filter_by(candidate_id=candidate.id).delete()
+            db.query(models.CandidateWorkExperience).filter_by(candidate_id=candidate.id).delete()
+            db.flush()
+        else:
+            is_new_candidate = True
+            # Create new candidate record
+            candidate = models.CandidateMetadata(
+                full_name           = payload.full_name,
+                email               = payload.email,
+                mobile_no           = payload.mobile_no,
+                dob                 = payload.dob,
+                gender              = payload.gender,
+                city                = payload.city,
+                state               = payload.state,
+                pincode             = payload.pincode,
+                years_of_experience = payload.years_of_experience
+            )
+            db.add(candidate)
+            db.flush()
+
+        # Create or update application tracking record
+        app_tracking = None
+        if not is_new_candidate:
+            app_tracking = db.query(models.ApplicationTracking).filter_by(
+                candidate_id=candidate.id,
+                job_id=payload.job_id
+            ).first()
+            
+        if app_tracking:
+            app_tracking.position_applied = payload.position_applied
+            app_tracking.admin_department = payload.admin_department
+            app_tracking.current_status = 'received'
+            app_tracking.updated_at = datetime.datetime.utcnow()
+        else:
+            app_tracking = models.ApplicationTracking(
+                candidate_id     = candidate.id,
+                job_id           = payload.job_id,
+                position_applied = payload.position_applied,
+                admin_department = payload.admin_department,
+                current_status   = 'received'
+            )
+            db.add(app_tracking)
+        db.flush()
+
+        # Re-add relations (schooling, links_about, higher_education, publications, work_experiences)
+        # 3. Candidate Links & About
+        links_about = models.CandidateLinksAbout(
+            candidate_id   = candidate.id,
+            about          = payload.about,
+            extracurriculars = payload.extracurriculars,
+            google_scholar = payload.google_scholar,
+            linkedin       = payload.linkedin
+        )
+        db.add(links_about)
+
+        # 4. Schooling (1:1)
+        db.add(models.CandidateSchooling(
+            candidate_id         = candidate.id,
+            class_x_percentage   = payload.schooling.class_x_percentage,
+            class_xii_percentage = payload.schooling.class_xii_percentage,
+        ))
+
+        # 5. Higher Education (1:N)
+        for edu in payload.higher_education:
+            db.add(models.CandidateHigherEducation(
+                candidate_id = candidate.id,
+                level        = edu.level,
+                university   = edu.university,
+                degree_name  = edu.degree_name,
+                score_type   = edu.score_type,
+                score_value  = edu.score_value,
+                grad_year    = edu.grad_year,
+                entry_order  = edu.entry_order,
+            ))
+
+        # 6. Publications (1:N)
+        for pub in payload.publications:
+            db.add(models.CandidatePublication(
+                candidate_id = candidate.id,
+                pub_type     = pub.pub_type,
+                title        = pub.title,
+                parent_book  = pub.parent_book,
+                entry_order  = pub.entry_order,
+            ))
+
+        # 7. Work Experiences (1:N)
+        for w in payload.work_experiences:
+            db.add(models.CandidateWorkExperience(
+                candidate_id = candidate.id,
+                company_name = w.company_name,
+                role         = w.role,
+                start_date   = w.start_date,
+                end_date     = w.end_date,
+                is_current   = w.is_current,
+                entry_order  = w.entry_order,
+            ))
+
+        # 8. Seed status history
+        db.add(models.ApplicationStatusHistory(
+            application_tracking_id = app_tracking.id,
+            status                 = 'received',
+            changed_by             = 'SYSTEM',
+            notes                  = 'Application updated/resubmitted' if not is_new_candidate else 'Application submitted',
+        ))
+
         db.commit()
         db.refresh(candidate)
         
@@ -673,10 +720,82 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
         return candidate
     except Exception as e:
         db.rollback()
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=str(e))
 
 
-def tokenize_candidate_bg(candidate_id: str):
+def tokenize_candidate(db: Session, candidate: models.CandidateMetadata):
+    """
+    Tokenizes candidate education, work experience, and publications to populate the TokenRegistry.
+    This provides autocomplete suggestions for the HR filter interface.
+    """
+    # Get all applications to know which jobs to register these tokens for
+    applications = db.query(models.ApplicationTracking).filter(
+        models.ApplicationTracking.candidate_id == candidate.id
+    ).all()
+    
+    job_ids = [app.job_id for app in applications if app.job_id]
+    if not job_ids:
+        return
+
+    # Extract raw values and map to token types
+    tokens_to_add = []
+    
+    # 1. Higher Education
+    if candidate.higher_education:
+        for edu in candidate.higher_education:
+            if edu.university:
+                tokens_to_add.append(('university', edu.university))
+            if edu.degree_name:
+                tokens_to_add.append(('degree', edu.degree_name))
+                
+    # 2. Work Experience
+    if candidate.work_experiences:
+        for exp in candidate.work_experiences:
+            if exp.company_name:
+                tokens_to_add.append(('company', exp.company_name))
+            if exp.role:
+                tokens_to_add.append(('role', exp.role))
+                
+    # 3. Publications
+    if candidate.publications:
+        for pub in candidate.publications:
+            if pub.title:
+                tokens_to_add.append(('pub_title', pub.title))
+
+    for job_id in job_ids:
+        for token_type, value in tokens_to_add:
+            if not value or not value.strip():
+                continue
+            val_clean = value.strip()
+            val_norm = val_clean.lower()
+            
+            # Check if this token already exists for this job and type
+            existing = db.query(models.TokenRegistry).filter(
+                models.TokenRegistry.job_id == job_id,
+                models.TokenRegistry.token_type == token_type,
+                models.TokenRegistry.normalized == val_norm
+            ).first()
+            
+            if existing:
+                existing.frequency += 1
+            else:
+                db.add(models.TokenRegistry(
+                    job_id=job_id,
+                    token_type=token_type,
+                    token_value=val_clean,
+                    normalized=val_norm,
+                    frequency=1
+                ))
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Error saving tokens in tokenize_candidate: {e}")
+
+
+def tokenize_candidate_bg(candidate_id: str, job_id: Optional[str] = None):
     """
     Background wrapper to tokenize candidate structured data.
     """

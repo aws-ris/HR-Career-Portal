@@ -327,11 +327,21 @@ export default function ApplicationForm() {
         alert("Application Successfully Submitted!");
         navigate("/");
       } else {
-        const err = await res.json();
-        setSubmitError("Database Rejection: " + JSON.stringify(err));
+        let errMessage = "Unknown Error";
+        try {
+          const err = await res.json();
+          errMessage = err.detail || JSON.stringify(err);
+        } catch (jsonErr) {
+          errMessage = `Status ${res.status}: ${res.statusText || 'Internal Server Error'}`;
+        }
+        setSubmitError("Database Rejection: " + errMessage);
       }
     } catch (err) {
-      setSubmitError("Could not connect to Backend. Ensure uvicorn is running on port 8000.");
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        setSubmitError("Could not connect to Backend. Ensure uvicorn is running on port 8000.");
+      } else {
+        setSubmitError("Could not connect to the server. Please check your internet connection or try again later.");
+      }
     }
   };
 
