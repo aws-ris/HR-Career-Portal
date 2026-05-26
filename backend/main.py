@@ -38,6 +38,81 @@ import os
 #         print(f"Warning: Could not preload AI model: {e}")
 
 
+@app.on_event("startup")
+def startup_migration():
+    """
+    Automatically check and apply database schema migrations at startup.
+    This runs every time the server boots, ensuring zero manual intervention.
+    """
+    from database.database import SessionLocal
+    from sqlalchemy import text
+    from database import models
+    import datetime
+    
+    db = SessionLocal()
+    try:
+        print("Running automatic database schema migrations...")
+        
+        # 1. Add missing columns if they don't exist
+        migrations = [
+            # Job Postings columns
+            "ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS min_pay INTEGER;",
+            "ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS max_pay INTEGER;",
+            "ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS min_experience INTEGER;",
+            "ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS max_experience INTEGER;",
+            "ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS contract_period INTEGER;",
+            "ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS job_mode VARCHAR(50);",
+            
+            # Candidate Metadata columns
+            "ALTER TABLE candidate_metadata ADD COLUMN IF NOT EXISTS pincode VARCHAR(20);",
+            "ALTER TABLE candidate_metadata ADD COLUMN IF NOT EXISTS age INTEGER;",
+            "ALTER TABLE candidate_metadata ADD COLUMN IF NOT EXISTS city VARCHAR(100);",
+            
+            # Candidate Links & About columns
+            "ALTER TABLE candidate_links_about ADD COLUMN IF NOT EXISTS extracurriculars TEXT;",
+            
+            # Candidate Resume Payload columns
+            "ALTER TABLE candidate_resume_payload ADD COLUMN IF NOT EXISTS pdf_blob BYTEA;"
+        ]
+        
+        for query in migrations:
+            try:
+                db.execute(text(query))
+            except Exception as e:
+                # Fallback for SQLite vs PostgreSQL differences
+                if "BYTEA" in query and "sqlite" in str(db.bind.url):
+                    try:
+                        db.execute(text("ALTER TABLE candidate_resume_payload ADD COLUMN IF NOT EXISTS pdf_blob BLOB;"))
+                    except Exception as sq_err:
+                        print(f"SQLite pdf_blob fallback error: {sq_err}")
+                else:
+                    print(f"Skipped schema migration query '{query}': {e}")
+                    
+        db.commit()
+        
+        # 2. Automatically backfill candidate ages
+        try:
+            candidates = db.query(models.CandidateMetadata).all()
+            today = datetime.date.today()
+            backfilled_count = 0
+            for cand in candidates:
+                if cand.dob and cand.age is None:
+                    cand.age = today.year - cand.dob.year - ((today.month, today.day) < (cand.dob.month, cand.dob.day))
+                    backfilled_count += 1
+            if backfilled_count > 0:
+                db.commit()
+                print(f"Auto-backfilled ages for {backfilled_count} candidates.")
+        except Exception as e:
+            print(f"Error backfilling candidate ages: {e}")
+            db.rollback()
+            
+        print("Automatic database migrations completed successfully.")
+    except Exception as e:
+        print(f"Automatic migration critical error: {e}")
+    finally:
+        db.close()
+
+
 # ─────────────────────────────────────────────
 # DATABASE SYSTEM MIGRATION (TEMPORARY)
 # ─────────────────────────────────────────────
