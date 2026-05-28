@@ -171,17 +171,6 @@ export default function CreateJobModal({ job, onClose, onSave }) {
             />
           </div>
 
-          {/* Requirements */}
-          <div className="hr-form-group">
-            <label className="hr-form-label">Requirements</label>
-            <p className="hr-form-hint">Internal only — used for AI keyword matching</p>
-            <textarea
-              className="hr-form-input hr-textarea"
-              placeholder="Minimum qualifications, experience, preferred skills..."
-              value={form.requirements}
-              onChange={e => set('requirements', e.target.value)}
-            />
-          </div>
 
           {/* Deadline + Openings */}
           <div className="hr-form-row">
@@ -209,7 +198,7 @@ export default function CreateJobModal({ job, onClose, onSave }) {
           {/* Dynamic Terms Configuration */}
           <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
             <h4 style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              Candidate Terms & Conditions Configuration
+              Contract & Compensation Settings
             </h4>
             
             <div className="hr-form-row">
@@ -251,8 +240,6 @@ export default function CreateJobModal({ job, onClose, onSave }) {
               </div>
             </div>
           </div>
-
-          <p className="hr-modal-location-note">📍 Location: RIS, New Delhi (fixed for all postings)</p>
 
           {error && <div className="hr-modal-error">{error}</div>}
         </div>
