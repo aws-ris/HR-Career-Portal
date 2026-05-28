@@ -814,7 +814,7 @@ export default function ApplicationForm() {
 
         {submitError && <div style={{background: '#fef2f2', color: '#ef4444', padding: '1rem', borderRadius: '8px', marginBottom: '1rem'}}>{submitError}</div>}
 
-        {jobDetail && (step === 0 || step >= 1) && (
+        {jobDetail && (step === 0 || step === 1) && (
           <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '24px', marginBottom: '32px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '16px' }}>Terms & Conditions of Employment</h2>
             <p style={{ fontSize: '14px', color: '#475569', marginBottom: '16px' }}>

@@ -1518,9 +1518,14 @@ textarea.form-input {
    PRINT MEDIA QUERY
    ════════════════════════════════════════════════ */
 @media print {
+  @page {
+    size: auto;
+    margin: 0mm; /* Hides default browser header (title/timestamp) and footer (URL/pages) */
+  }
   body {
     background: white !important;
     color: black !important;
+    margin: 15mm 20mm !important; /* Re-establishes clean margins for the printable layout */
   }
   .app-header,
   .step-indicator,
