@@ -27,9 +27,9 @@ def run():
     sections = [
         ("Basic Info", '4F81BD', ['Full Name', 'DOB', 'Mobile Number', 'Email', 'Description', 'Position Applied', 'Admin Department']),
         ("Secondary Education", '76923C', ['Class X', 'Class XII']),
-        ("Graduation Details", '9BBB59', ['University', 'Degree', 'Score Type', 'Score Value'] * 3),
-        ("Postgraduate Details", '8064A2', ['University', 'Degree', 'Score Type', 'Score Value'] * 3),
-        ("Doctorate Details", '4BACC6', ['University', 'Thesis', 'Score Type', 'Score Value'] * 3),
+        ("Graduation Details", '9BBB59', ['University', 'Degree', 'Score Type', 'Score Value', 'Year of Passing'] * 3),
+        ("Postgraduate Details", '8064A2', ['University', 'Degree', 'Score Type', 'Score Value', 'Year of Passing'] * 3),
+        ("Doctorate Details", '4BACC6', ['University', 'Thesis', 'Score Type', 'Score Value', 'Year of Passing'] * 3),
         ("Publications Summary", 'F79646', ['Types']),
         ("Books", 'FFC000', ['Book 1 Title', 'Book 2 Title', 'Book 3 Title']),
         ("Chapters", '00B050', ['Chapter 1 Title', 'Chapter 1 Book', 'Chapter 2 Title', 'Chapter 2 Book', 'Chapter 3 Title', 'Chapter 3 Book']),
@@ -77,31 +77,31 @@ def run():
         ])
 
         # 2. Graduations (Level = undergrad)
-        cur.execute("SELECT university, degree_name, score_type, score_value FROM candidate_higher_education WHERE candidate_id = %s AND level = 'undergrad' ORDER BY entry_order LIMIT 3;", (app_id,))
+        cur.execute("SELECT university, degree_name, score_type, score_value, grad_year FROM candidate_higher_education WHERE candidate_id = %s AND level = 'undergrad' ORDER BY entry_order LIMIT 3;", (app_id,))
         bachelors = cur.fetchall()
         for i in range(3):
             if i < len(bachelors):
-                row_data.extend([bachelors[i][0], bachelors[i][1] or '', bachelors[i][2], bachelors[i][3]])
+                row_data.extend([bachelors[i][0], bachelors[i][1] or '', bachelors[i][2], bachelors[i][3], bachelors[i][4] or ''])
             else:
-                row_data.extend(['', '', '', ''])
+                row_data.extend(['', '', '', '', ''])
 
         # 3. Postgrad (Level = postgrad)
-        cur.execute("SELECT university, degree_name, score_type, score_value FROM candidate_higher_education WHERE candidate_id = %s AND level = 'postgrad' ORDER BY entry_order LIMIT 3;", (app_id,))
+        cur.execute("SELECT university, degree_name, score_type, score_value, grad_year FROM candidate_higher_education WHERE candidate_id = %s AND level = 'postgrad' ORDER BY entry_order LIMIT 3;", (app_id,))
         masters = cur.fetchall()
         for i in range(3):
             if i < len(masters):
-                row_data.extend([masters[i][0], masters[i][1] or '', masters[i][2], masters[i][3]])
+                row_data.extend([masters[i][0], masters[i][1] or '', masters[i][2], masters[i][3], masters[i][4] or ''])
             else:
-                row_data.extend(['', '', '', ''])
+                row_data.extend(['', '', '', '', ''])
 
         # 4. Doctorate (Level = phd)
-        cur.execute("SELECT university, degree_name, score_type, score_value FROM candidate_higher_education WHERE candidate_id = %s AND level = 'phd' ORDER BY entry_order LIMIT 3;", (app_id,))
+        cur.execute("SELECT university, degree_name, score_type, score_value, grad_year FROM candidate_higher_education WHERE candidate_id = %s AND level = 'phd' ORDER BY entry_order LIMIT 3;", (app_id,))
         docs = cur.fetchall()
         for i in range(3):
             if i < len(docs):
-                row_data.extend([docs[i][0], docs[i][1] or '', docs[i][2], docs[i][3]])
+                row_data.extend([docs[i][0], docs[i][1] or '', docs[i][2], docs[i][3], docs[i][4] or ''])
             else:
-                row_data.extend(['', '', '', ''])
+                row_data.extend(['', '', '', '', ''])
 
         # Publications fetch
         cur.execute("SELECT pub_type, title, parent_book FROM candidate_publications WHERE candidate_id = %s ORDER BY entry_order;", (app_id,))

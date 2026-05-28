@@ -49,9 +49,9 @@ export default function ApplicationForm() {
   // Step 2
   const [classX, setClassX] = useState(() => savedDraft.classX || '');
   const [classXII, setClassXII] = useState(() => savedDraft.classXII || '');
-  const [grads, setGrads] = useState(() => savedDraft.grads || [{ university: '', degree_name: '', score_type: 'Percentage', score_value: '' }]);
-  const [postGrads, setPostGrads] = useState(() => savedDraft.postGrads || [{ university: '', degree_name: '', score_type: 'Percentage', score_value: '' }]);
-  const [doctorates, setDoctorates] = useState(() => savedDraft.doctorates || [{ university: '', thesis_title: '', score_type: 'Percentage', score_value: '' }]);
+  const [grads, setGrads] = useState(() => savedDraft.grads || [{ university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' }]);
+  const [postGrads, setPostGrads] = useState(() => savedDraft.postGrads || [{ university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' }]);
+  const [doctorates, setDoctorates] = useState(() => savedDraft.doctorates || [{ university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '' }]);
 
   // Step 3
   const [pubTypes, setPubTypes] = useState(() => savedDraft.pubTypes || { none: true, books: false, chapters: false, papers: false });
@@ -293,7 +293,7 @@ export default function ApplicationForm() {
         errors.push("Class XII Percentage must be a number between 0 and 100.");
       }
       grads.forEach((g, i) => {
-        if (i === 0 || g.university || g.degree_name || g.score_value) {
+        if (i === 0 || g.university || g.degree_name || g.score_value || g.grad_year) {
           if (!g.university.trim()) errors.push(`Graduation #${i + 1}: University is required.`);
           if (!g.degree_name.trim()) errors.push(`Graduation #${i + 1}: Degree Name is required.`);
           const score = parseFloat(g.score_value);
@@ -304,10 +304,18 @@ export default function ApplicationForm() {
           } else if (g.score_type === 'CGPA' && score > 10) {
             errors.push(`Graduation #${i + 1}: CGPA score cannot exceed 10.`);
           }
+          if (!g.grad_year) {
+            errors.push(`Graduation #${i + 1}: Year of Passing is required.`);
+          } else {
+            const yr = parseInt(g.grad_year, 10);
+            if (isNaN(yr) || yr < 1950 || yr > 2030) {
+              errors.push(`Graduation #${i + 1}: Year of Passing must be a number between 1950 and 2030.`);
+            }
+          }
         }
       });
       postGrads.forEach((g, i) => {
-        if (g.university || g.degree_name || g.score_value) {
+        if (g.university || g.degree_name || g.score_value || g.grad_year) {
           if (!g.university.trim()) errors.push(`Post Graduation #${i + 1}: University is required.`);
           if (!g.degree_name.trim()) errors.push(`Post Graduation #${i + 1}: Degree Name is required.`);
           const score = parseFloat(g.score_value);
@@ -318,10 +326,18 @@ export default function ApplicationForm() {
           } else if (g.score_type === 'CGPA' && score > 10) {
             errors.push(`Post Graduation #${i + 1}: CGPA score cannot exceed 10.`);
           }
+          if (!g.grad_year) {
+            errors.push(`Post Graduation #${i + 1}: Year of Passing is required.`);
+          } else {
+            const yr = parseInt(g.grad_year, 10);
+            if (isNaN(yr) || yr < 1950 || yr > 2030) {
+              errors.push(`Post Graduation #${i + 1}: Year of Passing must be a number between 1950 and 2030.`);
+            }
+          }
         }
       });
       doctorates.forEach((g, i) => {
-        if (g.university || g.thesis_title || g.score_value) {
+        if (g.university || g.thesis_title || g.score_value || g.grad_year) {
           if (!g.university.trim()) errors.push(`Doctorate #${i + 1}: University is required.`);
           if (!g.thesis_title.trim()) errors.push(`Doctorate #${i + 1}: Thesis Title is required.`);
           const score = parseFloat(g.score_value);
@@ -331,6 +347,14 @@ export default function ApplicationForm() {
             errors.push(`Doctorate #${i + 1}: Percentage score cannot exceed 100.`);
           } else if (g.score_type === 'CGPA' && score > 10) {
             errors.push(`Doctorate #${i + 1}: CGPA score cannot exceed 10.`);
+          }
+          if (!g.grad_year) {
+            errors.push(`Doctorate #${i + 1}: Year of Passing is required.`);
+          } else {
+            const yr = parseInt(g.grad_year, 10);
+            if (isNaN(yr) || yr < 1950 || yr > 2030) {
+              errors.push(`Doctorate #${i + 1}: Year of Passing must be a number between 1950 and 2030.`);
+            }
           }
         }
       });
@@ -447,7 +471,7 @@ export default function ApplicationForm() {
 
     // Graduation
     grads.forEach((g, i) => {
-      if (i === 0 || g.university || g.degree_name || g.score_value) {
+      if (i === 0 || g.university || g.degree_name || g.score_value || g.grad_year) {
         if (!g.university.trim()) errors.push(`Graduation #${i + 1}: University is required.`);
         if (!g.degree_name.trim()) errors.push(`Graduation #${i + 1}: Degree Name is required.`);
         const score = parseFloat(g.score_value);
@@ -458,12 +482,20 @@ export default function ApplicationForm() {
         } else if (g.score_type === 'CGPA' && score > 10) {
           errors.push(`Graduation #${i + 1}: CGPA score cannot exceed 10.`);
         }
+        if (!g.grad_year) {
+          errors.push(`Graduation #${i + 1}: Year of Passing is required.`);
+        } else {
+          const yr = parseInt(g.grad_year, 10);
+          if (isNaN(yr) || yr < 1950 || yr > 2030) {
+            errors.push(`Graduation #${i + 1}: Year of Passing must be a number between 1950 and 2030.`);
+          }
+        }
       }
     });
 
     // PG
     postGrads.forEach((g, i) => {
-      if (g.university || g.degree_name || g.score_value) {
+      if (g.university || g.degree_name || g.score_value || g.grad_year) {
         if (!g.university.trim()) errors.push(`Post Graduation #${i + 1}: University is required.`);
         if (!g.degree_name.trim()) errors.push(`Post Graduation #${i + 1}: Degree Name is required.`);
         const score = parseFloat(g.score_value);
@@ -474,12 +506,20 @@ export default function ApplicationForm() {
         } else if (g.score_type === 'CGPA' && score > 10) {
           errors.push(`Post Graduation #${i + 1}: CGPA score cannot exceed 10.`);
         }
+        if (!g.grad_year) {
+          errors.push(`Post Graduation #${i + 1}: Year of Passing is required.`);
+        } else {
+          const yr = parseInt(g.grad_year, 10);
+          if (isNaN(yr) || yr < 1950 || yr > 2030) {
+            errors.push(`Post Graduation #${i + 1}: Year of Passing must be a number between 1950 and 2030.`);
+          }
+        }
       }
     });
 
     // PhD
     doctorates.forEach((g, i) => {
-      if (g.university || g.thesis_title || g.score_value) {
+      if (g.university || g.thesis_title || g.score_value || g.grad_year) {
         if (!g.university.trim()) errors.push(`Doctorate #${i + 1}: University is required.`);
         if (!g.thesis_title.trim()) errors.push(`Doctorate #${i + 1}: Thesis Title is required.`);
         const score = parseFloat(g.score_value);
@@ -489,6 +529,14 @@ export default function ApplicationForm() {
           errors.push(`Doctorate #${i + 1}: Percentage score cannot exceed 100.`);
         } else if (g.score_type === 'CGPA' && score > 10) {
           errors.push(`Doctorate #${i + 1}: CGPA score cannot exceed 10.`);
+        }
+        if (!g.grad_year) {
+          errors.push(`Doctorate #${i + 1}: Year of Passing is required.`);
+        } else {
+          const yr = parseInt(g.grad_year, 10);
+          if (isNaN(yr) || yr < 1950 || yr > 2030) {
+            errors.push(`Doctorate #${i + 1}: Year of Passing must be a number between 1950 and 2030.`);
+          }
         }
       }
     });
@@ -698,7 +746,8 @@ export default function ApplicationForm() {
       },
       higher_education: educations.map(e => ({
         ...e,
-        level: e.level === 'Bachelors' ? 'undergrad' : (e.level === 'Masters' ? 'postgrad' : 'phd')
+        level: e.level === 'Bachelors' ? 'undergrad' : (e.level === 'Masters' ? 'postgrad' : 'phd'),
+        grad_year: e.grad_year ? parseInt(e.grad_year, 10) : null
       })),
       publications: publications.map(p => ({
         pub_type: p.type.toLowerCase(),
@@ -1024,9 +1073,10 @@ export default function ApplicationForm() {
                   <div className="form-group"><label className="form-label">Degree Name</label><input required className="form-input" value={g.degree_name} onChange={e => updateEntry(setGrads, grads, i, 'degree_name', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setGrads, grads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
                   <div className="form-group"><label className="form-label">Score (&lt;= {g.score_type==='Percentage' ? '100' : '10'})</label><input required type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setGrads, grads, i, 'score_value', e.target.value)} /></div>
+                  <div className="form-group"><label className="form-label">Year of Passing (1950 - 2030)</label><input required={i === 0 || !!g.university || !!g.degree_name || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setGrads, grads, i, 'grad_year', e.target.value)} /></div>
                 </div>
               ))}
-              <button type="button" className="btn-secondary" disabled={grads.length>=3} onClick={() => addEntry(setGrads, grads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '' })}>+ Add Graduation Detail</button>
+              <button type="button" className="btn-secondary" disabled={grads.length>=3} onClick={() => addEntry(setGrads, grads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Graduation Detail</button>
 
               <hr style={dividerStyle} />
 
@@ -1037,9 +1087,10 @@ export default function ApplicationForm() {
                   <div className="form-group"><label className="form-label">Degree Name</label><input className="form-input" value={g.degree_name} onChange={e => updateEntry(setPostGrads, postGrads, i, 'degree_name', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
                   <div className="form-group"><label className="form-label">Score</label><input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_value', e.target.value)} /></div>
+                  <div className="form-group"><label className="form-label">Year of Passing (1950 - 2030)</label><input required={!!g.university || !!g.degree_name || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setPostGrads, postGrads, i, 'grad_year', e.target.value)} /></div>
                 </div>
               ))}
-              <button type="button" className="btn-secondary" disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '' })}>+ Add Post Graduation</button>
+              <button type="button" className="btn-secondary" disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Post Graduation</button>
 
               <hr style={dividerStyle} />
 
@@ -1050,9 +1101,10 @@ export default function ApplicationForm() {
                   <div className="form-group"><label className="form-label">Thesis Title</label><input className="form-input" value={g.thesis_title} onChange={e => updateEntry(setDoctorates, doctorates, i, 'thesis_title', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
                   <div className="form-group"><label className="form-label">Score</label><input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_value', e.target.value)} /></div>
+                  <div className="form-group"><label className="form-label">Year of Passing (1950 - 2030)</label><input required={!!g.university || !!g.thesis_title || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setDoctorates, doctorates, i, 'grad_year', e.target.value)} /></div>
                 </div>
               ))}
-              <button type="button" className="btn-secondary" disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3, { university: '', thesis_title: '', score_type: 'Percentage', score_value: '' })}>+ Add Doctorate</button>
+              <button type="button" className="btn-secondary" disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3, { university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Doctorate</button>
 
               <div style={{display: 'flex'}}>
                 <button type="button" className="btn-secondary" onClick={() => setStep(1)}>Back</button>
@@ -1421,6 +1473,10 @@ export default function ApplicationForm() {
                           <label className="resume-inline-label">Score</label>
                           <input type="number" step="0.01" className="resume-inline-input" value={g.score_value} onChange={e => updateEntry(setGrads, grads, i, 'score_value', e.target.value)} />
                         </div>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Year of Passing</label>
+                          <input type="number" min="1950" max="2030" className="resume-inline-input" value={g.grad_year || ''} onChange={e => updateEntry(setGrads, grads, i, 'grad_year', e.target.value)} />
+                        </div>
                         {grads.length > 1 && (
                           <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end' }}>
                             <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setGrads, grads, i)}>❌ Remove Entry</button>
@@ -1428,7 +1484,7 @@ export default function ApplicationForm() {
                         )}
                       </div>
                     ))}
-                    <button type="button" className="btn-secondary" style={{ marginTop: '0', marginBottom: '1.5rem' }} disabled={grads.length>=3} onClick={() => addEntry(setGrads, grads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '' })}>+ Add Graduation Detail</button>
+                    <button type="button" className="btn-secondary" style={{ marginTop: '0', marginBottom: '1.5rem' }} disabled={grads.length>=3} onClick={() => addEntry(setGrads, grads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Graduation Detail</button>
 
                     <h4 style={{ marginBottom: '0.5rem' }}>Post Graduation Details</h4>
                     {postGrads.map((g, i) => (
@@ -1452,12 +1508,16 @@ export default function ApplicationForm() {
                           <label className="resume-inline-label">Score</label>
                           <input type="number" step="0.01" className="resume-inline-input" value={g.score_value} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_value', e.target.value)} />
                         </div>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Year of Passing</label>
+                          <input type="number" min="1950" max="2030" className="resume-inline-input" value={g.grad_year || ''} onChange={e => updateEntry(setPostGrads, postGrads, i, 'grad_year', e.target.value)} />
+                        </div>
                         <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end' }}>
                           <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setPostGrads, postGrads, i)}>❌ Remove Entry</button>
                         </div>
                       </div>
                     ))}
-                    <button type="button" className="btn-secondary" style={{ marginTop: '0', marginBottom: '1.5rem' }} disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '' })}>+ Add Post Graduation</button>
+                    <button type="button" className="btn-secondary" style={{ marginTop: '0', marginBottom: '1.5rem' }} disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Post Graduation</button>
 
                     <h4 style={{ marginBottom: '0.5rem' }}>Doctorate Details</h4>
                     {doctorates.map((g, i) => (
@@ -1481,12 +1541,16 @@ export default function ApplicationForm() {
                           <label className="resume-inline-label">Score</label>
                           <input type="number" step="0.01" className="resume-inline-input" value={g.score_value} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_value', e.target.value)} />
                         </div>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Year of Passing</label>
+                          <input type="number" min="1950" max="2030" className="resume-inline-input" value={g.grad_year || ''} onChange={e => updateEntry(setDoctorates, doctorates, i, 'grad_year', e.target.value)} />
+                        </div>
                         <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end' }}>
                           <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setDoctorates, doctorates, i)}>❌ Remove Entry</button>
                         </div>
                       </div>
                     ))}
-                    <button type="button" className="btn-secondary" style={{ marginTop: '0' }} disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3, { university: '', thesis_title: '', score_type: 'Percentage', score_value: '' })}>+ Add Doctorate</button>
+                    <button type="button" className="btn-secondary" style={{ marginTop: '0' }} disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3, { university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Doctorate</button>
                   </div>
                 ) : (
                   <table className="resume-table">
@@ -1511,7 +1575,7 @@ export default function ApplicationForm() {
                       {grads.map((g, i) => g.university && (
                         <tr key={`g-${i}`}>
                           <td>
-                            <span className="resume-item-title">Bachelors Degree</span>
+                            <span className="resume-item-title">Bachelors Degree {g.grad_year && `(${g.grad_year})`}</span>
                             <div className="resume-item-subtitle">{g.degree_name}</div>
                           </td>
                           <td>{g.university}</td>
@@ -1521,7 +1585,7 @@ export default function ApplicationForm() {
                       {postGrads.map((g, i) => g.university && (
                         <tr key={`pg-${i}`}>
                           <td>
-                            <span className="resume-item-title">Masters Degree</span>
+                            <span className="resume-item-title">Masters Degree {g.grad_year && `(${g.grad_year})`}</span>
                             <div className="resume-item-subtitle">{g.degree_name}</div>
                           </td>
                           <td>{g.university}</td>
@@ -1531,7 +1595,7 @@ export default function ApplicationForm() {
                       {doctorates.map((g, i) => g.university && (
                         <tr key={`phd-${i}`}>
                           <td>
-                            <span className="resume-item-title">Doctorate Degree (Ph.D)</span>
+                            <span className="resume-item-title">Doctorate Degree (Ph.D) {g.grad_year && `(${g.grad_year})`}</span>
                             <div className="resume-item-subtitle">Thesis: {g.thesis_title}</div>
                           </td>
                           <td>{g.university}</td>
