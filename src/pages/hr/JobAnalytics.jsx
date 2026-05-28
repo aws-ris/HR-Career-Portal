@@ -39,6 +39,17 @@ export default function JobAnalytics() {
   const [search, setSearch] = useState('');
   const [currentFilters, setCurrentFilters] = useState({});
   const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (!exportDropdownOpen) return;
+    const closeDropdown = (e) => {
+      if (e.target.closest('.export-dropdown-container')) return;
+      setExportDropdownOpen(false);
+    };
+    document.addEventListener('click', closeDropdown);
+    return () => document.removeEventListener('click', closeDropdown);
+  }, [exportDropdownOpen]);
 
   // Dynamic Column Logic: 
   // Core columns are always visible. 
@@ -90,7 +101,7 @@ export default function JobAnalytics() {
     }
   };
 
-  const handleExport = async (format) => {
+  const handleExport = async (format, reportType = 'detailed') => {
     setDebugStatus(`Generating ${format.toUpperCase()}...`);
     try {
       const res = await fetch(`${API}/jobs/${id}/candidates/export`, {
@@ -99,7 +110,8 @@ export default function JobAnalytics() {
         body: JSON.stringify({
           filters: currentFilters,
           format: format,
-          columns: activeCols
+          columns: activeCols,
+          report_type: reportType
         })
       });
 
@@ -275,22 +287,41 @@ export default function JobAnalytics() {
             />
           </div>
           
-          <button 
-            onClick={() => handleExport('csv')}
-            className="hr-btn-refresh" 
-            title="Download as CSV"
-            style={{ fontSize: '12px', fontWeight: '700', padding: '0.6rem 1rem', gap: '6px' }}
-          >
-            CSV
-          </button>
-          <button 
-            onClick={() => handleExport('xlsx')}
-            className="hr-btn-refresh" 
-            title="Download as Excel"
-            style={{ fontSize: '12px', fontWeight: '700', padding: '0.6rem 1rem', gap: '6px', color: '#16a34a', borderColor: '#16a34a22' }}
-          >
-            XLSX
-          </button>
+          <div className="export-dropdown-container">
+            <button 
+              onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
+              className="hr-btn-refresh" 
+              title="Download applicants data"
+              style={{ fontSize: '12px', fontWeight: '700', padding: '0.6rem 1rem', gap: '6px', display: 'flex', alignItems: 'center', color: '#1e3a8a', borderColor: '#1e3a8a22' }}
+            >
+              📥 Export Candidates
+            </button>
+            {exportDropdownOpen && (
+              <div className="export-dropdown-menu">
+                <button
+                  onClick={() => { handleExport('xlsx', 'detailed'); setExportDropdownOpen(false); }}
+                  className="export-dropdown-item"
+                >
+                  <span className="export-dropdown-item-title xlsx-detailed">Detailed Excel (.xlsx)</span>
+                  <span className="export-dropdown-item-desc">Grouped candidate rows with merged metadata</span>
+                </button>
+                <button
+                  onClick={() => { handleExport('xlsx', 'standardized'); setExportDropdownOpen(false); }}
+                  className="export-dropdown-item"
+                >
+                  <span className="export-dropdown-item-title xlsx-standard">Standardized Summary (.xlsx)</span>
+                  <span className="export-dropdown-item-desc">Standard roster of scores & work history</span>
+                </button>
+                <button
+                  onClick={() => { handleExport('csv', 'detailed'); setExportDropdownOpen(false); }}
+                  className="export-dropdown-item"
+                >
+                  <span className="export-dropdown-item-title csv">Flat CSV (.csv)</span>
+                  <span className="export-dropdown-item-desc">Raw candidate data sheet</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

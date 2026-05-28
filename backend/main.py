@@ -1144,6 +1144,7 @@ class ExportRequest(BaseModel):
     filters: CandidateFilter
     format: str # 'csv' or 'xlsx'
     columns: List[str]
+    report_type: Optional[str] = 'detailed'
 
 
 @app.post("/api/v1/jobs/{job_id}/candidates/export")
@@ -1152,7 +1153,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
     import csv
     from fastapi.responses import StreamingResponse
     from openpyxl import Workbook
-    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
 
     try:
         # 1. Fetch filtered candidates using the existing engine
@@ -1168,75 +1169,153 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 output.seek(0)
                 return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-        # 2. Define our professional header structure
-        # Basic Info, Grad(1-3), PG(1-3), PhD(1-3), Books(1-3), Chapters(1-3), Papers(1-3), Work(1-3)
-        headers = ["Full Name", "Email", "Mobile", "DOB", "Gender", "State", "City", "Pincode", "Extracurriculars", "Exp (Yrs)", "Highest Edu", "Status", "Class X %", "Class XII %"]
-        
-        # Add Triple-Entry Headers
-        for label in ["Grad", "PG", "PhD"]:
-            for i in range(1, 4):
-                headers.extend([f"{label} {i} Univ", f"{label} {i} Degree", f"{label} {i} Score"])
-        
-        for label in ["Book", "Chapter", "Paper"]:
-            for i in range(1, 4):
-                headers.append(f"{label} {i} Title")
-                if label == "Chapter": headers.append(f"{label} {i} Source")
-
-        for i in range(1, 4):
-            headers.extend([f"Work {i} Co", f"Work {i} Role", f"Work {i} Start", f"Work {i} End"])
-
-        # 3. Build Rows
-        rows = []
-        for c in candidates_data:
-            full_c = db.query(models.CandidateMetadata).filter(models.CandidateMetadata.id == c['id']).first()
-            if not full_c: continue
-            
-            row = [
-                full_c.full_name, full_c.email, full_c.mobile_no, str(full_c.dob),
-                full_c.gender, full_c.state, full_c.city, full_c.pincode,
-                (full_c.links_about.extracurriculars if full_c.links_about else "") or "",
-                full_c.years_of_experience,
-                c['highest_education'], c['current_status'],
-                full_c.schooling.class_x_percentage if full_c.schooling else 0,
-                full_c.schooling.class_xii_percentage if full_c.schooling else 0
+        # 2. Build Headers and Rows based on report type
+        if req.report_type == 'standardized':
+            headers = [
+                "Full Name", "Class X %", "Class XII %", 
+                "Bachelors Degree", "Bachelors Score", "Bachelors Year",
+                "Masters Degree", "Masters Score", "Masters Year",
+                "Doctorate Degree", "Doctorate Score", "Doctorate Year",
+                "Total Exp (Yrs)", "Latest Company", "Latest Role", "Status"
             ]
             
-            # Education (Grad, PG, PhD)
-            for level in ['undergrad', 'postgrad', 'phd']:
-                entries = [e for e in full_c.higher_education if e.level == level][:3]
-                for i in range(3):
-                    if i < len(entries):
-                        row.extend([entries[i].university, entries[i].degree_name, f"{entries[i].score_value} {entries[i].score_type}"])
-                    else:
-                        row.extend(["", "", ""])
-
-            # Publications
-            for ptype in ['book', 'chapter', 'paper']:
-                entries = [p for p in full_c.publications if p.pub_type == ptype][:3]
-                for i in range(3):
-                    if i < len(entries):
-                        row.append(entries[i].title)
-                        if ptype == 'chapter': row.append(entries[i].parent_book or "")
-                    else:
-                        row.append("")
-                        if ptype == 'chapter': row.append("")
-
-            # Work Experience
-            entries = sorted(full_c.work_experiences, key=lambda x: x.entry_order)[:3]
-            for i in range(3):
-                if i < len(entries):
-                    row.extend([entries[i].company_name, entries[i].role, str(entries[i].start_date), str(entries[i].end_date or "Present")])
-                else:
-                    row.extend(["", "", "", ""])
+            rows_to_write = []
+            for c in candidates_data:
+                full_c = db.query(models.CandidateMetadata).filter(models.CandidateMetadata.id == c['id']).first()
+                if not full_c: continue
+                
+                # Fetch qualifications
+                ug = next((e for e in full_c.higher_education if e.level == 'undergrad'), None)
+                pg = next((e for e in full_c.higher_education if e.level == 'postgrad'), None)
+                phd = next((e for e in full_c.higher_education if e.level == 'phd'), None)
+                
+                # Get latest work experience (by date or highest order)
+                latest_work = None
+                if full_c.work_experiences:
+                    latest_work = max(full_c.work_experiences, key=lambda x: x.start_date)
+                
+                row = [
+                    full_c.full_name,
+                    full_c.schooling.class_x_percentage if full_c.schooling else 0.0,
+                    full_c.schooling.class_xii_percentage if full_c.schooling else 0.0,
+                    ug.degree_name if ug else "",
+                    f"{ug.score_value} {ug.score_type}" if ug and ug.score_value else "",
+                    ug.grad_year if ug else "",
+                    pg.degree_name if pg else "",
+                    f"{pg.score_value} {pg.score_type}" if pg and pg.score_value else "",
+                    pg.grad_year if pg else "",
+                    phd.degree_name if phd else "", # thesis title
+                    f"{phd.score_value} {phd.score_type}" if phd and phd.score_value else "",
+                    phd.grad_year if phd else "",
+                    full_c.years_of_experience or 0.0,
+                    latest_work.company_name if latest_work else "",
+                    latest_work.role if latest_work else "",
+                    c['current_status']
+                ]
+                rows_to_write.append(row)
+                
+            merge_ranges = []
+            candidate_groups = []
+        else:
+            # Detailed Report (Grouped Roster)
+            headers = [
+                "Full Name", "Email", "Mobile", "DOB", "Gender", "State", "City", "Pincode", 
+                "Extracurriculars", "Total Exp (Yrs)", "Highest Edu", "Status", "Class X %", "Class XII %",
+                "Graduation Univ", "Graduation Degree", "Graduation Score", "Graduation Year",
+                "Postgrad Univ", "Postgrad Degree", "Postgrad Score", "Postgrad Year",
+                "PhD Univ", "PhD Thesis", "PhD Score", "PhD Year",
+                "Pub Type", "Pub Title", "Pub Source (Book/Journal)", "Scholar Link",
+                "Work Company", "Work Role", "Work Start", "Work End"
+            ]
             
-            rows.append(row)
+            rows_to_write = []
+            merge_ranges = []
+            candidate_groups = []
+            current_r = 2 # Row 1 is headers
+            
+            for c in candidates_data:
+                full_c = db.query(models.CandidateMetadata).filter(models.CandidateMetadata.id == c['id']).first()
+                if not full_c: continue
+                
+                undergrads = [e for e in full_c.higher_education if e.level == 'undergrad']
+                postgrads = [e for e in full_c.higher_education if e.level == 'postgrad']
+                phds = [e for e in full_c.higher_education if e.level == 'phd']
+                pubs = full_c.publications
+                works = sorted(full_c.work_experiences, key=lambda x: x.entry_order)
+                
+                max_rows = max(len(undergrads), len(postgrads), len(phds), len(pubs), len(works), 1)
+                
+                candidate_groups.append((current_r, current_r + max_rows - 1))
+                
+                # Setup merge ranges if max_rows > 1
+                if max_rows > 1:
+                    # Merge columns 1 to 14, and column 30 (Scholar Link)
+                    for col in list(range(1, 15)) + [30]:
+                        merge_ranges.append((current_r, current_r + max_rows - 1, col))
+                
+                for i in range(max_rows):
+                    row = [""] * 34
+                    if i == 0:
+                        # Basic details
+                        row[0] = full_c.full_name
+                        row[1] = full_c.email
+                        row[2] = full_c.mobile_no
+                        row[3] = str(full_c.dob)
+                        row[4] = full_c.gender
+                        row[5] = full_c.state
+                        row[6] = full_c.city
+                        row[7] = full_c.pincode
+                        row[8] = (full_c.links_about.extracurriculars if full_c.links_about else "") or ""
+                        row[9] = full_c.years_of_experience
+                        row[10] = c['highest_education']
+                        row[11] = c['current_status']
+                        row[12] = full_c.schooling.class_x_percentage if full_c.schooling else 0.0
+                        row[13] = full_c.schooling.class_xii_percentage if full_c.schooling else 0.0
+                        row[29] = (full_c.links_about.google_scholar if full_c.links_about else "") or ""
+                    
+                    # UG details
+                    if i < len(undergrads):
+                        row[14] = undergrads[i].university or ""
+                        row[15] = undergrads[i].degree_name or ""
+                        row[16] = f"{undergrads[i].score_value} {undergrads[i].score_type}" if undergrads[i].score_value else ""
+                        row[17] = undergrads[i].grad_year or ""
+                    
+                    # PG details
+                    if i < len(postgrads):
+                        row[18] = postgrads[i].university or ""
+                        row[19] = postgrads[i].degree_name or ""
+                        row[20] = f"{postgrads[i].score_value} {postgrads[i].score_type}" if postgrads[i].score_value else ""
+                        row[21] = postgrads[i].grad_year or ""
+                    
+                    # PhD details
+                    if i < len(phds):
+                        row[22] = phds[i].university or ""
+                        row[23] = phds[i].degree_name or "" # thesis title is saved as degree_name in models
+                        row[24] = f"{phds[i].score_value} {phds[i].score_type}" if phds[i].score_value else ""
+                        row[25] = phds[i].grad_year or ""
+                    
+                    # Publications
+                    if i < len(pubs):
+                        row[26] = pubs[i].pub_type or ""
+                        row[27] = pubs[i].title or ""
+                        row[28] = pubs[i].parent_book or ""
+                    
+                    # Work Experience
+                    if i < len(works):
+                        row[30] = works[i].company_name or ""
+                        row[31] = works[i].role or ""
+                        row[32] = str(works[i].start_date) if works[i].start_date else ""
+                        row[33] = str(works[i].end_date or "Present") if works[i].start_date else ""
+                    
+                    rows_to_write.append(row)
+                    current_r += 1
 
-        # 4. Generate Output
+        # 3. Generate Output
         if req.format == 'csv':
             si = StringIO()
             cw = csv.writer(si)
             cw.writerow(headers)
-            cw.writerows(rows)
+            cw.writerows(rows_to_write)
             si.seek(0)
             return StreamingResponse(
                 iter([si.getvalue()]),
@@ -1244,7 +1323,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 headers={"Content-Disposition": f"attachment; filename=applicants_{job_id}.csv"}
             )
         else:
-            # XLSX using openpyxl directly (no pandas)
+            # XLSX using openpyxl directly
             output = BytesIO()
             wb = Workbook()
             ws = wb.active
@@ -1254,22 +1333,72 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             header_fill = PatternFill(start_color='1E3A8A', end_color='1E3A8A', fill_type='solid')
             header_font = Font(bold=True, color='FFFFFF')
             
+            thin_border = Border(
+                left=Side(style='thin', color='CBD5E1'),
+                right=Side(style='thin', color='CBD5E1'),
+                top=Side(style='thin', color='CBD5E1'),
+                bottom=Side(style='thin', color='CBD5E1')
+            )
+
             # Write Headers
-            for col, header in enumerate(headers, 1):
-                cell = ws.cell(row=1, column=col, value=header)
+            for col_idx, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col_idx, value=header)
                 cell.fill = header_fill
                 cell.font = header_font
-                cell.alignment = Alignment(horizontal='center')
+                cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
 
             # Write Data
-            for r_idx, row_data in enumerate(rows, 2):
+            for r_idx, row_data in enumerate(rows_to_write, 2):
                 for c_idx, value in enumerate(row_data, 1):
-                    ws.cell(row=r_idx, column=c_idx, value=value)
+                    cell = ws.cell(row=r_idx, column=c_idx, value=value)
+                    cell.border = thin_border
+                    
+                    # Alignments
+                    if req.report_type == 'standardized':
+                        # Standardized aligns
+                        if c_idx in [2, 3, 5, 6, 8, 9, 11, 12, 13, 16]:
+                            cell.alignment = Alignment(horizontal='center', vertical='center')
+                        else:
+                            cell.alignment = Alignment(horizontal='left', vertical='center')
+                    else:
+                        # Detailed aligns
+                        if c_idx in [3, 4, 5, 10, 11, 12, 13, 14, 17, 18, 21, 22, 25, 26, 27, 33, 34]:
+                            cell.alignment = Alignment(horizontal='center', vertical='top')
+                        else:
+                            cell.alignment = Alignment(horizontal='left', vertical='top')
 
-            # Auto-width
+            # Apply merges (only for detailed report type)
+            if req.report_type == 'detailed':
+                for start_r, end_r, col in merge_ranges:
+                    ws.merge_cells(start_row=start_r, start_column=col, end_row=end_r, end_column=col)
+                    # Align the top merged cell
+                    h_align = 'center' if col in [3, 4, 5, 10, 11, 12, 13, 14, 30] else 'left'
+                    ws.cell(row=start_r, column=col).alignment = Alignment(vertical='top', horizontal=h_align)
+
+                # Set bottom boundaries borders for groups
+                for start_r, end_r in candidate_groups:
+                    for col in range(1, len(headers) + 1):
+                        cell = ws.cell(row=end_r, column=col)
+                        cell.border = Border(
+                            left=Side(style='thin', color='CBD5E1'),
+                            right=Side(style='thin', color='CBD5E1'),
+                            top=cell.border.top or Side(style='thin', color='CBD5E1'),
+                            bottom=Side(style='medium', color='1E3A8A')
+                        )
+
+            # Auto-adjust column widths based on report type
             from openpyxl.utils import get_column_letter
             for col_idx in range(1, len(headers) + 1):
-                ws.column_dimensions[get_column_letter(col_idx)].width = 20
+                col_letter = get_column_letter(col_idx)
+                header_name = headers[col_idx - 1]
+                
+                # Check header categories for wider column adjustments
+                if "Details" in header_name or "Univ" in header_name or "Degree" in header_name or "Title" in header_name or "Company" in header_name or "Extracurriculars" in header_name:
+                    ws.column_dimensions[col_letter].width = 30
+                elif "Name" in header_name or "Email" in header_name or "Thesis" in header_name or "Source" in header_name:
+                    ws.column_dimensions[col_letter].width = 24
+                else:
+                    ws.column_dimensions[col_letter].width = 15
 
             wb.save(output)
             output.seek(0)
