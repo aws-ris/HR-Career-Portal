@@ -1169,6 +1169,34 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 output.seek(0)
                 return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
+        def format_score(value, score_type):
+            if not value:
+                return ""
+            stype = str(score_type).strip().lower() if score_type else ""
+            if "percent" in stype:
+                if value == int(value):
+                    return f"{int(value)}%"
+                return f"{value}%"
+            elif "cgpa" in stype:
+                if value == int(value):
+                    return f"{int(value)} CGPA"
+                return f"{value} CGPA"
+            else:
+                suffix = f" {score_type}" if score_type else ""
+                if value == int(value):
+                    return f"{int(value)}{suffix}"
+                return f"{value}{suffix}"
+
+        def format_schooling_score(schooling, field_name):
+            if not schooling:
+                return ""
+            value = getattr(schooling, field_name, None)
+            if value is None:
+                return ""
+            if value == int(value):
+                return int(value)
+            return value
+
         # 2. Build Headers and Rows based on report type
         if req.report_type == 'standardized':
             headers = [
@@ -1212,16 +1240,16 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 
                 row = [
                     full_c.full_name,
-                    full_c.schooling.class_x_percentage if full_c.schooling else 0.0,
-                    full_c.schooling.class_xii_percentage if full_c.schooling else 0.0,
+                    format_schooling_score(full_c.schooling, "class_x_percentage"),
+                    format_schooling_score(full_c.schooling, "class_xii_percentage"),
                     ug_text,
-                    f"{ug.score_value} {ug.score_type}" if ug and ug.score_value else "",
+                    format_score(ug.score_value, ug.score_type) if ug else "",
                     ug.grad_year if ug else "",
                     pg_text,
-                    f"{pg.score_value} {pg.score_type}" if pg and pg.score_value else "",
+                    format_score(pg.score_value, pg.score_type) if pg else "",
                     pg.grad_year if pg else "",
                     phd_text,
-                    f"{phd.score_value} {phd.score_type}" if phd and phd.score_value else "",
+                    format_score(phd.score_value, phd.score_type) if phd else "",
                     phd.grad_year if phd else "",
                     full_c.years_of_experience or 0.0,
                     latest_work_text
@@ -1288,29 +1316,29 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[8] = (full_c.links_about.extracurriculars if full_c.links_about else "") or ""
                         row[9] = full_c.years_of_experience
                         row[10] = c['highest_education']
-                        row[11] = full_c.schooling.class_x_percentage if full_c.schooling else 0.0
-                        row[12] = full_c.schooling.class_xii_percentage if full_c.schooling else 0.0
+                        row[11] = format_schooling_score(full_c.schooling, "class_x_percentage")
+                        row[12] = format_schooling_score(full_c.schooling, "class_xii_percentage")
                         row[28] = (full_c.links_about.google_scholar if full_c.links_about else "") or ""
                     
                     # UG details
                     if i < len(undergrads):
                         row[13] = undergrads[i].university or ""
                         row[14] = undergrads[i].degree_name or ""
-                        row[15] = f"{undergrads[i].score_value} {undergrads[i].score_type}" if undergrads[i].score_value else ""
+                        row[15] = format_score(undergrads[i].score_value, undergrads[i].score_type) if undergrads[i].score_value else ""
                         row[16] = undergrads[i].grad_year or ""
                     
                     # PG details
                     if i < len(postgrads):
                         row[17] = postgrads[i].university or ""
                         row[18] = postgrads[i].degree_name or ""
-                        row[19] = f"{postgrads[i].score_value} {postgrads[i].score_type}" if postgrads[i].score_value else ""
+                        row[19] = format_score(postgrads[i].score_value, postgrads[i].score_type) if postgrads[i].score_value else ""
                         row[20] = postgrads[i].grad_year or ""
                     
                     # PhD details
                     if i < len(phds):
                         row[21] = phds[i].university or ""
                         row[22] = phds[i].degree_name or "" # thesis title is saved as degree_name in models
-                        row[23] = f"{phds[i].score_value} {phds[i].score_type}" if phds[i].score_value else ""
+                        row[23] = format_score(phds[i].score_value, phds[i].score_type) if phds[i].score_value else ""
                         row[24] = phds[i].grad_year or ""
                     
                     # Publications
@@ -2061,6 +2089,16 @@ def fix_dakshin_candidates(db: Session = Depends(get_db)):
             db.query(models.CandidateHigherEducation).filter(models.CandidateHigherEducation.candidate_id == c.id).delete()
             db.query(models.CandidatePublication).filter(models.CandidatePublication.candidate_id == c.id).delete()
             db.query(models.CandidateWorkExperience).filter(models.CandidateWorkExperience.candidate_id == c.id).delete()
+            db.query(models.CandidateSchooling).filter(models.CandidateSchooling.candidate_id == c.id).delete()
+            
+            # Schooling Seeding
+            import random
+            sch_rec = models.CandidateSchooling(
+                candidate_id=c.id,
+                class_x_percentage=round(random.uniform(80.0, 98.0), 1),
+                class_xii_percentage=round(random.uniform(80.0, 98.0), 1)
+            )
+            db.add(sch_rec)
             
             # 4. Insert new qualifications
             # UG
@@ -2144,7 +2182,9 @@ def fix_dakshin_candidates(db: Session = Depends(get_db)):
                 "email": c.email,
                 "city": c.city,
                 "state": c.state,
-                "has_phd": ("phd_uni" in p)
+                "has_phd": ("phd_uni" in p),
+                "class_x_percentage": sch_rec.class_x_percentage,
+                "class_xii_percentage": sch_rec.class_xii_percentage
             })
             
         db.commit()
