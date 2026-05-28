@@ -1176,7 +1176,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 "Bachelors (UG)", "Bachelors Score", "Bachelors Year",
                 "Masters (PG)", "Masters Score", "Masters Year",
                 "Doctorate (PhD)", "Doctorate Score", "Doctorate Year",
-                "Total Exp (Yrs)", "Latest Employment", "Status"
+                "Total Exp (Yrs)", "Latest Employment"
             ]
             
             rows_to_write = []
@@ -1224,8 +1224,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     f"{phd.score_value} {phd.score_type}" if phd and phd.score_value else "",
                     phd.grad_year if phd else "",
                     full_c.years_of_experience or 0.0,
-                    latest_work_text,
-                    c['current_status']
+                    latest_work_text
                 ]
                 rows_to_write.append(row)
                 
@@ -1236,7 +1235,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             # Detailed Report (Grouped Roster)
             headers = [
                 "Full Name", "Email", "Mobile", "DOB", "Gender", "State", "City", "Pincode", 
-                "Extracurriculars", "Total Exp (Yrs)", "Highest Edu", "Status", "Class X %", "Class XII %",
+                "Extracurriculars", "Total Exp (Yrs)", "Highest Edu", "Class X %", "Class XII %",
                 "Graduation Univ", "Graduation Degree", "Graduation Score", "Graduation Year",
                 "Postgrad Univ", "Postgrad Degree", "Postgrad Score", "Postgrad Year",
                 "PhD Univ", "PhD Thesis", "PhD Score", "PhD Year",
@@ -1270,12 +1269,12 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 
                 # Setup merge ranges if max_rows > 1
                 if max_rows > 1:
-                    # Merge columns 1 to 14, and column 30 (Scholar Link)
-                    for col in list(range(1, 15)) + [30]:
+                    # Merge columns 1 to 13, and column 29 (Scholar Link)
+                    for col in list(range(1, 14)) + [29]:
                         merge_ranges.append((current_r, current_r + max_rows - 1, col))
                 
                 for i in range(max_rows):
-                    row = [""] * 34
+                    row = [""] * 33
                     if i == 0:
                         # Basic details
                         row[0] = full_c.full_name
@@ -1289,44 +1288,43 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[8] = (full_c.links_about.extracurriculars if full_c.links_about else "") or ""
                         row[9] = full_c.years_of_experience
                         row[10] = c['highest_education']
-                        row[11] = c['current_status']
-                        row[12] = full_c.schooling.class_x_percentage if full_c.schooling else 0.0
-                        row[13] = full_c.schooling.class_xii_percentage if full_c.schooling else 0.0
-                        row[29] = (full_c.links_about.google_scholar if full_c.links_about else "") or ""
+                        row[11] = full_c.schooling.class_x_percentage if full_c.schooling else 0.0
+                        row[12] = full_c.schooling.class_xii_percentage if full_c.schooling else 0.0
+                        row[28] = (full_c.links_about.google_scholar if full_c.links_about else "") or ""
                     
                     # UG details
                     if i < len(undergrads):
-                        row[14] = undergrads[i].university or ""
-                        row[15] = undergrads[i].degree_name or ""
-                        row[16] = f"{undergrads[i].score_value} {undergrads[i].score_type}" if undergrads[i].score_value else ""
-                        row[17] = undergrads[i].grad_year or ""
+                        row[13] = undergrads[i].university or ""
+                        row[14] = undergrads[i].degree_name or ""
+                        row[15] = f"{undergrads[i].score_value} {undergrads[i].score_type}" if undergrads[i].score_value else ""
+                        row[16] = undergrads[i].grad_year or ""
                     
                     # PG details
                     if i < len(postgrads):
-                        row[18] = postgrads[i].university or ""
-                        row[19] = postgrads[i].degree_name or ""
-                        row[20] = f"{postgrads[i].score_value} {postgrads[i].score_type}" if postgrads[i].score_value else ""
-                        row[21] = postgrads[i].grad_year or ""
+                        row[17] = postgrads[i].university or ""
+                        row[18] = postgrads[i].degree_name or ""
+                        row[19] = f"{postgrads[i].score_value} {postgrads[i].score_type}" if postgrads[i].score_value else ""
+                        row[20] = postgrads[i].grad_year or ""
                     
                     # PhD details
                     if i < len(phds):
-                        row[22] = phds[i].university or ""
-                        row[23] = phds[i].degree_name or "" # thesis title is saved as degree_name in models
-                        row[24] = f"{phds[i].score_value} {phds[i].score_type}" if phds[i].score_value else ""
-                        row[25] = phds[i].grad_year or ""
+                        row[21] = phds[i].university or ""
+                        row[22] = phds[i].degree_name or "" # thesis title is saved as degree_name in models
+                        row[23] = f"{phds[i].score_value} {phds[i].score_type}" if phds[i].score_value else ""
+                        row[24] = phds[i].grad_year or ""
                     
                     # Publications
                     if i < len(pubs):
-                        row[26] = pubs[i].pub_type or ""
-                        row[27] = pubs[i].title or ""
-                        row[28] = pubs[i].parent_book or ""
+                        row[25] = pubs[i].pub_type or ""
+                        row[26] = pubs[i].title or ""
+                        row[27] = pubs[i].parent_book or ""
                     
                     # Work Experience
                     if i < len(works):
-                        row[30] = works[i].company_name or ""
-                        row[31] = works[i].role or ""
-                        row[32] = str(works[i].start_date) if works[i].start_date else ""
-                        row[33] = str(works[i].end_date or "Present") if works[i].start_date else ""
+                        row[29] = works[i].company_name or ""
+                        row[30] = works[i].role or ""
+                        row[31] = str(works[i].start_date) if works[i].start_date else ""
+                        row[32] = str(works[i].end_date or "Present") if works[i].start_date else ""
                     
                     rows_to_write.append(row)
                     current_r += 1
@@ -1368,8 +1366,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 cell.font = header_font
                 
                 # Header vertical dividers for detailed view
-                r_style = 'medium' if (req.report_type == 'detailed' and col_idx in [14, 18, 22, 26, 29, 30, 34]) else 'thin'
-                r_color = '1E3A8A' if (req.report_type == 'detailed' and col_idx in [14, 18, 22, 26, 29, 30, 34]) else 'CBD5E1'
+                r_style = 'medium' if (req.report_type == 'detailed' and col_idx in [13, 17, 21, 25, 28, 29, 33]) else 'thin'
+                r_color = '1E3A8A' if (req.report_type == 'detailed' and col_idx in [13, 17, 21, 25, 28, 29, 33]) else 'CBD5E1'
                 
                 cell.border = Border(
                     left=Side(style='thin', color='CBD5E1'),
@@ -1379,14 +1377,16 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 )
                 cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
 
+            ws.row_dimensions[1].height = 28
+
             # Write Data
             for r_idx, row_data in enumerate(rows_to_write, 2):
                 for c_idx, value in enumerate(row_data, 1):
                     cell = ws.cell(row=r_idx, column=c_idx, value=value)
                     
                     # Right border vertical dividers
-                    r_style = 'medium' if (req.report_type == 'detailed' and c_idx in [14, 18, 22, 26, 29, 30, 34]) else 'thin'
-                    r_color = '1E3A8A' if (req.report_type == 'detailed' and c_idx in [14, 18, 22, 26, 29, 30, 34]) else 'CBD5E1'
+                    r_style = 'medium' if (req.report_type == 'detailed' and c_idx in [13, 17, 21, 25, 28, 29, 33]) else 'thin'
+                    r_color = '1E3A8A' if (req.report_type == 'detailed' and c_idx in [13, 17, 21, 25, 28, 29, 33]) else 'CBD5E1'
                     
                     cell.border = Border(
                         left=Side(style='thin', color='CBD5E1'),
@@ -1397,14 +1397,14 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     
                     # Alignments
                     if req.report_type == 'standardized':
-                        # Standardized aligns (15 columns total)
-                        if c_idx in [2, 3, 5, 6, 8, 9, 11, 12, 13, 15]:
+                        # Standardized aligns (14 columns total)
+                        if c_idx in [2, 3, 5, 6, 8, 9, 11, 12, 13]:
                             cell.alignment = Alignment(horizontal='center', vertical='center')
                         else:
                             cell.alignment = Alignment(horizontal='left', vertical='center')
                     else:
                         # Detailed aligns
-                        if c_idx in [3, 4, 5, 10, 11, 12, 13, 14, 17, 18, 21, 22, 25, 26, 27, 33, 34]:
+                        if c_idx in [3, 4, 5, 10, 11, 12, 13, 16, 17, 20, 21, 24, 25, 26, 29, 32, 33]:
                             cell.alignment = Alignment(horizontal='center', vertical='top')
                         else:
                             cell.alignment = Alignment(horizontal='left', vertical='top')
@@ -1414,15 +1414,15 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 for start_r, end_r, col in merge_ranges:
                     ws.merge_cells(start_row=start_r, start_column=col, end_row=end_r, end_column=col)
                     # Align the top merged cell
-                    h_align = 'center' if col in [3, 4, 5, 10, 11, 12, 13, 14, 30] else 'left'
+                    h_align = 'center' if col in [3, 4, 5, 10, 11, 12, 13, 29] else 'left'
                     ws.cell(row=start_r, column=col).alignment = Alignment(vertical='top', horizontal=h_align)
 
                 # Set bottom boundaries borders for groups (preserving vertical dividers)
                 for start_r, end_r in candidate_groups:
                     for col in range(1, len(headers) + 1):
                         cell = ws.cell(row=end_r, column=col)
-                        r_style = 'medium' if col in [14, 18, 22, 26, 29, 30, 34] else 'thin'
-                        r_color = '1E3A8A' if col in [14, 18, 22, 26, 29, 30, 34] else 'CBD5E1'
+                        r_style = 'medium' if col in [13, 17, 21, 25, 28, 29, 33] else 'thin'
+                        r_color = '1E3A8A' if col in [13, 17, 21, 25, 28, 29, 33] else 'CBD5E1'
                         cell.border = Border(
                             left=Side(style='thin', color='CBD5E1'),
                             right=Side(style=r_style, color=r_color),
