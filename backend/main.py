@@ -1405,9 +1405,9 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     else:
                         # Detailed aligns
                         if c_idx in [3, 4, 5, 10, 11, 12, 13, 16, 17, 20, 21, 24, 25, 26, 29, 32, 33]:
-                            cell.alignment = Alignment(horizontal='center', vertical='top')
+                            cell.alignment = Alignment(horizontal='center', vertical='top', wrap_text=True)
                         else:
-                            cell.alignment = Alignment(horizontal='left', vertical='top')
+                            cell.alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
 
             # Apply merges (only for detailed report type)
             if req.report_type == 'detailed':
@@ -1415,7 +1415,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     ws.merge_cells(start_row=start_r, start_column=col, end_row=end_r, end_column=col)
                     # Align the top merged cell
                     h_align = 'center' if col in [3, 4, 5, 10, 11, 12, 13, 29] else 'left'
-                    ws.cell(row=start_r, column=col).alignment = Alignment(vertical='top', horizontal=h_align)
+                    ws.cell(row=start_r, column=col).alignment = Alignment(vertical='top', horizontal=h_align, wrap_text=True)
 
                 # Set bottom boundaries borders for groups (preserving vertical dividers)
                 for start_r, end_r in candidate_groups:
@@ -1916,7 +1916,6 @@ def delete_job(job_id: str, db: Session = Depends(get_db)):
     return {"status": "deleted"}
 
 
-# ─────────────────────────────────────────────
 # Fix DAKSHIN Candidate Data Debug Route
 # ─────────────────────────────────────────────
 @app.post("/api/v1/debug/fix-dakshin-candidates")
@@ -1957,6 +1956,7 @@ def fix_dakshin_candidates(db: Session = Depends(get_db)):
                 "email_domain": "nipfp.org.in",
                 "grad_uni": "Delhi University (St. Stephen's)", "grad_deg": "B.A. (Hons) Economics", "grad_score": 8.5, "grad_score_type": "CGPA", "grad_year": 2021,
                 "pg_uni": "Jawaharlal Nehru University (JNU)", "pg_deg": "M.A. Economics", "pg_score": 78.5, "pg_score_type": "Percentage", "pg_year": 2023,
+                "phd_uni": "Jawaharlal Nehru University", "phd_thesis": "Public Debt and Fiscal Sustainability in Developing Nations", "phd_score": 8.0, "phd_score_type": "CGPA", "phd_year": 2026,
                 "work": [{"role": "Research Assistant", "comp": "National Institute of Public Finance and Policy (NIPFP)", "start": datetime.date(2023, 7, 1), "end": datetime.date(2025, 6, 30)}],
                 "pubs": [{"pub_type": "paper", "title": "Financing Green Infrastructure in Indian Cities: Challenges and Opportunities", "parent": None}],
                 "extracurriculars": "Avid debater and classical music enthusiast.",
@@ -1966,6 +1966,7 @@ def fix_dakshin_candidates(db: Session = Depends(get_db)):
                 "email_domain": "igidr.ac.in",
                 "grad_uni": "St. Xavier's College, Mumbai", "grad_deg": "B.Sc. Economics", "grad_score": 79.0, "grad_score_type": "Percentage", "grad_year": 2020,
                 "pg_uni": "Indira Gandhi Institute of Development Research (IGIDR)", "pg_deg": "M.Sc. Development Finance", "pg_score": 8.2, "pg_score_type": "CGPA", "pg_year": 2022,
+                "phd_uni": "Indira Gandhi Institute of Development Research (IGIDR)", "phd_thesis": "Empirical Essays on Micro-credit and Rural Development", "phd_score": 0.0, "phd_score_type": "Percentage", "phd_year": 2025,
                 "work": [{"role": "Research Associate", "comp": "Centre for Monitoring Indian Economy (CMIE)", "start": datetime.date(2022, 8, 15), "end": datetime.date(2024, 5, 31)}],
                 "pubs": [{"pub_type": "paper", "title": "Determinants of Microfinance Repayment Rates in Rural Maharashtra", "parent": None}],
                 "extracurriculars": "Volunteered at local NGOs teaching financial literacy.",
@@ -2005,6 +2006,7 @@ def fix_dakshin_candidates(db: Session = Depends(get_db)):
                 "email_domain": "presidency.edu",
                 "grad_uni": "Presidency University, Kolkata", "grad_deg": "B.Sc. Economics", "grad_score": 8.6, "grad_score_type": "CGPA", "grad_year": 2020,
                 "pg_uni": "Calcutta University", "pg_deg": "M.Sc. Economics", "pg_score": 77.0, "pg_score_type": "Percentage", "pg_year": 2022,
+                "phd_uni": "London School of Economics (LSE)", "phd_thesis": "Essays on Development Finance and Fiscal Federalism", "phd_score": 0.0, "phd_score_type": "Percentage", "phd_year": 2025,
                 "work": [{"role": "Junior Economist", "comp": "National Institute of Public Finance and Policy", "start": datetime.date(2022, 7, 1), "end": datetime.date(2024, 6, 30)}],
                 "pubs": [{"pub_type": "paper", "title": "Municipal Bonds as an Alternative Source of Development Finance in India", "parent": None}],
                 "extracurriculars": "Plays chess competitively.",
@@ -2087,6 +2089,20 @@ def fix_dakshin_candidates(db: Session = Depends(get_db)):
             )
             db.add(pg_rec)
             
+            # PhD
+            if "phd_uni" in p:
+                phd_rec = models.CandidateHigherEducation(
+                    candidate_id=c.id,
+                    level='phd',
+                    university=p["phd_uni"],
+                    degree_name=p["phd_thesis"],
+                    score_type=p["phd_score_type"],
+                    score_value=p["phd_score"],
+                    grad_year=p["phd_year"],
+                    entry_order=3
+                )
+                db.add(phd_rec)
+            
             # 5. Insert new work experiences
             for w_idx, w in enumerate(p["work"], 1):
                 work_rec = models.CandidateWorkExperience(
@@ -2127,7 +2143,8 @@ def fix_dakshin_candidates(db: Session = Depends(get_db)):
                 "gender": c.gender,
                 "email": c.email,
                 "city": c.city,
-                "state": c.state
+                "state": c.state,
+                "has_phd": ("phd_uni" in p)
             })
             
         db.commit()
