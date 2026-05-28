@@ -26,6 +26,12 @@ export default function ApplicationForm() {
   const [triedSubmit, setTriedSubmit] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
+  // Edit states for Step 5 Preview
+  const [editPersonal, setEditPersonal] = useState(false);
+  const [editEducation, setEditEducation] = useState(false);
+  const [editPublications, setEditPublications] = useState(false);
+  const [editWork, setEditWork] = useState(false);
+
   // Step 1
   const [position_applied, setPosition] = useState(() => savedDraft.position_applied || 'Professor');
   const [admin_department, setAdminDept] = useState(() => savedDraft.admin_department || 'IT');
@@ -237,6 +243,310 @@ export default function ApplicationForm() {
 
   const countWords = (str) => str.trim().split(/\s+/).filter(Boolean).length;
 
+  const removeEntry = (setter, state, index) => {
+    const fresh = [...state];
+    fresh.splice(index, 1);
+    setter(fresh);
+  };
+
+  const handleToggleEditPersonal = () => {
+    if (editPersonal) {
+      // Validate Personal Info before saving
+      const errors = [];
+      if (!full_name.trim()) errors.push("Full Name is required.");
+      if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) errors.push("A valid Email ID is required.");
+      if (!mobile_number || !/^\d{10}$/.test(mobile_number)) errors.push("Mobile Number must be exactly 10 digits.");
+      if (!dob) {
+        errors.push("Date of Birth is required.");
+      } else {
+        const dobErr = validateDob(dob);
+        if (dobErr) errors.push(dobErr);
+      }
+      if (!gender) errors.push("Gender is required.");
+      if (!candidateState) errors.push("State/Union Territory is required.");
+      if (!city.trim() || !/^[a-zA-Z\s]{2,100}$/.test(city.trim())) {
+        errors.push("City must be at least 2 characters and contain only letters.");
+      }
+      if (!pincode || !/^\d{6}$/.test(pincode)) errors.push("Pincode must be exactly 6 digits.");
+      if (extracurriculars && countWords(extracurriculars) > 100) {
+        errors.push("Extracurriculars must not exceed 100 words.");
+      }
+
+      if (errors.length > 0) {
+        alert(errors.join("\n"));
+        return; // Stay in edit mode
+      }
+    }
+    setEditPersonal(!editPersonal);
+  };
+
+  const handleToggleEditEducation = () => {
+    if (editEducation) {
+      // Validate education details
+      const errors = [];
+      const valClassX = parseFloat(classX);
+      if (isNaN(valClassX) || valClassX < 0 || valClassX > 100) {
+        errors.push("Class X Percentage must be a number between 0 and 100.");
+      }
+      const valClassXII = parseFloat(classXII);
+      if (isNaN(valClassXII) || valClassXII < 0 || valClassXII > 100) {
+        errors.push("Class XII Percentage must be a number between 0 and 100.");
+      }
+      grads.forEach((g, i) => {
+        if (i === 0 || g.university || g.degree_name || g.score_value) {
+          if (!g.university.trim()) errors.push(`Graduation #${i + 1}: University is required.`);
+          if (!g.degree_name.trim()) errors.push(`Graduation #${i + 1}: Degree Name is required.`);
+          const score = parseFloat(g.score_value);
+          if (isNaN(score) || score < 0) {
+            errors.push(`Graduation #${i + 1}: Valid Score is required.`);
+          } else if (g.score_type === 'Percentage' && score > 100) {
+            errors.push(`Graduation #${i + 1}: Percentage score cannot exceed 100.`);
+          } else if (g.score_type === 'CGPA' && score > 10) {
+            errors.push(`Graduation #${i + 1}: CGPA score cannot exceed 10.`);
+          }
+        }
+      });
+      postGrads.forEach((g, i) => {
+        if (g.university || g.degree_name || g.score_value) {
+          if (!g.university.trim()) errors.push(`Post Graduation #${i + 1}: University is required.`);
+          if (!g.degree_name.trim()) errors.push(`Post Graduation #${i + 1}: Degree Name is required.`);
+          const score = parseFloat(g.score_value);
+          if (isNaN(score) || score < 0) {
+            errors.push(`Post Graduation #${i + 1}: Valid Score is required.`);
+          } else if (g.score_type === 'Percentage' && score > 100) {
+            errors.push(`Post Graduation #${i + 1}: Percentage score cannot exceed 100.`);
+          } else if (g.score_type === 'CGPA' && score > 10) {
+            errors.push(`Post Graduation #${i + 1}: CGPA score cannot exceed 10.`);
+          }
+        }
+      });
+      doctorates.forEach((g, i) => {
+        if (g.university || g.thesis_title || g.score_value) {
+          if (!g.university.trim()) errors.push(`Doctorate #${i + 1}: University is required.`);
+          if (!g.thesis_title.trim()) errors.push(`Doctorate #${i + 1}: Thesis Title is required.`);
+          const score = parseFloat(g.score_value);
+          if (isNaN(score) || score < 0) {
+            errors.push(`Doctorate #${i + 1}: Valid Score is required.`);
+          } else if (g.score_type === 'Percentage' && score > 100) {
+            errors.push(`Doctorate #${i + 1}: Percentage score cannot exceed 100.`);
+          } else if (g.score_type === 'CGPA' && score > 10) {
+            errors.push(`Doctorate #${i + 1}: CGPA score cannot exceed 10.`);
+          }
+        }
+      });
+
+      if (errors.length > 0) {
+        alert(errors.join("\n"));
+        return;
+      }
+    }
+    setEditEducation(!editEducation);
+  };
+
+  const handleToggleEditPublications = () => {
+    if (editPublications) {
+      const errors = [];
+      if (!pubTypes.none) {
+        if (pubTypes.books) {
+          books.forEach((b, i) => {
+            if (b.title && !b.title.trim()) errors.push(`Book #${i + 1}: Title cannot be blank.`);
+          });
+        }
+        if (pubTypes.chapters) {
+          chapters.forEach((c, i) => {
+            if ((c.title || c.parent_title) && (!c.title.trim() || !c.parent_title.trim())) {
+              errors.push(`Chapter #${i + 1}: Both Chapter Name and Corresponding Book are required.`);
+            }
+          });
+        }
+        if (pubTypes.papers) {
+          papers.forEach((p, i) => {
+            if (p.title && !p.title.trim()) errors.push(`Paper #${i + 1}: Title cannot be blank.`);
+          });
+        }
+      }
+      if (scholarLink && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(scholarLink)) {
+        errors.push("Google Scholar Link must be a valid URL.");
+      }
+
+      if (errors.length > 0) {
+        alert(errors.join("\n"));
+        return;
+      }
+    }
+    setEditPublications(!editPublications);
+  };
+
+  const handleToggleEditWork = () => {
+    if (editWork) {
+      const errors = [];
+      if (!resumeFile) {
+        errors.push("Resume (PDF) is required.");
+      }
+      if (expYears === '' && expMonths === '') {
+        errors.push("Professional experience in years and months is required.");
+      } else {
+        const yrs = parseInt(expYears) || 0;
+        const mths = parseInt(expMonths) || 0;
+        if (yrs < 0 || mths < 0 || mths > 11) {
+          errors.push("Please enter valid Experience Years (>=0) and Months (0-11).");
+        }
+      }
+
+      if (hasWork) {
+        workExps.forEach((w, i) => {
+          if (!w.company_name.trim() || !w.role.trim() || !w.start_date) {
+            errors.push(`Work Entry #${i + 1}: Company Name, Position, and Start Date are required.`);
+          }
+          if (w.description && countWords(w.description) > 40) {
+            errors.push(`Work Entry #${i + 1}: Description exceeds 40 words.`);
+          }
+        });
+      }
+
+      if (errors.length > 0) {
+        alert(errors.join("\n"));
+        return;
+      }
+    }
+    setEditWork(!editWork);
+  };
+
+  const validateAllFields = () => {
+    const errors = [];
+
+    // Personal Info (Step 1)
+    if (!full_name.trim()) errors.push("Full Name is required.");
+    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) errors.push("A valid Email ID is required.");
+    if (!mobile_number || !/^\d{10}$/.test(mobile_number)) errors.push("Mobile Number must be exactly 10 digits.");
+    if (!dob) {
+      errors.push("Date of Birth is required.");
+    } else {
+      const dobErr = validateDob(dob);
+      if (dobErr) errors.push(dobErr);
+    }
+    if (!gender) errors.push("Gender is required.");
+    if (!candidateState) errors.push("State/Union Territory is required.");
+    if (!city.trim() || !/^[a-zA-Z\s]{2,100}$/.test(city.trim())) {
+      errors.push("City must be at least 2 characters and contain only letters.");
+    }
+    if (!pincode || !/^\d{6}$/.test(pincode)) errors.push("Pincode must be exactly 6 digits.");
+    if (extracurriculars && countWords(extracurriculars) > 100) {
+      errors.push("Extracurriculars must not exceed 100 words.");
+    }
+
+    // Education (Step 2)
+    const valClassX = parseFloat(classX);
+    if (isNaN(valClassX) || valClassX < 0 || valClassX > 100) {
+      errors.push("Class X Percentage must be a number between 0 and 100.");
+    }
+    const valClassXII = parseFloat(classXII);
+    if (isNaN(valClassXII) || valClassXII < 0 || valClassXII > 100) {
+      errors.push("Class XII Percentage must be a number between 0 and 100.");
+    }
+
+    // Graduation
+    grads.forEach((g, i) => {
+      if (i === 0 || g.university || g.degree_name || g.score_value) {
+        if (!g.university.trim()) errors.push(`Graduation #${i + 1}: University is required.`);
+        if (!g.degree_name.trim()) errors.push(`Graduation #${i + 1}: Degree Name is required.`);
+        const score = parseFloat(g.score_value);
+        if (isNaN(score) || score < 0) {
+          errors.push(`Graduation #${i + 1}: Valid Score is required.`);
+        } else if (g.score_type === 'Percentage' && score > 100) {
+          errors.push(`Graduation #${i + 1}: Percentage score cannot exceed 100.`);
+        } else if (g.score_type === 'CGPA' && score > 10) {
+          errors.push(`Graduation #${i + 1}: CGPA score cannot exceed 10.`);
+        }
+      }
+    });
+
+    // PG
+    postGrads.forEach((g, i) => {
+      if (g.university || g.degree_name || g.score_value) {
+        if (!g.university.trim()) errors.push(`Post Graduation #${i + 1}: University is required.`);
+        if (!g.degree_name.trim()) errors.push(`Post Graduation #${i + 1}: Degree Name is required.`);
+        const score = parseFloat(g.score_value);
+        if (isNaN(score) || score < 0) {
+          errors.push(`Post Graduation #${i + 1}: Valid Score is required.`);
+        } else if (g.score_type === 'Percentage' && score > 100) {
+          errors.push(`Post Graduation #${i + 1}: Percentage score cannot exceed 100.`);
+        } else if (g.score_type === 'CGPA' && score > 10) {
+          errors.push(`Post Graduation #${i + 1}: CGPA score cannot exceed 10.`);
+        }
+      }
+    });
+
+    // PhD
+    doctorates.forEach((g, i) => {
+      if (g.university || g.thesis_title || g.score_value) {
+        if (!g.university.trim()) errors.push(`Doctorate #${i + 1}: University is required.`);
+        if (!g.thesis_title.trim()) errors.push(`Doctorate #${i + 1}: Thesis Title is required.`);
+        const score = parseFloat(g.score_value);
+        if (isNaN(score) || score < 0) {
+          errors.push(`Doctorate #${i + 1}: Valid Score is required.`);
+        } else if (g.score_type === 'Percentage' && score > 100) {
+          errors.push(`Doctorate #${i + 1}: Percentage score cannot exceed 100.`);
+        } else if (g.score_type === 'CGPA' && score > 10) {
+          errors.push(`Doctorate #${i + 1}: CGPA score cannot exceed 10.`);
+        }
+      }
+    });
+
+    // Publications (Step 3)
+    if (!pubTypes.none) {
+      if (pubTypes.books) {
+        books.forEach((b, i) => {
+          if (b.title && !b.title.trim()) errors.push(`Book #${i + 1}: Title cannot be blank.`);
+        });
+      }
+      if (pubTypes.chapters) {
+        chapters.forEach((c, i) => {
+          if ((c.title || c.parent_title) && (!c.title.trim() || !c.parent_title.trim())) {
+            errors.push(`Chapter #${i + 1}: Both Chapter Name and Corresponding Book are required.`);
+          }
+        });
+      }
+      if (pubTypes.papers) {
+        papers.forEach((p, i) => {
+          if (p.title && !p.title.trim()) errors.push(`Paper #${i + 1}: Title cannot be blank.`);
+        });
+      }
+    }
+    if (scholarLink && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(scholarLink)) {
+      errors.push("Google Scholar Link must be a valid URL.");
+    }
+
+    // Work Experience (Step 4)
+    if (!resumeFile) {
+      errors.push("Resume (PDF) is required.");
+    }
+    if (expYears === '' && expMonths === '') {
+      errors.push("Professional experience in years and months is required.");
+    } else {
+      const yrs = parseInt(expYears) || 0;
+      const mths = parseInt(expMonths) || 0;
+      if (yrs < 0 || mths < 0 || mths > 11) {
+        errors.push("Please enter valid Experience Years (>=0) and Months (0-11).");
+      }
+    }
+
+    if (hasWork) {
+      workExps.forEach((w, i) => {
+        if (w.company_name || w.role || w.start_date || w.description) {
+          if (!w.company_name.trim()) errors.push(`Work Entry #${i + 1}: Company Name is required.`);
+          if (!w.role.trim()) errors.push(`Work Entry #${i + 1}: Position Held is required.`);
+          if (!w.start_date) errors.push(`Work Entry #${i + 1}: Start Date is required.`);
+          if (w.description && countWords(w.description) > 40) {
+            errors.push(`Work Entry #${i + 1}: Description exceeds 40 words.`);
+          }
+        }
+      });
+    }
+
+    return errors.length > 0 ? errors : null;
+  };
+
   const handleNext = (e) => {
     e.preventDefault();
     setTriedSubmit(true);
@@ -299,8 +609,44 @@ export default function ApplicationForm() {
     setTriedSubmit(false);
   };
 
-  const handleSubmit = async (e) => {
+  const handleProceedToPreview = (e) => {
     e.preventDefault();
+    setTriedSubmit(true);
+
+    if (!resumeFile) {
+      alert("Please upload your Resume (PDF) first.");
+      return;
+    }
+    if (expYears === '' && expMonths === '') {
+      alert("Please specify your professional experience in years/months.");
+      return;
+    }
+    const yrs = parseInt(expYears) || 0;
+    const mths = parseInt(expMonths) || 0;
+    if (yrs < 0 || mths < 0 || mths > 11) {
+      alert("Please enter valid Experience Years (>=0) and Months (0-11).");
+      return;
+    }
+
+    if (hasWork) {
+      for (let i = 0; i < workExps.length; i++) {
+        const w = workExps[i];
+        if (!w.company_name || !w.role || !w.start_date) {
+          alert(`Please fill in all required fields (Company, Position, Start Date) for Work Entry #${i + 1}.`);
+          return;
+        }
+        if (w.description && countWords(w.description) > 40) {
+          alert(`Description for Work Entry #${i + 1} exceeds 40 words.`);
+          return;
+        }
+      }
+    }
+
+    setStep(5);
+    setTriedSubmit(false);
+  };
+
+  const executeFinalSubmit = async () => {
     setTriedSubmit(true);
     setSubmitError("");
     
@@ -393,18 +739,51 @@ export default function ApplicationForm() {
         try {
           const err = await res.json();
           errMessage = err.detail || JSON.stringify(err);
-        } catch (jsonErr) {
+        } catch {
           errMessage = `Status ${res.status}: ${res.statusText || 'Internal Server Error'}`;
         }
         setSubmitError("Database Rejection: " + errMessage);
       }
-    } catch (err) {
+    } catch {
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         setSubmitError("Could not connect to Backend. Ensure uvicorn is running on port 8000.");
       } else {
         setSubmitError("Could not connect to the server. Please check your internet connection or try again later.");
       }
     }
+  };
+
+  const handleSaveAsPdf = () => {
+    // Close any open edits
+    setEditPersonal(false);
+    setEditEducation(false);
+    setEditPublications(false);
+    setEditWork(false);
+
+    // Trigger printing
+    setTimeout(() => {
+      window.print();
+    }, 150);
+  };
+
+  const handleFinalSubmissionClick = () => {
+    // Close any open edits first
+    setEditPersonal(false);
+    setEditEducation(false);
+    setEditPublications(false);
+    setEditWork(false);
+
+    setTimeout(async () => {
+      const errors = validateAllFields();
+      if (errors) {
+        alert("Cannot submit application because there are errors in your data:\n\n• " + errors.join("\n• "));
+        return;
+      }
+
+      if (window.confirm("Are you sure you want to submit your application? This action cannot be undone.")) {
+        await executeFinalSubmit();
+      }
+    }, 100);
   };
 
   const dividerStyle = { border: '0', borderTop: '1px solid var(--border-color)', margin: '2rem 0' };
@@ -429,7 +808,8 @@ export default function ApplicationForm() {
           <span className={`step-pill ${step >= 1 ? 'active' : ''}`}>1. Info</span>
           <span className={`step-pill ${step >= 2 ? 'active' : ''}`}>2. Education</span>
           <span className={`step-pill ${step >= 3 ? 'active' : ''}`}>3. Publications</span>
-          <span className={`step-pill ${step >= 4 ? 'active' : ''}`}>4. Work & Submit</span>
+          <span className={`step-pill ${step >= 4 ? 'active' : ''}`}>4. Work Experience</span>
+          <span className={`step-pill ${step >= 5 ? 'active' : ''}`}>5. Review & Submit</span>
         </div>
 
         {submitError && <div style={{background: '#fef2f2', color: '#ef4444', padding: '1rem', borderRadius: '8px', marginBottom: '1rem'}}>{submitError}</div>}
@@ -469,7 +849,8 @@ export default function ApplicationForm() {
           </div>
         )}
 
-        <form onSubmit={step === 4 ? handleSubmit : handleNext} style={{ display: step === 0 ? 'none' : 'block' }}>
+        {step < 5 && (
+          <form onSubmit={step === 4 ? handleProceedToPreview : handleNext} style={{ display: step === 0 ? 'none' : 'block' }}>
           {step === 1 && (
             <>
               <div className="form-group">
@@ -808,11 +1189,614 @@ export default function ApplicationForm() {
               <hr style={dividerStyle} />
               <div style={{display: 'flex'}}>
                 <button type="button" className="btn-secondary" onClick={() => setStep(3)}>Back</button>
-                <button type="submit" className="btn-primary" style={{flex: 1, backgroundColor: 'var(--brand-accent)', color: '#000'}}>Final Submit Form</button>
+                <button type="submit" className="btn-primary" style={{flex: 1, backgroundColor: 'var(--brand-accent)', color: '#000'}}>Proceed to Preview</button>
               </div>
             </>
           )}
         </form>
+        )}
+
+        {step === 5 && (
+          <div className="resume-preview-container">
+            <div className="resume-preview-card">
+              {/* Resume Header */}
+              <div className="resume-header">
+                {editPersonal ? (
+                  <div className="resume-inline-grid-edit">
+                    <div className="resume-inline-group">
+                      <label className="resume-inline-label">Full Name</label>
+                      <input 
+                        className="resume-inline-input"
+                        value={full_name}
+                        onChange={e => setFullName(e.target.value)}
+                      />
+                    </div>
+                    <div className="resume-inline-group">
+                      <label className="resume-inline-label">Position Applied</label>
+                      <select 
+                        className="resume-inline-input"
+                        value={position_applied}
+                        onChange={e => setPosition(e.target.value)}
+                        disabled={!!jobId}
+                      >
+                        <option>Professor</option>
+                        <option>Associate Professor</option>
+                        <option>Assistant Professor</option>
+                        <option>Consultant</option>
+                        <option>Research Assistant</option>
+                        <option>Admin</option>
+                      </select>
+                    </div>
+                    {position_applied === 'Admin' && (
+                      <div className="resume-inline-group">
+                        <label className="resume-inline-label">Department</label>
+                        <select 
+                          className="resume-inline-input"
+                          value={admin_department}
+                          onChange={e => setAdminDept(e.target.value)}
+                          disabled={!!jobId}
+                        >
+                          <option>IT</option>
+                          <option>HR</option>
+                          <option>Finance</option>
+                          <option>Library</option>
+                          <option>Other</option>
+                        </select>
+                      </div>
+                    )}
+                    <div className="resume-inline-group">
+                      <label className="resume-inline-label">Email ID</label>
+                      <input 
+                        type="email"
+                        className="resume-inline-input"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                      />
+                    </div>
+                    <div className="resume-inline-group">
+                      <label className="resume-inline-label">Mobile Number</label>
+                      <input 
+                        className="resume-inline-input"
+                        value={mobile_number}
+                        onChange={e => setMobile(e.target.value)}
+                      />
+                    </div>
+                    <div className="resume-inline-group">
+                      <label className="resume-inline-label">Date of Birth</label>
+                      <input 
+                        className="resume-inline-input"
+                        value={dob}
+                        onChange={handleDobChange}
+                        placeholder="DD/MM/YYYY"
+                      />
+                    </div>
+                    <div className="resume-inline-group">
+                      <label className="resume-inline-label">Gender</label>
+                      <select 
+                        className="resume-inline-input"
+                        value={gender}
+                        onChange={e => setGender(e.target.value)}
+                      >
+                        <option value="">Select Gender</option>
+                        <option>Male</option>
+                        <option>Female</option>
+                        <option>Other</option>
+                        <option>Prefer not to say</option>
+                      </select>
+                    </div>
+                    <div className="resume-inline-group">
+                      <label className="resume-inline-label">State / UT</label>
+                      <select 
+                        className="resume-inline-input"
+                        value={candidateState}
+                        onChange={e => setCandidateState(e.target.value)}
+                      >
+                        <option value="">Select State / UT</option>
+                        {['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry'].map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="resume-inline-group">
+                      <label className="resume-inline-label">City</label>
+                      <input 
+                        className="resume-inline-input"
+                        value={city}
+                        onChange={e => setCity(e.target.value)}
+                      />
+                    </div>
+                    <div className="resume-inline-group">
+                      <label className="resume-inline-label">Pincode</label>
+                      <input 
+                        className="resume-inline-input"
+                        value={pincode}
+                        onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      />
+                    </div>
+                    <div className="resume-inline-group" style={{ gridColumn: 'span 2' }}>
+                      <label className="resume-inline-label">Extracurriculars</label>
+                      <textarea 
+                        className="resume-inline-input resume-inline-textarea"
+                        value={extracurriculars}
+                        onChange={e => setExtracurriculars(e.target.value)}
+                      />
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Current word count: {countWords(extracurriculars)}/100</div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="resume-title">{full_name || "Candidate Name"}</h2>
+                    <div className="resume-subtitle">
+                      {position_applied} {position_applied === 'Admin' ? `(${admin_department} Department)` : ''}
+                    </div>
+                    <div className="resume-contact-info">
+                      <span className="resume-contact-item">📧 {email}</span>
+                      <span className="resume-contact-item">📞 {mobile_number}</span>
+                      <span className="resume-contact-item">📍 {city}, {candidateState} - {pincode}</span>
+                      <span className="resume-contact-item">🎂 {dob}</span>
+                      <span className="resume-contact-item">👤 {gender}</span>
+                    </div>
+                  </>
+                )}
+                
+                <div className="resume-section-actions no-print" style={{ marginTop: '1rem', borderTop: 'none' }}>
+                  <button 
+                    type="button" 
+                    className="section-edit-btn" 
+                    onClick={handleToggleEditPersonal}
+                  >
+                    {editPersonal ? "Save Personal Info" : "Edit Personal Info"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Extracurriculars Summary (View Mode Only, when not editing header) */}
+              {!editPersonal && extracurriculars && (
+                <div className="resume-section">
+                  <div className="resume-section-title-container">
+                    <h3 className="resume-section-title">Personal Summary & Extracurriculars</h3>
+                  </div>
+                  <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontStyle: 'italic', lineHeight: '1.6' }}>
+                    "{extracurriculars}"
+                  </p>
+                </div>
+              )}
+
+              {/* Education Section */}
+              <div className="resume-section">
+                <div className="resume-section-title-container">
+                  <h3 className="resume-section-title">Education</h3>
+                  <button 
+                    type="button" 
+                    className="section-edit-btn no-print" 
+                    onClick={handleToggleEditEducation}
+                  >
+                    {editEducation ? "Save Education" : "Edit Education"}
+                  </button>
+                </div>
+
+                {editEducation ? (
+                  <div>
+                    <h4 style={{ marginBottom: '0.5rem' }}>Basic Schooling</h4>
+                    <div className="resume-inline-grid-edit" style={{ marginBottom: '1.5rem' }}>
+                      <div className="resume-inline-group">
+                        <label className="resume-inline-label">Class X Percentage</label>
+                        <input 
+                          type="number" step="0.01" max="100"
+                          className="resume-inline-input"
+                          value={classX}
+                          onChange={e => setClassX(e.target.value)}
+                        />
+                      </div>
+                      <div className="resume-inline-group">
+                        <label className="resume-inline-label">Class XII Percentage</label>
+                        <input 
+                          type="number" step="0.01" max="100"
+                          className="resume-inline-input"
+                          value={classXII}
+                          onChange={e => setClassXII(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <h4 style={{ marginBottom: '0.5rem' }}>Graduation Details (Min 1 required)</h4>
+                    {grads.map((g, i) => (
+                      <div className="resume-inline-grid-edit" key={i} style={{ marginBottom: '1rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">University</label>
+                          <input className="resume-inline-input" value={g.university} onChange={e => updateEntry(setGrads, grads, i, 'university', e.target.value)} />
+                        </div>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Degree Name</label>
+                          <input className="resume-inline-input" value={g.degree_name} onChange={e => updateEntry(setGrads, grads, i, 'degree_name', e.target.value)} />
+                        </div>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Score Type</label>
+                          <select className="resume-inline-input" value={g.score_type} onChange={e => updateEntry(setGrads, grads, i, 'score_type', e.target.value)}>
+                            <option>Percentage</option>
+                            <option>CGPA</option>
+                          </select>
+                        </div>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Score</label>
+                          <input type="number" step="0.01" className="resume-inline-input" value={g.score_value} onChange={e => updateEntry(setGrads, grads, i, 'score_value', e.target.value)} />
+                        </div>
+                        {grads.length > 1 && (
+                          <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setGrads, grads, i)}>❌ Remove Entry</button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    <button type="button" className="btn-secondary" style={{ marginTop: '0', marginBottom: '1.5rem' }} disabled={grads.length>=3} onClick={() => addEntry(setGrads, grads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '' })}>+ Add Graduation Detail</button>
+
+                    <h4 style={{ marginBottom: '0.5rem' }}>Post Graduation Details</h4>
+                    {postGrads.map((g, i) => (
+                      <div className="resume-inline-grid-edit" key={i} style={{ marginBottom: '1rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">University</label>
+                          <input className="resume-inline-input" value={g.university} onChange={e => updateEntry(setPostGrads, postGrads, i, 'university', e.target.value)} />
+                        </div>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Degree Name</label>
+                          <input className="resume-inline-input" value={g.degree_name} onChange={e => updateEntry(setPostGrads, postGrads, i, 'degree_name', e.target.value)} />
+                        </div>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Score Type</label>
+                          <select className="resume-inline-input" value={g.score_type} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_type', e.target.value)}>
+                            <option>Percentage</option>
+                            <option>CGPA</option>
+                          </select>
+                        </div>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Score</label>
+                          <input type="number" step="0.01" className="resume-inline-input" value={g.score_value} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_value', e.target.value)} />
+                        </div>
+                        <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end' }}>
+                          <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setPostGrads, postGrads, i)}>❌ Remove Entry</button>
+                        </div>
+                      </div>
+                    ))}
+                    <button type="button" className="btn-secondary" style={{ marginTop: '0', marginBottom: '1.5rem' }} disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '' })}>+ Add Post Graduation</button>
+
+                    <h4 style={{ marginBottom: '0.5rem' }}>Doctorate Details</h4>
+                    {doctorates.map((g, i) => (
+                      <div className="resume-inline-grid-edit" key={i} style={{ marginBottom: '1rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">University</label>
+                          <input className="resume-inline-input" value={g.university} onChange={e => updateEntry(setDoctorates, doctorates, i, 'university', e.target.value)} />
+                        </div>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Thesis Title</label>
+                          <input className="resume-inline-input" value={g.thesis_title} onChange={e => updateEntry(setDoctorates, doctorates, i, 'thesis_title', e.target.value)} />
+                        </div>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Score Type</label>
+                          <select className="resume-inline-input" value={g.score_type} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_type', e.target.value)}>
+                            <option>Percentage</option>
+                            <option>CGPA</option>
+                          </select>
+                        </div>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Score</label>
+                          <input type="number" step="0.01" className="resume-inline-input" value={g.score_value} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_value', e.target.value)} />
+                        </div>
+                        <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end' }}>
+                          <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setDoctorates, doctorates, i)}>❌ Remove Entry</button>
+                        </div>
+                      </div>
+                    ))}
+                    <button type="button" className="btn-secondary" style={{ marginTop: '0' }} disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3, { university: '', thesis_title: '', score_type: 'Percentage', score_value: '' })}>+ Add Doctorate</button>
+                  </div>
+                ) : (
+                  <table className="resume-table">
+                    <thead>
+                      <tr>
+                        <th>Level / Degree</th>
+                        <th>School / University</th>
+                        <th>Result</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><span className="resume-item-title">Class X</span></td>
+                        <td>Secondary Schooling</td>
+                        <td>{classX}%</td>
+                      </tr>
+                      <tr>
+                        <td><span className="resume-item-title">Class XII</span></td>
+                        <td>Senior Secondary Schooling</td>
+                        <td>{classXII}%</td>
+                      </tr>
+                      {grads.map((g, i) => g.university && (
+                        <tr key={`g-${i}`}>
+                          <td>
+                            <span className="resume-item-title">Bachelors Degree</span>
+                            <div className="resume-item-subtitle">{g.degree_name}</div>
+                          </td>
+                          <td>{g.university}</td>
+                          <td>{g.score_value} ({g.score_type === 'Percentage' ? '%' : 'CGPA'})</td>
+                        </tr>
+                      ))}
+                      {postGrads.map((g, i) => g.university && (
+                        <tr key={`pg-${i}`}>
+                          <td>
+                            <span className="resume-item-title">Masters Degree</span>
+                            <div className="resume-item-subtitle">{g.degree_name}</div>
+                          </td>
+                          <td>{g.university}</td>
+                          <td>{g.score_value} ({g.score_type === 'Percentage' ? '%' : 'CGPA'})</td>
+                        </tr>
+                      ))}
+                      {doctorates.map((g, i) => g.university && (
+                        <tr key={`phd-${i}`}>
+                          <td>
+                            <span className="resume-item-title">Doctorate Degree (Ph.D)</span>
+                            <div className="resume-item-subtitle">Thesis: {g.thesis_title}</div>
+                          </td>
+                          <td>{g.university}</td>
+                          <td>{g.score_value} ({g.score_type === 'Percentage' ? '%' : 'CGPA'})</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Publications Section */}
+              <div className="resume-section">
+                <div className="resume-section-title-container">
+                  <h3 className="resume-section-title">Publications & Works</h3>
+                  <button 
+                    type="button" 
+                    className="section-edit-btn no-print" 
+                    onClick={handleToggleEditPublications}
+                  >
+                    {editPublications ? "Save Publications" : "Edit Publications"}
+                  </button>
+                </div>
+
+                {editPublications ? (
+                  <div>
+                    <div style={{ display: 'flex', gap: '2rem', marginBottom: '1.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
+                      <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.none} onChange={e => setPubTypes({...pubTypes, none: e.target.checked, books: false, chapters: false, papers: false})} /> None</label>
+                      <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.books} onChange={e => setPubTypes({...pubTypes, books: e.target.checked, none: false})} /> Books</label>
+                      <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.chapters} onChange={e => setPubTypes({...pubTypes, chapters: e.target.checked, none: false})} /> Chapters</label>
+                      <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.papers} onChange={e => setPubTypes({...pubTypes, papers: e.target.checked, none: false})} /> Papers</label>
+                    </div>
+
+                    {pubTypes.books && (
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <h4 style={{ marginBottom: '0.5rem' }}>Books Authored</h4>
+                        {books.map((b, i) => (
+                          <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <input className="resume-inline-input" placeholder="Book Title" value={b.title} onChange={e => updateEntry(setBooks, books, i, 'title', e.target.value)} />
+                            <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setBooks, books, i)}>❌</button>
+                          </div>
+                        ))}
+                        <button type="button" className="btn-secondary" style={{ marginTop: '0' }} disabled={books.length>=3} onClick={() => addEntry(setBooks, books, 3, { title: '' })}>+ Add Book</button>
+                      </div>
+                    )}
+
+                    {pubTypes.chapters && (
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <h4 style={{ marginBottom: '0.5rem' }}>Chapters in Books</h4>
+                        {chapters.map((c, i) => (
+                          <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem', background: '#f8fafc', padding: '0.5rem', borderRadius: '4px' }}>
+                            <input className="resume-inline-input" placeholder="Chapter Name" value={c.title} onChange={e => updateEntry(setChapters, chapters, i, 'title', e.target.value)} />
+                            <input className="resume-inline-input" placeholder="Corresponding Book" value={c.parent_title} onChange={e => updateEntry(setChapters, chapters, i, 'parent_title', e.target.value)} />
+                            <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setChapters, chapters, i)}>❌</button>
+                          </div>
+                        ))}
+                        <button type="button" className="btn-secondary" style={{ marginTop: '0' }} disabled={chapters.length>=3} onClick={() => addEntry(setChapters, chapters, 3, { title: '', parent_title: '' })}>+ Add Chapter</button>
+                      </div>
+                    )}
+
+                    {pubTypes.papers && (
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <h4 style={{ marginBottom: '0.5rem' }}>Research Papers</h4>
+                        {papers.map((p, i) => (
+                          <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <input className="resume-inline-input" placeholder="Paper Title" value={p.title} onChange={e => updateEntry(setPapers, papers, i, 'title', e.target.value)} />
+                            <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setPapers, papers, i)}>❌</button>
+                          </div>
+                        ))}
+                        <button type="button" className="btn-secondary" style={{ marginTop: '0' }} disabled={papers.length>=3} onClick={() => addEntry(setPapers, papers, 3, { title: '' })}>+ Add Paper</button>
+                      </div>
+                    )}
+
+                    <div className="resume-inline-group" style={{ marginTop: '1rem' }}>
+                      <label className="resume-inline-label">Google Scholar Link (Optional)</label>
+                      <input type="url" className="resume-inline-input" value={scholarLink} onChange={e => setScholarLink(e.target.value)} placeholder="e.g. https://scholar.google.com/citations?user=..." />
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    {scholarLink && (
+                      <p style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
+                        🌐 <strong>Google Scholar:</strong> <a href={scholarLink} target="_blank" rel="noreferrer" style={{ color: 'var(--brand-secondary)', textDecoration: 'underline' }}>{scholarLink}</a>
+                      </p>
+                    )}
+
+                    {pubTypes.none && <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No publications or authored works declared.</p>}
+
+                    {!pubTypes.none && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {pubTypes.books && books.some(b => b.title) && (
+                          <div>
+                            <h4 className="resume-item-subtitle" style={{ fontSize: '0.95rem', borderBottom: '1px dotted var(--border-color)', paddingBottom: '0.2rem', marginBottom: '0.4rem' }}>Books</h4>
+                            <ul style={{ paddingLeft: '1.25rem', fontSize: '0.95rem' }}>
+                              {books.map((b, i) => b.title && <li key={`b-${i}`} style={{ marginBottom: '0.25rem' }}><span className="resume-item-title">"{b.title}"</span></li>)}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        {pubTypes.chapters && chapters.some(c => c.title) && (
+                          <div>
+                            <h4 className="resume-item-subtitle" style={{ fontSize: '0.95rem', borderBottom: '1px dotted var(--border-color)', paddingBottom: '0.2rem', marginBottom: '0.4rem' }}>Book Chapters</h4>
+                            <ul style={{ paddingLeft: '1.25rem', fontSize: '0.95rem' }}>
+                              {chapters.map((c, i) => c.title && <li key={`c-${i}`} style={{ marginBottom: '0.25rem' }}>Chapter <span className="resume-item-title">"{c.title}"</span> in book <em>"{c.parent_title}"</em></li>)}
+                            </ul>
+                          </div>
+                        )}
+
+                        {pubTypes.papers && papers.some(p => p.title) && (
+                          <div>
+                            <h4 className="resume-item-subtitle" style={{ fontSize: '0.95rem', borderBottom: '1px dotted var(--border-color)', paddingBottom: '0.2rem', marginBottom: '0.4rem' }}>Papers</h4>
+                            <ul style={{ paddingLeft: '1.25rem', fontSize: '0.95rem' }}>
+                              {papers.map((p, i) => p.title && <li key={`p-${i}`} style={{ marginBottom: '0.25rem' }}><span className="resume-item-title">"{p.title}"</span></li>)}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Work Experience Section */}
+              <div className="resume-section" style={{ marginBottom: '0' }}>
+                <div className="resume-section-title-container">
+                  <h3 className="resume-section-title">Professional Experience</h3>
+                  <button 
+                    type="button" 
+                    className="section-edit-btn no-print" 
+                    onClick={handleToggleEditWork}
+                  >
+                    {editWork ? "Save Experience" : "Edit Experience"}
+                  </button>
+                </div>
+
+                {editWork ? (
+                  <div>
+                    <div className="resume-inline-grid-edit" style={{ marginBottom: '1rem' }}>
+                      <div className="resume-inline-group">
+                        <label className="resume-inline-label">Total Exp Years</label>
+                        <input 
+                          type="number" min="0" className="resume-inline-input"
+                          value={expYears} onChange={e => setExpYears(e.target.value)}
+                        />
+                      </div>
+                      <div className="resume-inline-group">
+                        <label className="resume-inline-label">Total Exp Months</label>
+                        <input 
+                          type="number" min="0" max="11" className="resume-inline-input"
+                          value={expMonths} onChange={e => setExpMonths(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="resume-inline-group" style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
+                      <label className="resume-inline-label" style={{ fontWeight: '700' }}>Uploaded Resume (PDF)</label>
+                      {resumeFile && <div style={{ fontSize: '0.85rem', color: '#16a34a', marginBottom: '0.5rem', fontWeight: '600' }}>✓ Current file: {resumeFile.name}</div>}
+                      <input type="file" accept=".pdf" className="resume-inline-input" onChange={e => setResumeFile(e.target.files[0])} />
+                    </div>
+
+                    <div className="resume-inline-group" style={{ marginBottom: '1.5rem' }}>
+                      <label className="resume-inline-label">Do you want to add specific detailed work entries?</label>
+                      <div style={{ display: 'flex', gap: '2rem', marginTop: '0.25rem' }}>
+                        <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="radio" name="resume_has_work" checked={hasWork} onChange={() => setHasWork(true)} /> Yes</label>
+                        <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="radio" name="resume_has_work" checked={!hasWork} onChange={() => setHasWork(false)} /> No</label>
+                      </div>
+                    </div>
+
+                    {hasWork && (
+                      <div>
+                        {workExps.map((w, i) => (
+                          <div key={i} style={{ marginBottom: '1.25rem', background: '#f8fafc', padding: '1rem', borderRadius: '6px' }}>
+                            <div className="resume-inline-grid-edit">
+                              <div className="resume-inline-group">
+                                <label className="resume-inline-label">Company Name</label>
+                                <input className="resume-inline-input" value={w.company_name} onChange={e => updateEntry(setWorkExps, workExps, i, 'company_name', e.target.value)} />
+                              </div>
+                              <div className="resume-inline-group">
+                                <label className="resume-inline-label">Position Held</label>
+                                <input className="resume-inline-input" value={w.role} onChange={e => updateEntry(setWorkExps, workExps, i, 'role', e.target.value)} />
+                              </div>
+                              <div className="resume-inline-group">
+                                <label className="resume-inline-label">Start Date</label>
+                                <input type="date" className="resume-inline-input" value={w.start_date} onChange={e => updateEntry(setWorkExps, workExps, i, 'start_date', e.target.value)} />
+                              </div>
+                              <div className="resume-inline-group">
+                                <label className="resume-inline-label">End Date (Leave blank if present)</label>
+                                <input type="date" className="resume-inline-input" value={w.end_date} onChange={e => updateEntry(setWorkExps, workExps, i, 'end_date', e.target.value)} />
+                              </div>
+                              <div className="resume-inline-group" style={{ gridColumn: 'span 2' }}>
+                                <label className="resume-inline-label">Description (Max 40 Words)</label>
+                                <textarea className="resume-inline-input resume-inline-textarea" value={w.description} onChange={e => updateEntry(setWorkExps, workExps, i, 'description', e.target.value)} />
+                                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Current word count: {countWords(w.description)}/40</div>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                              <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setWorkExps, workExps, i)}>❌ Remove Work Entry</button>
+                            </div>
+                          </div>
+                        ))}
+                        <button type="button" className="btn-secondary" style={{ marginTop: '0' }} disabled={workExps.length>=3} onClick={() => addEntry(setWorkExps, workExps, 3, { company_name: '', start_date: '', end_date: '', role: '', description: '' })}>+ Add Work Experience</button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <p style={{ fontSize: '0.95rem', marginBottom: '1rem' }}>
+                      💼 <strong>Total Experience:</strong> {expYears || 0} Years, {expMonths || 0} Months
+                      {resumeFile && <span style={{ marginLeft: '1.5rem', color: 'var(--brand-primary)', fontWeight: '600' }}>📄 Attachment: {resumeFile.name}</span>}
+                    </p>
+
+                    {!hasWork ? (
+                      <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No detailed timeline entries added.</p>
+                    ) : (
+                      <div>
+                        {workExps.map((w, i) => w.company_name && (
+                          <div className="resume-timeline-item" key={`w-${i}`}>
+                            <div className="resume-timeline-header">
+                              <div>
+                                <span className="resume-item-title">{w.role}</span>
+                                <span style={{ color: 'var(--text-secondary)' }}> at </span>
+                                <span style={{ fontWeight: 600, color: 'var(--brand-primary)' }}>{w.company_name}</span>
+                              </div>
+                              <span className="resume-timeline-date">
+                                {w.start_date ? new Date(w.start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''} - {w.end_date ? new Date(w.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Present'}
+                              </span>
+                            </div>
+                            {w.description && <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.5rem', lineHeight: '1.5' }}>{w.description}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="resume-actions-container no-print">
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                onClick={() => setStep(4)}
+                style={{ margin: 0 }}
+              >
+                Back to Form
+              </button>
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                onClick={handleSaveAsPdf}
+                style={{ margin: 0, backgroundColor: 'var(--brand-secondary)', color: 'white' }}
+              >
+                Save as PDF
+              </button>
+              <button 
+                type="button" 
+                className="btn-primary" 
+                onClick={handleFinalSubmissionClick}
+                style={{ margin: 0, backgroundColor: 'var(--brand-accent)', color: '#000' }}
+              >
+                Submit Application
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
