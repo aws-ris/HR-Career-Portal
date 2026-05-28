@@ -442,11 +442,9 @@ export default function CandidateProfileModal({ candidateId, onClose }) {
           borderTop: '1px solid #f1f5f9', 
           display: 'flex', 
           justifyContent: 'flex-end', 
-          gap: '12px',
           background: '#f8fafc'
         }}>
-          <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', fontWeight: '600' }}>Close</button>
-          <button style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontWeight: '600' }}>Shortlist Candidate</button>
+          <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontWeight: '600' }}>OK</button>
         </div>
       </div>
     </div>
