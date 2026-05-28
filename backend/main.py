@@ -1763,6 +1763,10 @@ def get_job_candidates(job_id: str, db: Session = Depends(get_db)):
             "email": c.email,
             "gender": c.gender,
             "state": c.state,
+            "age": c.age or (
+                (datetime.date.today().year - c.dob.year - ((datetime.date.today().month, datetime.date.today().day) < (c.dob.month, c.dob.day)))
+                if c.dob else None
+            ),
             "years_of_experience": c.years_of_experience,
             "highest_education": highest_edu,
             "current_status": t.current_status,
@@ -1910,4 +1914,232 @@ def delete_job(job_id: str, db: Session = Depends(get_db)):
     job.updated_at = datetime.datetime.utcnow()
     db.commit()
     return {"status": "deleted"}
+
+
+# ─────────────────────────────────────────────
+# Fix DAKSHIN Candidate Data Debug Route
+# ─────────────────────────────────────────────
+@app.post("/api/v1/debug/fix-dakshin-candidates")
+def fix_dakshin_candidates(db: Session = Depends(get_db)):
+    try:
+        # Find the job posting
+        job = db.query(models.JobPosting).filter(
+            models.JobPosting.title.ilike('%Research Assistant (Development Finance)%')
+        ).first()
+        
+        if not job:
+            # Try a broader search
+            job = db.query(models.JobPosting).filter(
+                models.JobPosting.title.ilike('%Research Assistant%')
+            ).first()
+            
+        if not job:
+            return {"status": "error", "message": "Job posting 'Research Assistant (Development Finance)' not found"}
+        
+        # Get application trackers for this job
+        trackers = db.query(models.ApplicationTracking).filter(
+            models.ApplicationTracking.job_id == job.id
+        ).all()
+        
+        candidate_ids = [t.candidate_id for t in trackers]
+        
+        # Get candidate metadata
+        candidates = db.query(models.CandidateMetadata).filter(
+            models.CandidateMetadata.id.in_(candidate_ids)
+        ).all()
+        
+        # Filter out Viraal Saini
+        candidates_to_fix = [c for c in candidates if not c.full_name.lower().startswith("viraal")]
+        
+        # Profiles definitions
+        profiles = [
+            {
+                "email_domain": "nipfp.org.in",
+                "grad_uni": "Delhi University (St. Stephen's)", "grad_deg": "B.A. (Hons) Economics", "grad_score": 8.5, "grad_score_type": "CGPA", "grad_year": 2021,
+                "pg_uni": "Jawaharlal Nehru University (JNU)", "pg_deg": "M.A. Economics", "pg_score": 78.5, "pg_score_type": "Percentage", "pg_year": 2023,
+                "work": [{"role": "Research Assistant", "comp": "National Institute of Public Finance and Policy (NIPFP)", "start": datetime.date(2023, 7, 1), "end": datetime.date(2025, 6, 30)}],
+                "pubs": [{"pub_type": "paper", "title": "Financing Green Infrastructure in Indian Cities: Challenges and Opportunities", "parent": None}],
+                "extracurriculars": "Avid debater and classical music enthusiast.",
+                "exp": 2.0, "dob": datetime.date(2001, 8, 15), "city": "New Delhi", "pincode": "110001", "state": "Delhi"
+            },
+            {
+                "email_domain": "igidr.ac.in",
+                "grad_uni": "St. Xavier's College, Mumbai", "grad_deg": "B.Sc. Economics", "grad_score": 79.0, "grad_score_type": "Percentage", "grad_year": 2020,
+                "pg_uni": "Indira Gandhi Institute of Development Research (IGIDR)", "pg_deg": "M.Sc. Development Finance", "pg_score": 8.2, "pg_score_type": "CGPA", "pg_year": 2022,
+                "work": [{"role": "Research Associate", "comp": "Centre for Monitoring Indian Economy (CMIE)", "start": datetime.date(2022, 8, 15), "end": datetime.date(2024, 5, 31)}],
+                "pubs": [{"pub_type": "paper", "title": "Determinants of Microfinance Repayment Rates in Rural Maharashtra", "parent": None}],
+                "extracurriculars": "Volunteered at local NGOs teaching financial literacy.",
+                "exp": 1.8, "dob": datetime.date(1999, 3, 12), "city": "Mumbai", "pincode": "400001", "state": "Maharashtra"
+            },
+            {
+                "email_domain": "rbi.org.in",
+                "grad_uni": "Christ University, Bengaluru", "grad_deg": "B.A. Economics", "grad_score": 8.8, "grad_score_type": "CGPA", "grad_year": 2022,
+                "pg_uni": "Madras School of Economics", "pg_deg": "M.Sc. Economics", "pg_score": 8.0, "pg_score_type": "CGPA", "pg_year": 2024,
+                "work": [{"role": "Finance Intern", "comp": "Reserve Bank of India (RBI)", "start": datetime.date(2024, 6, 1), "end": datetime.date(2024, 12, 31)}],
+                "pubs": [{"pub_type": "paper", "title": "Assessing the Impact of Digital Financial Inclusion on Rural Households in Karnataka", "parent": None}],
+                "extracurriculars": "Enjoys photography and trekking.",
+                "exp": 0.5, "dob": datetime.date(2002, 11, 20), "city": "Bengaluru", "pincode": "560001", "state": "Karnataka"
+            },
+            {
+                "email_domain": "hdfc.com",
+                "grad_uni": "Madras Christian College", "grad_deg": "B.A. Corporate Secretaryship", "grad_score": 82.0, "grad_score_type": "Percentage", "grad_year": 2019,
+                "pg_uni": "Anna University", "pg_deg": "MBA Finance", "pg_score": 8.1, "pg_score_type": "CGPA", "pg_year": 2021,
+                "work": [
+                    {"role": "Credit Analyst", "comp": "HDFC Bank", "start": datetime.date(2021, 8, 1), "end": datetime.date(2023, 12, 31)},
+                    {"role": "Research Analyst", "comp": "IFMR Lead", "start": datetime.date(2024, 1, 15), "end": None}
+                ],
+                "pubs": [{"pub_type": "chapter", "title": "Fintech Innovations in Rural Banking", "parent": "Financial inclusion in the Global South"}],
+                "extracurriculars": "State-level badminton player.",
+                "exp": 3.5, "dob": datetime.date(1998, 5, 14), "city": "Chennai", "pincode": "600001", "state": "Tamil Nadu"
+            },
+            {
+                "email_domain": "jindal.edu.in",
+                "grad_uni": "Lucknow University", "grad_deg": "B.Com (Hons)", "grad_score": 75.0, "grad_score_type": "Percentage", "grad_year": 2021,
+                "pg_uni": "Jindal School of Government and Public Policy", "pg_deg": "M.A. Public Policy", "pg_score": 7.9, "pg_score_type": "CGPA", "pg_year": 2023,
+                "work": [{"role": "Project Assistant", "comp": "Centre for Development Finance", "start": datetime.date(2023, 8, 1), "end": datetime.date(2025, 4, 30)}],
+                "pubs": [],
+                "extracurriculars": "Blogger writing about policy and public affairs.",
+                "exp": 1.7, "dob": datetime.date(2001, 1, 25), "city": "Lucknow", "pincode": "226001", "state": "Uttar Pradesh"
+            },
+            {
+                "email_domain": "presidency.edu",
+                "grad_uni": "Presidency University, Kolkata", "grad_deg": "B.Sc. Economics", "grad_score": 8.6, "grad_score_type": "CGPA", "grad_year": 2020,
+                "pg_uni": "Calcutta University", "pg_deg": "M.Sc. Economics", "pg_score": 77.0, "pg_score_type": "Percentage", "pg_year": 2022,
+                "work": [{"role": "Junior Economist", "comp": "National Institute of Public Finance and Policy", "start": datetime.date(2022, 7, 1), "end": datetime.date(2024, 6, 30)}],
+                "pubs": [{"pub_type": "paper", "title": "Municipal Bonds as an Alternative Source of Development Finance in India", "parent": None}],
+                "extracurriculars": "Plays chess competitively.",
+                "exp": 2.0, "dob": datetime.date(2000, 9, 8), "city": "Kolkata", "pincode": "700001", "state": "West Bengal"
+            },
+            {
+                "email_domain": "cds.edu",
+                "grad_uni": "St. Teresa's College, Ernakulam", "grad_deg": "B.A. Economics", "grad_score": 91.0, "grad_score_type": "Percentage", "grad_year": 2021,
+                "pg_uni": "Centre for Development Studies (CDS)", "pg_deg": "M.A. Economics", "pg_score": 8.4, "pg_score_type": "CGPA", "pg_year": 2023,
+                "work": [
+                    {"role": "Research Intern", "comp": "Kerala State Planning Board", "start": datetime.date(2023, 6, 1), "end": datetime.date(2023, 11, 30)},
+                    {"role": "Research Assistant", "comp": "Gulati Institute of Finance and Taxation (GIFT)", "start": datetime.date(2023, 12, 1), "end": None}
+                ],
+                "pubs": [{"pub_type": "paper", "title": "Fiscal Decentralization and Development Spending: Evidence from Kerala's Local Bodies", "parent": None}],
+                "extracurriculars": "Enjoys reading historical fiction and volunteering.",
+                "exp": 2.2, "dob": datetime.date(2001, 4, 30), "city": "Thiruvananthapuram", "pincode": "695001", "state": "Kerala"
+            }
+        ]
+        
+        # Sort candidates to ensure deterministic assignment
+        candidates_to_fix.sort(key=lambda x: x.id)
+        
+        updated_candidates = []
+        for idx, c in enumerate(candidates_to_fix):
+            p = profiles[idx % len(profiles)]
+            
+            # 1. Determine and correct gender based on name
+            name_lower = c.full_name.lower()
+            if any(k in name_lower for k in ["arjun", "rohan", "vikram", "kabir", "siddharth", "rahul", "amit", "deepak", "suresh", "vijay", "rajesh", "manish", "anil", "sunil", "ravi", "aarav", "amitav", "iyer", "ghosh"]):
+                c.gender = "Male"
+            elif any(k in name_lower for k in ["aditi", "sanya", "isha", "meera", "ananya", "priya", "kavita", "riya", "neeta", "sunita", "pooja", "shweta", "geeta", "asha", "lata", "ishani", "zara", "williams", "sharma", "nair", "kulkarni"]):
+                c.gender = "Female"
+            else:
+                c.gender = "Male" # Default
+            
+            # 2. Update basic fields
+            c.dob = p["dob"]
+            c.years_of_experience = p["exp"]
+            c.state = p["state"]
+            c.city = p["city"]
+            c.pincode = p["pincode"]
+            
+            # Keep original name, but update email to be varied using profile domain
+            prefix = c.full_name.lower().replace(" ", ".").replace("dr.", "").replace("ms.", "").replace("mr.", "").replace("prof.", "")
+            c.email = f"{prefix}@{p['email_domain']}"
+            
+            # Recalculate age field
+            today = datetime.date.today()
+            c.age = today.year - c.dob.year - ((today.month, today.day) < (c.dob.month, c.dob.day))
+            
+            # 3. Clear existing sub-records
+            db.query(models.CandidateHigherEducation).filter(models.CandidateHigherEducation.candidate_id == c.id).delete()
+            db.query(models.CandidatePublication).filter(models.CandidatePublication.candidate_id == c.id).delete()
+            db.query(models.CandidateWorkExperience).filter(models.CandidateWorkExperience.candidate_id == c.id).delete()
+            
+            # 4. Insert new qualifications
+            # UG
+            ug_rec = models.CandidateHigherEducation(
+                candidate_id=c.id,
+                level='undergrad',
+                university=p["grad_uni"],
+                degree_name=p["grad_deg"],
+                score_type=p["grad_score_type"],
+                score_value=p["grad_score"],
+                grad_year=p["grad_year"],
+                entry_order=1
+            )
+            db.add(ug_rec)
+            
+            # PG
+            pg_rec = models.CandidateHigherEducation(
+                candidate_id=c.id,
+                level='postgrad',
+                university=p["pg_uni"],
+                degree_name=p["pg_deg"],
+                score_type=p["pg_score_type"],
+                score_value=p["pg_score"],
+                grad_year=p["pg_year"],
+                entry_order=2
+            )
+            db.add(pg_rec)
+            
+            # 5. Insert new work experiences
+            for w_idx, w in enumerate(p["work"], 1):
+                work_rec = models.CandidateWorkExperience(
+                    candidate_id=c.id,
+                    company_name=w["comp"],
+                    role=w["role"],
+                    start_date=w["start"],
+                    end_date=w["end"],
+                    is_current=(w["end"] is None),
+                    entry_order=w_idx
+                )
+                db.add(work_rec)
+                
+            # 6. Insert new publications
+            for p_idx, pub in enumerate(p["pubs"], 1):
+                pub_rec = models.CandidatePublication(
+                    candidate_id=c.id,
+                    pub_type=pub["pub_type"],
+                    title=pub["title"],
+                    parent_book=pub["parent"],
+                    entry_order=p_idx
+                )
+                db.add(pub_rec)
+                
+            # 7. Update Links & About
+            links = db.query(models.CandidateLinksAbout).filter(models.CandidateLinksAbout.candidate_id == c.id).first()
+            if not links:
+                links = models.CandidateLinksAbout(candidate_id=c.id)
+                db.add(links)
+            links.about = f"Passionate research professional specializing in development finance. Deployed research outputs on green infrastructure, microfinance, and policy analysis."
+            links.extracurriculars = p["extracurriculars"]
+            links.google_scholar = f"https://scholar.google.com/citations?user={c.id[:8]}"
+            links.linkedin = f"https://linkedin.com/in/{prefix}"
+            
+            updated_candidates.append({
+                "id": c.id,
+                "name": c.full_name,
+                "gender": c.gender,
+                "email": c.email,
+                "city": c.city,
+                "state": c.state
+            })
+            
+        db.commit()
+        return {
+            "status": "success",
+            "message": f"Successfully updated {len(updated_candidates)} candidates for job '{job.title}'",
+            "updated_candidates": updated_candidates
+        }
+        
+    except Exception as e:
+        db.rollback()
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 

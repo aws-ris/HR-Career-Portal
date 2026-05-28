@@ -373,7 +373,7 @@ export default function JobAnalytics() {
                             <div className="hr-c-name" style={{ fontWeight: '800', color: '#0f172a', fontSize: '13px' }}>{c.full_name}</div>
                           </div>
                           <div className="hr-c-meta" style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', marginTop: '2px' }}>
-                            {c.gender} • <span style={{ color: '#f59e0b' }}>{c.age} Yrs</span> • {c.state}
+                            {c.gender || ''}{c.age ? ` • ${c.age} Yrs` : ''}{c.state ? ` • ${c.state}` : ''}
                           </div>
                         </>
                       ) : (
