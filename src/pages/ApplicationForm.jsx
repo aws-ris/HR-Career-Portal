@@ -6,11 +6,60 @@ import { CheckCircle2 } from 'lucide-react';
 export default function ApplicationForm() {
   const { jobId } = useParams();
   const navigate = useNavigate();
-  const [step, setStep] = useState(jobId ? 0 : 1);
+
+  // Load draft safely from localStorage (Error prevention / Autosave)
+  const savedDraft = (() => {
+    try {
+      const draft = JSON.parse(localStorage.getItem('hr_application_draft') || '{}');
+      if (draft.jobId === jobId) {
+        return draft;
+      }
+    } catch (e) {
+      console.error("Error loading application draft:", e);
+    }
+    return {};
+  })();
+
+  const [step, setStep] = useState(() => savedDraft.step !== undefined ? savedDraft.step : (jobId ? 0 : 1));
   const [submitError, setSubmitError] = useState('');
   const [jobDetail, setJobDetail] = useState(null);
   const [triedSubmit, setTriedSubmit] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+
+  // Step 1
+  const [position_applied, setPosition] = useState(() => savedDraft.position_applied || 'Professor');
+  const [admin_department, setAdminDept] = useState(() => savedDraft.admin_department || 'IT');
+  const [full_name, setFullName] = useState(() => savedDraft.full_name || '');
+  const [email, setEmail] = useState(() => savedDraft.email || '');
+  const [mobile_number, setMobile] = useState(() => savedDraft.mobile_number || '');
+  const [dob, setDob] = useState(() => savedDraft.dob || '');
+  const [gender, setGender] = useState(() => savedDraft.gender || '');
+  const [candidateState, setCandidateState] = useState(() => savedDraft.candidateState || '');
+  const [city, setCity] = useState(() => savedDraft.city || '');
+  const [pincode, setPincode] = useState(() => savedDraft.pincode || '');
+  const [extracurriculars, setExtracurriculars] = useState(() => savedDraft.extracurriculars || '');
+  const [dobError, setDobError] = useState('');
+
+  // Step 2
+  const [classX, setClassX] = useState(() => savedDraft.classX || '');
+  const [classXII, setClassXII] = useState(() => savedDraft.classXII || '');
+  const [grads, setGrads] = useState(() => savedDraft.grads || [{ university: '', degree_name: '', score_type: 'Percentage', score_value: '' }]);
+  const [postGrads, setPostGrads] = useState(() => savedDraft.postGrads || [{ university: '', degree_name: '', score_type: 'Percentage', score_value: '' }]);
+  const [doctorates, setDoctorates] = useState(() => savedDraft.doctorates || [{ university: '', thesis_title: '', score_type: 'Percentage', score_value: '' }]);
+
+  // Step 3
+  const [pubTypes, setPubTypes] = useState(() => savedDraft.pubTypes || { none: true, books: false, chapters: false, papers: false });
+  const [books, setBooks] = useState(() => savedDraft.books || [{ title: '' }]);
+  const [chapters, setChapters] = useState(() => savedDraft.chapters || [{ title: '', parent_title: '' }]);
+  const [papers, setPapers] = useState(() => savedDraft.papers || [{ title: '' }]);
+  const [scholarLink, setScholarLink] = useState(() => savedDraft.scholarLink || '');
+  const [expYears, setExpYears] = useState(() => savedDraft.expYears || '');
+  const [expMonths, setExpMonths] = useState(() => savedDraft.expMonths || '');
+  const [resumeFile, setResumeFile] = useState(null);
+
+  // Step 4
+  const [hasWork, setHasWork] = useState(() => savedDraft.hasWork || false);
+  const [workExps, setWorkExps] = useState(() => savedDraft.workExps || [{ company_name: '', start_date: '', end_date: '', role: '', description: '' }]);
 
   // Fetch Job details if ID is present
   useEffect(() => {
@@ -20,26 +69,58 @@ export default function ApplicationForm() {
         .then(data => {
           if (data.id) {
             setJobDetail(data);
-            setPosition(data.position);
+            if (savedDraft.position_applied === undefined) {
+              setPosition(data.position);
+            }
           }
         })
         .catch(err => console.error("Error fetching job:", err));
     }
   }, [jobId]);
 
-  // Step 1
-  const [position_applied, setPosition] = useState('Professor');
-  const [admin_department, setAdminDept] = useState('IT');
-  const [full_name, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [mobile_number, setMobile] = useState('');
-  const [dob, setDob] = useState('');
-  const [gender, setGender] = useState('');
-  const [candidateState, setCandidateState] = useState('');
-  const [city, setCity] = useState('');
-  const [pincode, setPincode] = useState('');
-  const [extracurriculars, setExtracurriculars] = useState('');
-  const [dobError, setDobError] = useState('');
+  // Sync to localStorage
+  useEffect(() => {
+    const draft = {
+      jobId,
+      position_applied,
+      admin_department,
+      full_name,
+      email,
+      mobile_number,
+      dob,
+      gender,
+      candidateState,
+      city,
+      pincode,
+      extracurriculars,
+      classX,
+      classXII,
+      grads,
+      postGrads,
+      doctorates,
+      pubTypes,
+      books,
+      chapters,
+      papers,
+      scholarLink,
+      expYears,
+      expMonths,
+      hasWork,
+      workExps,
+      step
+    };
+    localStorage.setItem('hr_application_draft', JSON.stringify(draft));
+  }, [
+    position_applied, admin_department, full_name, email, mobile_number, dob, gender,
+    candidateState, city, pincode, extracurriculars, classX, classXII, grads,
+    postGrads, doctorates, pubTypes, books, chapters, papers, scholarLink,
+    expYears, expMonths, hasWork, workExps, step, jobId
+  ]);
+
+  // Scroll to top on step change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [step]);
 
   const validateDob = (val) => {
     if (!val) return '';
@@ -142,27 +223,7 @@ export default function ApplicationForm() {
     setDobError(validateDob(formatted));
   };
 
-  // Step 2
-  const [classX, setClassX] = useState('');
-  const [classXII, setClassXII] = useState('');
-  
-  const [grads, setGrads] = useState([{ university: '', degree_name: '', score_type: 'Percentage', score_value: '' }]);
-  const [postGrads, setPostGrads] = useState([{ university: '', degree_name: '', score_type: 'Percentage', score_value: '' }]);
-  const [doctorates, setDoctorates] = useState([{ university: '', thesis_title: '', score_type: 'Percentage', score_value: '' }]);
 
-  // Step 3
-  const [pubTypes, setPubTypes] = useState({ none: true, books: false, chapters: false, papers: false });
-  const [books, setBooks] = useState([{ title: '' }]);
-  const [chapters, setChapters] = useState([{ title: '', parent_title: '' }]);
-  const [papers, setPapers] = useState([{ title: '' }]);
-  const [scholarLink, setScholarLink] = useState('');
-  const [expYears, setExpYears] = useState('');
-  const [expMonths, setExpMonths] = useState('');
-  const [resumeFile, setResumeFile] = useState(null);
-
-  // Step 4
-  const [hasWork, setHasWork] = useState(false);
-  const [workExps, setWorkExps] = useState([{ company_name: '', start_date: '', end_date: '', role: '', description: '' }]);
 
   const addEntry = (setter, state, max, template) => {
     if (state.length < max) setter([...state, { ...template }]);
@@ -325,6 +386,7 @@ export default function ApplicationForm() {
           } catch(err) { console.error("Resume upload failed:", err); }
         }
         alert("Application Successfully Submitted!");
+        localStorage.removeItem('hr_application_draft');
         navigate("/");
       } else {
         let errMessage = "Unknown Error";
