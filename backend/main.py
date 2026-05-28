@@ -1173,10 +1173,10 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
         if req.report_type == 'standardized':
             headers = [
                 "Full Name", "Class X %", "Class XII %", 
-                "Bachelors Degree", "Bachelors Score", "Bachelors Year",
-                "Masters Degree", "Masters Score", "Masters Year",
-                "Doctorate Degree", "Doctorate Score", "Doctorate Year",
-                "Total Exp (Yrs)", "Latest Company", "Latest Role", "Status"
+                "Bachelors (UG)", "Bachelors Score", "Bachelors Year",
+                "Masters (PG)", "Masters Score", "Masters Year",
+                "Doctorate (PhD)", "Doctorate Score", "Doctorate Year",
+                "Total Exp (Yrs)", "Latest Employment", "Status"
             ]
             
             rows_to_write = []
@@ -1194,28 +1194,44 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 if full_c.work_experiences:
                     latest_work = max(full_c.work_experiences, key=lambda x: x.start_date)
                 
+                ug_text = ""
+                if ug:
+                    ug_text = f"{ug.degree_name} ({ug.university})" if ug.university else ug.degree_name
+                
+                pg_text = ""
+                if pg:
+                    pg_text = f"{pg.degree_name} ({pg.university})" if pg.university else pg.degree_name
+                
+                phd_text = ""
+                if phd:
+                    phd_text = f"{phd.degree_name} ({phd.university})" if phd.university else phd.degree_name
+                
+                latest_work_text = ""
+                if latest_work:
+                    latest_work_text = f"{latest_work.role} ({latest_work.company_name})"
+                
                 row = [
                     full_c.full_name,
                     full_c.schooling.class_x_percentage if full_c.schooling else 0.0,
                     full_c.schooling.class_xii_percentage if full_c.schooling else 0.0,
-                    ug.degree_name if ug else "",
+                    ug_text,
                     f"{ug.score_value} {ug.score_type}" if ug and ug.score_value else "",
                     ug.grad_year if ug else "",
-                    pg.degree_name if pg else "",
+                    pg_text,
                     f"{pg.score_value} {pg.score_type}" if pg and pg.score_value else "",
                     pg.grad_year if pg else "",
-                    phd.degree_name if phd else "", # thesis title
+                    phd_text,
                     f"{phd.score_value} {phd.score_type}" if phd and phd.score_value else "",
                     phd.grad_year if phd else "",
                     full_c.years_of_experience or 0.0,
-                    latest_work.company_name if latest_work else "",
-                    latest_work.role if latest_work else "",
+                    latest_work_text,
                     c['current_status']
                 ]
                 rows_to_write.append(row)
                 
             merge_ranges = []
             candidate_groups = []
+            single_line_rows = []
         else:
             # Detailed Report (Grouped Roster)
             headers = [
@@ -1231,6 +1247,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             rows_to_write = []
             merge_ranges = []
             candidate_groups = []
+            single_line_rows = []
             current_r = 2 # Row 1 is headers
             
             for c in candidates_data:
@@ -1246,6 +1263,10 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 max_rows = max(len(undergrads), len(postgrads), len(phds), len(pubs), len(works), 1)
                 
                 candidate_groups.append((current_r, current_r + max_rows - 1))
+                
+                # Check for single-line candidates to style row height later
+                if max_rows == 1:
+                    single_line_rows.append(current_r)
                 
                 # Setup merge ranges if max_rows > 1
                 if max_rows > 1:
@@ -1345,18 +1366,39 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 cell = ws.cell(row=1, column=col_idx, value=header)
                 cell.fill = header_fill
                 cell.font = header_font
+                
+                # Header vertical dividers for detailed view
+                r_style = 'medium' if (req.report_type == 'detailed' and col_idx in [14, 18, 22, 26, 29, 30, 34]) else 'thin'
+                r_color = '1E3A8A' if (req.report_type == 'detailed' and col_idx in [14, 18, 22, 26, 29, 30, 34]) else 'CBD5E1'
+                
+                cell.border = Border(
+                    left=Side(style='thin', color='CBD5E1'),
+                    right=Side(style=r_style, color=r_color),
+                    top=Side(style='thin', color='CBD5E1'),
+                    bottom=Side(style='thin', color='CBD5E1')
+                )
                 cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
 
             # Write Data
             for r_idx, row_data in enumerate(rows_to_write, 2):
                 for c_idx, value in enumerate(row_data, 1):
                     cell = ws.cell(row=r_idx, column=c_idx, value=value)
-                    cell.border = thin_border
+                    
+                    # Right border vertical dividers
+                    r_style = 'medium' if (req.report_type == 'detailed' and c_idx in [14, 18, 22, 26, 29, 30, 34]) else 'thin'
+                    r_color = '1E3A8A' if (req.report_type == 'detailed' and c_idx in [14, 18, 22, 26, 29, 30, 34]) else 'CBD5E1'
+                    
+                    cell.border = Border(
+                        left=Side(style='thin', color='CBD5E1'),
+                        right=Side(style=r_style, color=r_color),
+                        top=Side(style='thin', color='CBD5E1'),
+                        bottom=Side(style='thin', color='CBD5E1')
+                    )
                     
                     # Alignments
                     if req.report_type == 'standardized':
-                        # Standardized aligns
-                        if c_idx in [2, 3, 5, 6, 8, 9, 11, 12, 13, 16]:
+                        # Standardized aligns (15 columns total)
+                        if c_idx in [2, 3, 5, 6, 8, 9, 11, 12, 13, 15]:
                             cell.alignment = Alignment(horizontal='center', vertical='center')
                         else:
                             cell.alignment = Alignment(horizontal='left', vertical='center')
@@ -1375,16 +1417,22 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     h_align = 'center' if col in [3, 4, 5, 10, 11, 12, 13, 14, 30] else 'left'
                     ws.cell(row=start_r, column=col).alignment = Alignment(vertical='top', horizontal=h_align)
 
-                # Set bottom boundaries borders for groups
+                # Set bottom boundaries borders for groups (preserving vertical dividers)
                 for start_r, end_r in candidate_groups:
                     for col in range(1, len(headers) + 1):
                         cell = ws.cell(row=end_r, column=col)
+                        r_style = 'medium' if col in [14, 18, 22, 26, 29, 30, 34] else 'thin'
+                        r_color = '1E3A8A' if col in [14, 18, 22, 26, 29, 30, 34] else 'CBD5E1'
                         cell.border = Border(
                             left=Side(style='thin', color='CBD5E1'),
-                            right=Side(style='thin', color='CBD5E1'),
+                            right=Side(style=r_style, color=r_color),
                             top=cell.border.top or Side(style='thin', color='CBD5E1'),
                             bottom=Side(style='medium', color='1E3A8A')
                         )
+                
+                # Apply row heights for single line rows (26px height)
+                for row_idx in single_line_rows:
+                    ws.row_dimensions[row_idx].height = 26
 
             # Auto-adjust column widths based on report type
             from openpyxl.utils import get_column_letter
@@ -1395,7 +1443,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 # Check header categories for wider column adjustments
                 if "Details" in header_name or "Univ" in header_name or "Degree" in header_name or "Title" in header_name or "Company" in header_name or "Extracurriculars" in header_name:
                     ws.column_dimensions[col_letter].width = 30
-                elif "Name" in header_name or "Email" in header_name or "Thesis" in header_name or "Source" in header_name:
+                elif "Bachelors" in header_name or "Masters" in header_name or "Doctorate" in header_name or "Name" in header_name or "Email" in header_name or "Thesis" in header_name or "Source" in header_name or "Employment" in header_name:
                     ws.column_dimensions[col_letter].width = 24
                 else:
                     ws.column_dimensions[col_letter].width = 15
@@ -1407,6 +1455,11 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 headers={"Content-Disposition": f"attachment; filename=applicants_{job_id}.xlsx"}
             )
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
     except Exception as e:
         import traceback
