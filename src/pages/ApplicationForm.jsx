@@ -7,25 +7,32 @@ const UG_DEGREES = ['B.A.', 'B.Sc.', 'B.Com', 'B.Tech', 'B.E.', 'B.B.A.', 'B.C.A
 const PG_DEGREES = ['M.A.', 'M.Sc.', 'M.Com', 'M.Tech', 'M.E.', 'M.B.A.', 'M.C.A.', 'LL.M.', 'M.Ed.', 'MD', 'MS'];
 
 const COMMON_SPECIALIZATIONS = [
-  'Economics',
-  'Development Economics',
-  'Applied Economics',
-  'Econometrics',
-  'Macroeconomics',
-  'Microeconomics',
-  'Computer Science',
-  'Information Technology',
-  'Data Science',
-  'Software Engineering',
-  'Mathematics',
-  'Statistics',
-  'Applied Mathematics',
-  'Physics',
-  'Chemistry',
-  'Biotechnology',
-  'Finance',
-  'Business Administration',
-  'Management'
+  // Humanities & Arts
+  'History', 'Ancient History', 'Modern History', 'Medieval History', 'Indian History', 'World History',
+  'Political Science', 'Sociology', 'Geography', 'Philosophy', 'English', 'English Literature', 
+  'Linguistics', 'Psychology', 'Clinical Psychology', 'Anthropology', 'Archaeology', 'Fine Arts', 
+  'Visual Arts', 'Music', 'Drama', 'Public Administration', 'International Relations', 'Social Work',
+  // Sciences
+  'Physics', 'Astrophysics', 'Theoretical Physics', 'Chemistry', 'Organic Chemistry', 'Inorganic Chemistry', 
+  'Physical Chemistry', 'Analytical Chemistry', 'Biochemistry', 'Biology', 'Microbiology', 'Biotechnology', 
+  'Zoology', 'Botany', 'Environmental Science', 'Geology', 'Genetics', 'Mathematics', 'Applied Mathematics', 
+  'Statistics', 'Applied Statistics', 'Data Science', 'Actuarial Science',
+  // Engineering & Tech
+  'Computer Science', 'Computer Engineering', 'Information Technology', 'Software Engineering', 
+  'Artificial Intelligence', 'Machine Learning', 'Data Analytics', 'Electrical Engineering', 
+  'Electronics Engineering', 'Mechanical Engineering', 'Civil Engineering', 'Chemical Engineering', 
+  'Aerospace Engineering', 'Biomedical Engineering', 'Metallurgical Engineering',
+  // Business, Finance & Economics
+  'Economics', 'Development Economics', 'Applied Economics', 'Econometrics', 'Macroeconomics', 
+  'Microeconomics', 'Finance', 'Financial Management', 'Business Administration', 'Management', 
+  'Marketing', 'Human Resource Management', 'Operations Management', 'Accounting', 'Commerce', 
+  'International Business', 'Corporate Finance', 'Investment Banking',
+  // Medicine & Healthcare
+  'Medicine', 'Surgery', 'Dentistry', 'Pharmacy', 'Nursing', 'Physiotherapy', 'Public Health', 
+  'Epidemiology', 'Biomedical Science', 'Pathology', 'Pharmacology',
+  // Education & Law
+  'Education', 'Special Education', 'Law', 'Corporate Law', 'Constitutional Law', 'International Law', 
+  'Criminal Law', 'Intellectual Property Law'
 ];
 
 const getSuggestion = (inputVal) => {
@@ -81,8 +88,6 @@ const SpecializationInput = ({ required, value, onChange, placeholder, className
             whiteSpace: 'pre',
             fontFamily: 'inherit',
             fontSize: 'inherit',
-            lineHeight: 'inherit',
-            padding: 'inherit',
             boxSizing: 'border-box',
             zIndex: 2
           }}
@@ -94,6 +99,7 @@ const SpecializationInput = ({ required, value, onChange, placeholder, className
     </div>
   );
 };
+
 
 const parseDegree = (degreeName, level) => {
   if (!degreeName) return { type: '', spec: '', custom: '' };
