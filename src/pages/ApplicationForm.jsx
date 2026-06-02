@@ -3,6 +3,38 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE as API } from '../api';
 import { CheckCircle2 } from 'lucide-react';
 
+const UG_DEGREES = ['B.A.', 'B.Sc.', 'B.Com', 'B.Tech', 'B.E.', 'B.B.A.', 'B.C.A.', 'LL.B.', 'MBBS', 'B.Arch', 'B.Ed.'];
+const PG_DEGREES = ['M.A.', 'M.Sc.', 'M.Com', 'M.Tech', 'M.E.', 'M.B.A.', 'M.C.A.', 'LL.M.', 'M.Ed.', 'MD', 'MS'];
+
+const parseDegree = (degreeName, level) => {
+  if (!degreeName) return { type: '', spec: '', custom: '' };
+  const match = degreeName.match(/^([^(]+)\s*\(([^)]+)\)$/);
+  if (match) {
+    const type = match[1].trim();
+    const spec = match[2].trim();
+    const standardList = level === 'Bachelors' ? UG_DEGREES : PG_DEGREES;
+    if (standardList.includes(type)) {
+      return { type, spec, custom: '' };
+    } else {
+      return { type: 'Other', spec, custom: type };
+    }
+  }
+  const standardList = level === 'Bachelors' ? UG_DEGREES : PG_DEGREES;
+  if (standardList.includes(degreeName.trim())) {
+    return { type: degreeName.trim(), spec: '', custom: '' };
+  }
+  return { type: 'Other', spec: '', custom: degreeName.trim() };
+};
+
+const buildDegreeName = (type, spec, custom) => {
+  const finalType = type === 'Other' ? (custom || '').trim() : type;
+  const finalSpec = (spec || '').trim();
+  if (finalType && finalSpec) {
+    return `${finalType} (${finalSpec})`;
+  }
+  return finalType || finalSpec || '';
+};
+
 export default function ApplicationForm() {
   const { jobId } = useParams();
   const navigate = useNavigate();
@@ -1035,16 +1067,6 @@ export default function ApplicationForm() {
                 </div>
               </div>
  
-              <div className="form-group">
-                <label className="form-label">Extracurriculars (if any)</label>
-                <textarea 
-                  className="form-input" 
-                  value={extracurriculars} 
-                  onChange={e => setExtracurriculars(e.target.value)} 
-                  placeholder="Tell us about your hobbies, sports, volunteering, or other interests..."
-                />
-                <div className="error-text">Current Word Count: {countWords(extracurriculars)}/100</div>
-              </div>
 
               <button type="submit" className="btn-primary" style={{width: '100%'}}>Proceed to Education Options</button>
             </>
@@ -1070,7 +1092,60 @@ export default function ApplicationForm() {
               {grads.map((g, i) => (
                 <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
                   <div className="form-group"><label className="form-label">University</label><input required className="form-input" value={g.university} onChange={e => updateEntry(setGrads, grads, i, 'university', e.target.value)} /></div>
-                  <div className="form-group"><label className="form-label">Degree Name</label><input required className="form-input" value={g.degree_name} onChange={e => updateEntry(setGrads, grads, i, 'degree_name', e.target.value)} /></div>
+                  {(() => {
+                    const { type, spec, custom } = parseDegree(g.degree_name, 'Bachelors');
+                    return (
+                      <>
+                        <div className="form-group">
+                          <label className="form-label">Degree Type</label>
+                          <select 
+                            required 
+                            className="form-input" 
+                            value={type} 
+                            onChange={e => {
+                              const newType = e.target.value;
+                              const newName = buildDegreeName(newType, spec, newType === 'Other' ? custom : '');
+                              updateEntry(setGrads, grads, i, 'degree_name', newName);
+                            }}
+                          >
+                            <option value="">-- Select Degree --</option>
+                            {UG_DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        {type === 'Other' && (
+                          <div className="form-group">
+                            <label className="form-label">Custom Degree Name</label>
+                            <input 
+                              required 
+                              className="form-input" 
+                              placeholder="e.g. B.Sc. Hons" 
+                              value={custom} 
+                              onChange={e => {
+                                const newCustom = e.target.value;
+                                const newName = buildDegreeName('Other', spec, newCustom);
+                                updateEntry(setGrads, grads, i, 'degree_name', newName);
+                              }} 
+                            />
+                          </div>
+                        )}
+                        <div className="form-group">
+                          <label className="form-label">Specialization / Discipline</label>
+                          <input 
+                            required 
+                            className="form-input" 
+                            placeholder="e.g. Economics, Mathematics" 
+                            value={spec} 
+                            onChange={e => {
+                              const newSpec = e.target.value;
+                              const newName = buildDegreeName(type, newSpec, custom);
+                              updateEntry(setGrads, grads, i, 'degree_name', newName);
+                            }} 
+                          />
+                        </div>
+                      </>
+                    );
+                  })()}
                   <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setGrads, grads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
                   <div className="form-group"><label className="form-label">Score (&lt;= {g.score_type==='Percentage' ? '100' : '10'})</label><input required type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setGrads, grads, i, 'score_value', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Year of Passing (1950 - 2030)</label><input required={i === 0 || !!g.university || !!g.degree_name || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setGrads, grads, i, 'grad_year', e.target.value)} /></div>
@@ -1084,7 +1159,57 @@ export default function ApplicationForm() {
               {postGrads.map((g, i) => (
                 <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
                   <div className="form-group"><label className="form-label">University</label><input className="form-input" value={g.university} onChange={e => updateEntry(setPostGrads, postGrads, i, 'university', e.target.value)} /></div>
-                  <div className="form-group"><label className="form-label">Degree Name</label><input className="form-input" value={g.degree_name} onChange={e => updateEntry(setPostGrads, postGrads, i, 'degree_name', e.target.value)} /></div>
+                  {(() => {
+                    const { type, spec, custom } = parseDegree(g.degree_name, 'Masters');
+                    return (
+                      <>
+                        <div className="form-group">
+                          <label className="form-label">Degree Type</label>
+                          <select 
+                            className="form-input" 
+                            value={type} 
+                            onChange={e => {
+                              const newType = e.target.value;
+                              const newName = buildDegreeName(newType, spec, newType === 'Other' ? custom : '');
+                              updateEntry(setPostGrads, postGrads, i, 'degree_name', newName);
+                            }}
+                          >
+                            <option value="">-- Select Degree --</option>
+                            {PG_DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        {type === 'Other' && (
+                          <div className="form-group">
+                            <label className="form-label">Custom Degree Name</label>
+                            <input 
+                              className="form-input" 
+                              placeholder="e.g. M.Sc. Hons" 
+                              value={custom} 
+                              onChange={e => {
+                                const newCustom = e.target.value;
+                                const newName = buildDegreeName('Other', spec, newCustom);
+                                updateEntry(setPostGrads, postGrads, i, 'degree_name', newName);
+                              }} 
+                            />
+                          </div>
+                        )}
+                        <div className="form-group">
+                          <label className="form-label">Specialization / Discipline</label>
+                          <input 
+                            className="form-input" 
+                            placeholder="e.g. Economics, Finance" 
+                            value={spec} 
+                            onChange={e => {
+                              const newSpec = e.target.value;
+                              const newName = buildDegreeName(type, newSpec, custom);
+                              updateEntry(setPostGrads, postGrads, i, 'degree_name', newName);
+                            }} 
+                          />
+                        </div>
+                      </>
+                    );
+                  })()}
                   <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
                   <div className="form-group"><label className="form-label">Score</label><input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_value', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Year of Passing (1950 - 2030)</label><input required={!!g.university || !!g.degree_name || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setPostGrads, postGrads, i, 'grad_year', e.target.value)} /></div>
@@ -1365,15 +1490,6 @@ export default function ApplicationForm() {
                         onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       />
                     </div>
-                    <div className="resume-inline-group" style={{ gridColumn: 'span 2' }}>
-                      <label className="resume-inline-label">Extracurriculars</label>
-                      <textarea 
-                        className="resume-inline-input resume-inline-textarea"
-                        value={extracurriculars}
-                        onChange={e => setExtracurriculars(e.target.value)}
-                      />
-                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Current word count: {countWords(extracurriculars)}/100</div>
-                    </div>
                   </div>
                 ) : (
                   <>
@@ -1402,17 +1518,6 @@ export default function ApplicationForm() {
                 </div>
               </div>
 
-              {/* Extracurriculars Summary (View Mode Only, when not editing header) */}
-              {!editPersonal && extracurriculars && (
-                <div className="resume-section">
-                  <div className="resume-section-title-container">
-                    <h3 className="resume-section-title">Personal Summary & Extracurriculars</h3>
-                  </div>
-                  <p style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontStyle: 'italic', lineHeight: '1.6' }}>
-                    "{extracurriculars}"
-                  </p>
-                </div>
-              )}
 
               {/* Education Section */}
               <div className="resume-section">
@@ -1458,10 +1563,57 @@ export default function ApplicationForm() {
                           <label className="resume-inline-label">University</label>
                           <input className="resume-inline-input" value={g.university} onChange={e => updateEntry(setGrads, grads, i, 'university', e.target.value)} />
                         </div>
-                        <div className="resume-inline-group">
-                          <label className="resume-inline-label">Degree Name</label>
-                          <input className="resume-inline-input" value={g.degree_name} onChange={e => updateEntry(setGrads, grads, i, 'degree_name', e.target.value)} />
-                        </div>
+                        {(() => {
+                          const { type, spec, custom } = parseDegree(g.degree_name, 'Bachelors');
+                          return (
+                            <>
+                              <div className="resume-inline-group">
+                                <label className="resume-inline-label">Degree Type</label>
+                                <select 
+                                  className="resume-inline-input" 
+                                  value={type} 
+                                  onChange={e => {
+                                    const newType = e.target.value;
+                                    const newName = buildDegreeName(newType, spec, newType === 'Other' ? custom : '');
+                                    updateEntry(setGrads, grads, i, 'degree_name', newName);
+                                  }}
+                                >
+                                  <option value="">-- Select Degree --</option>
+                                  {UG_DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
+                                  <option value="Other">Other</option>
+                                </select>
+                              </div>
+                              {type === 'Other' && (
+                                <div className="resume-inline-group">
+                                  <label className="resume-inline-label">Custom Degree Name</label>
+                                  <input 
+                                    className="resume-inline-input" 
+                                    placeholder="e.g. B.Sc. Hons" 
+                                    value={custom} 
+                                    onChange={e => {
+                                      const newCustom = e.target.value;
+                                      const newName = buildDegreeName('Other', spec, newCustom);
+                                      updateEntry(setGrads, grads, i, 'degree_name', newName);
+                                    }} 
+                                  />
+                                </div>
+                              )}
+                              <div className="resume-inline-group">
+                                <label className="resume-inline-label">Specialization / Discipline</label>
+                                <input 
+                                  className="resume-inline-input" 
+                                  placeholder="e.g. Economics, Physics" 
+                                  value={spec} 
+                                  onChange={e => {
+                                    const newSpec = e.target.value;
+                                    const newName = buildDegreeName(type, newSpec, custom);
+                                    updateEntry(setGrads, grads, i, 'degree_name', newName);
+                                  }} 
+                                />
+                              </div>
+                            </>
+                          );
+                        })()}
                         <div className="resume-inline-group">
                           <label className="resume-inline-label">Score Type</label>
                           <select className="resume-inline-input" value={g.score_type} onChange={e => updateEntry(setGrads, grads, i, 'score_type', e.target.value)}>
@@ -1493,10 +1645,57 @@ export default function ApplicationForm() {
                           <label className="resume-inline-label">University</label>
                           <input className="resume-inline-input" value={g.university} onChange={e => updateEntry(setPostGrads, postGrads, i, 'university', e.target.value)} />
                         </div>
-                        <div className="resume-inline-group">
-                          <label className="resume-inline-label">Degree Name</label>
-                          <input className="resume-inline-input" value={g.degree_name} onChange={e => updateEntry(setPostGrads, postGrads, i, 'degree_name', e.target.value)} />
-                        </div>
+                        {(() => {
+                          const { type, spec, custom } = parseDegree(g.degree_name, 'Masters');
+                          return (
+                            <>
+                              <div className="resume-inline-group">
+                                <label className="resume-inline-label">Degree Type</label>
+                                <select 
+                                  className="resume-inline-input" 
+                                  value={type} 
+                                  onChange={e => {
+                                    const newType = e.target.value;
+                                    const newName = buildDegreeName(newType, spec, newType === 'Other' ? custom : '');
+                                    updateEntry(setPostGrads, postGrads, i, 'degree_name', newName);
+                                  }}
+                                >
+                                  <option value="">-- Select Degree --</option>
+                                  {PG_DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
+                                  <option value="Other">Other</option>
+                                </select>
+                              </div>
+                              {type === 'Other' && (
+                                <div className="resume-inline-group">
+                                  <label className="resume-inline-label">Custom Degree Name</label>
+                                  <input 
+                                    className="resume-inline-input" 
+                                    placeholder="e.g. M.Sc. Hons" 
+                                    value={custom} 
+                                    onChange={e => {
+                                      const newCustom = e.target.value;
+                                      const newName = buildDegreeName('Other', spec, newCustom);
+                                      updateEntry(setPostGrads, postGrads, i, 'degree_name', newName);
+                                    }} 
+                                  />
+                                </div>
+                              )}
+                              <div className="resume-inline-group">
+                                <label className="resume-inline-label">Specialization / Discipline</label>
+                                <input 
+                                  className="resume-inline-input" 
+                                  placeholder="e.g. Economics, Finance" 
+                                  value={spec} 
+                                  onChange={e => {
+                                    const newSpec = e.target.value;
+                                    const newName = buildDegreeName(type, newSpec, custom);
+                                    updateEntry(setPostGrads, postGrads, i, 'degree_name', newName);
+                                  }} 
+                                />
+                              </div>
+                            </>
+                          );
+                        })()}
                         <div className="resume-inline-group">
                           <label className="resume-inline-label">Score Type</label>
                           <select className="resume-inline-input" value={g.score_type} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_type', e.target.value)}>
