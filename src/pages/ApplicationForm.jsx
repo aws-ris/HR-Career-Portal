@@ -6,6 +6,95 @@ import { CheckCircle2 } from 'lucide-react';
 const UG_DEGREES = ['B.A.', 'B.Sc.', 'B.Com', 'B.Tech', 'B.E.', 'B.B.A.', 'B.C.A.', 'LL.B.', 'MBBS', 'B.Arch', 'B.Ed.'];
 const PG_DEGREES = ['M.A.', 'M.Sc.', 'M.Com', 'M.Tech', 'M.E.', 'M.B.A.', 'M.C.A.', 'LL.M.', 'M.Ed.', 'MD', 'MS'];
 
+const COMMON_SPECIALIZATIONS = [
+  'Economics',
+  'Development Economics',
+  'Applied Economics',
+  'Econometrics',
+  'Macroeconomics',
+  'Microeconomics',
+  'Computer Science',
+  'Information Technology',
+  'Data Science',
+  'Software Engineering',
+  'Mathematics',
+  'Statistics',
+  'Applied Mathematics',
+  'Physics',
+  'Chemistry',
+  'Biotechnology',
+  'Finance',
+  'Business Administration',
+  'Management'
+];
+
+const getSuggestion = (inputVal) => {
+  if (!inputVal || !inputVal.trim()) return '';
+  const match = COMMON_SPECIALIZATIONS.find(s => 
+    s.toLowerCase().startsWith(inputVal.toLowerCase()) && 
+    s.toLowerCase() !== inputVal.toLowerCase()
+  );
+  if (match) {
+    return match.substring(inputVal.length);
+  }
+  return '';
+};
+
+const SpecializationInput = ({ required, value, onChange, placeholder, className }) => {
+  const [suggestion, setSuggestion] = useState('');
+  
+  useEffect(() => {
+    setSuggestion(getSuggestion(value));
+  }, [value]);
+  
+  const handleKeyDown = (e) => {
+    if ((e.key === 'Tab' || e.key === 'ArrowRight') && suggestion) {
+      e.preventDefault();
+      onChange(value + suggestion);
+    }
+  };
+  
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <input 
+        required={required}
+        className={className}
+        placeholder={placeholder}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        style={{ position: 'relative', zIndex: 1 }}
+      />
+      {suggestion && (
+        <div 
+          className={className} 
+          style={{ 
+            position: 'absolute', 
+            top: 0, 
+            left: 0, 
+            width: '100%', 
+            pointerEvents: 'none', 
+            color: '#94a3b8', 
+            background: 'transparent',
+            borderColor: 'transparent',
+            boxShadow: 'none',
+            whiteSpace: 'pre',
+            fontFamily: 'inherit',
+            fontSize: 'inherit',
+            lineHeight: 'inherit',
+            padding: 'inherit',
+            boxSizing: 'border-box',
+            zIndex: 2
+          }}
+        >
+          <span style={{ color: 'transparent' }}>{value}</span>
+          {suggestion}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const parseDegree = (degreeName, level) => {
   if (!degreeName) return { type: '', spec: '', custom: '' };
   const match = degreeName.match(/^([^(]+)\s*\(([^)]+)\)$/);
@@ -27,13 +116,14 @@ const parseDegree = (degreeName, level) => {
 };
 
 const buildDegreeName = (type, spec, custom) => {
-  const finalType = type === 'Other' ? (custom || '').trim() : type;
-  const finalSpec = (spec || '').trim();
+  const finalType = type === 'Other' ? (custom || '') : type;
+  const finalSpec = (spec || '');
   if (finalType && finalSpec) {
     return `${finalType} (${finalSpec})`;
   }
   return finalType || finalSpec || '';
 };
+
 
 export default function ApplicationForm() {
   const { jobId } = useParams();
@@ -81,8 +171,33 @@ export default function ApplicationForm() {
   // Step 2
   const [classX, setClassX] = useState(() => savedDraft.classX || '');
   const [classXII, setClassXII] = useState(() => savedDraft.classXII || '');
-  const [grads, setGrads] = useState(() => savedDraft.grads || [{ university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' }]);
-  const [postGrads, setPostGrads] = useState(() => savedDraft.postGrads || [{ university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' }]);
+  const [grads, setGrads] = useState(() => {
+    const raw = savedDraft.grads || [{ university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' }];
+    return raw.map(g => {
+      if (g.degree_select !== undefined) return g;
+      const parsed = parseDegree(g.degree_name || '', 'Bachelors');
+      return {
+        ...g,
+        degree_select: parsed.type,
+        degree_custom: parsed.custom,
+        degree_spec: parsed.spec
+      };
+    });
+  });
+  const [postGrads, setPostGrads] = useState(() => {
+    const raw = savedDraft.postGrads || [{ university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' }];
+    return raw.map(g => {
+      if (g.degree_select !== undefined) return g;
+      const parsed = parseDegree(g.degree_name || '', 'Masters');
+      return {
+        ...g,
+        degree_select: parsed.type,
+        degree_custom: parsed.custom,
+        degree_spec: parsed.spec
+      };
+    });
+  });
+
   const [doctorates, setDoctorates] = useState(() => savedDraft.doctorates || [{ university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '' }]);
 
   // Step 3
@@ -1092,66 +1207,95 @@ export default function ApplicationForm() {
               {grads.map((g, i) => (
                 <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
                   <div className="form-group"><label className="form-label">University</label><input required className="form-input" value={g.university} onChange={e => updateEntry(setGrads, grads, i, 'university', e.target.value)} /></div>
-                  {(() => {
-                    const { type, spec, custom } = parseDegree(g.degree_name, 'Bachelors');
-                    return (
-                      <>
-                        <div className="form-group">
-                          <label className="form-label">Degree Type</label>
-                          <select 
-                            required 
-                            className="form-input" 
-                            value={type} 
-                            onChange={e => {
-                              const newType = e.target.value;
-                              const newName = buildDegreeName(newType, spec, newType === 'Other' ? custom : '');
-                              updateEntry(setGrads, grads, i, 'degree_name', newName);
-                            }}
-                          >
-                            <option value="">-- Select Degree --</option>
-                            {UG_DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
-                            <option value="Other">Other</option>
-                          </select>
-                        </div>
-                        {type === 'Other' && (
-                          <div className="form-group">
-                            <label className="form-label">Custom Degree Name</label>
-                            <input 
-                              required 
-                              className="form-input" 
-                              placeholder="e.g. B.Sc. Hons" 
-                              value={custom} 
-                              onChange={e => {
-                                const newCustom = e.target.value;
-                                const newName = buildDegreeName('Other', spec, newCustom);
-                                updateEntry(setGrads, grads, i, 'degree_name', newName);
-                              }} 
-                            />
-                          </div>
-                        )}
-                        <div className="form-group">
-                          <label className="form-label">Specialization / Discipline</label>
-                          <input 
-                            required 
-                            className="form-input" 
-                            placeholder="e.g. Economics, Mathematics" 
-                            value={spec} 
-                            onChange={e => {
-                              const newSpec = e.target.value;
-                              const newName = buildDegreeName(type, newSpec, custom);
-                              updateEntry(setGrads, grads, i, 'degree_name', newName);
-                            }} 
-                          />
-                        </div>
-                      </>
-                    );
-                  })()}
+                  <div className="form-group">
+                    <label className="form-label">Degree Type</label>
+                    {g.degree_select === 'Other' ? (
+                      <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                        <input 
+                          required 
+                          className="form-input" 
+                          placeholder="e.g. B.Sc. Hons" 
+                          value={g.degree_custom || ''} 
+                          onChange={e => {
+                            const newCustom = e.target.value;
+                            const newName = buildDegreeName('Other', g.degree_spec, newCustom);
+                            const newGrads = [...grads];
+                            newGrads[i] = {
+                              ...newGrads[i],
+                              degree_custom: newCustom,
+                              degree_name: newName
+                            };
+                            setGrads(newGrads);
+                          }} 
+                        />
+                        <button 
+                          type="button" 
+                          className="btn-secondary" 
+                          style={{ whiteSpace: 'nowrap', padding: '0 0.75rem', fontSize: '0.875rem' }}
+                          onClick={() => {
+                            const newName = buildDegreeName('', g.degree_spec, '');
+                            const newGrads = [...grads];
+                            newGrads[i] = {
+                              ...newGrads[i],
+                              degree_select: '',
+                              degree_custom: '',
+                              degree_name: newName
+                            };
+                            setGrads(newGrads);
+                          }}
+                        >
+                          Select List
+                        </button>
+                      </div>
+                    ) : (
+                      <select 
+                        required 
+                        className="form-input" 
+                        value={g.degree_select || ''} 
+                        onChange={e => {
+                          const newSelect = e.target.value;
+                          const newName = buildDegreeName(newSelect, g.degree_spec, g.degree_custom);
+                          const newGrads = [...grads];
+                          newGrads[i] = {
+                            ...newGrads[i],
+                            degree_select: newSelect,
+                            degree_name: newName
+                          };
+                          setGrads(newGrads);
+                        }}
+                      >
+                        <option value="">-- Select Degree --</option>
+                        {UG_DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
+                        <option value="Other">Other (please specify)</option>
+                      </select>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Specialization / Discipline</label>
+                    <SpecializationInput 
+                      required={true}
+                      className="form-input" 
+                      placeholder="e.g. Economics, Mathematics" 
+                      value={g.degree_spec || ''} 
+                      onChange={newSpec => {
+                        const newName = buildDegreeName(g.degree_select, newSpec, g.degree_custom);
+                        const newGrads = [...grads];
+                        newGrads[i] = {
+                          ...newGrads[i],
+                          degree_spec: newSpec,
+                          degree_name: newName
+                        };
+                        setGrads(newGrads);
+                      }} 
+                    />
+                  </div>
                   <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setGrads, grads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
                   <div className="form-group"><label className="form-label">Score (&lt;= {g.score_type==='Percentage' ? '100' : '10'})</label><input required type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setGrads, grads, i, 'score_value', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Year of Passing (1950 - 2030)</label><input required={i === 0 || !!g.university || !!g.degree_name || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setGrads, grads, i, 'grad_year', e.target.value)} /></div>
                 </div>
               ))}
-              <button type="button" className="btn-secondary" disabled={grads.length>=3} onClick={() => addEntry(setGrads, grads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Graduation Detail</button>
+              <button type="button" className="btn-secondary" disabled={grads.length>=3} onClick={() => addEntry(setGrads, grads, 3, { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Graduation Detail</button>
+
 
               <hr style={dividerStyle} />
 
@@ -1159,63 +1303,93 @@ export default function ApplicationForm() {
               {postGrads.map((g, i) => (
                 <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
                   <div className="form-group"><label className="form-label">University</label><input className="form-input" value={g.university} onChange={e => updateEntry(setPostGrads, postGrads, i, 'university', e.target.value)} /></div>
-                  {(() => {
-                    const { type, spec, custom } = parseDegree(g.degree_name, 'Masters');
-                    return (
-                      <>
-                        <div className="form-group">
-                          <label className="form-label">Degree Type</label>
-                          <select 
-                            className="form-input" 
-                            value={type} 
-                            onChange={e => {
-                              const newType = e.target.value;
-                              const newName = buildDegreeName(newType, spec, newType === 'Other' ? custom : '');
-                              updateEntry(setPostGrads, postGrads, i, 'degree_name', newName);
-                            }}
-                          >
-                            <option value="">-- Select Degree --</option>
-                            {PG_DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
-                            <option value="Other">Other</option>
-                          </select>
-                        </div>
-                        {type === 'Other' && (
-                          <div className="form-group">
-                            <label className="form-label">Custom Degree Name</label>
-                            <input 
-                              className="form-input" 
-                              placeholder="e.g. M.Sc. Hons" 
-                              value={custom} 
-                              onChange={e => {
-                                const newCustom = e.target.value;
-                                const newName = buildDegreeName('Other', spec, newCustom);
-                                updateEntry(setPostGrads, postGrads, i, 'degree_name', newName);
-                              }} 
-                            />
-                          </div>
-                        )}
-                        <div className="form-group">
-                          <label className="form-label">Specialization / Discipline</label>
-                          <input 
-                            className="form-input" 
-                            placeholder="e.g. Economics, Finance" 
-                            value={spec} 
-                            onChange={e => {
-                              const newSpec = e.target.value;
-                              const newName = buildDegreeName(type, newSpec, custom);
-                              updateEntry(setPostGrads, postGrads, i, 'degree_name', newName);
-                            }} 
-                          />
-                        </div>
-                      </>
-                    );
-                  })()}
+                  <div className="form-group">
+                    <label className="form-label">Degree Type</label>
+                    {g.degree_select === 'Other' ? (
+                      <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                        <input 
+                          className="form-input" 
+                          placeholder="e.g. M.Sc. Hons" 
+                          value={g.degree_custom || ''} 
+                          onChange={e => {
+                            const newCustom = e.target.value;
+                            const newName = buildDegreeName('Other', g.degree_spec, newCustom);
+                            const newPostGrads = [...postGrads];
+                            newPostGrads[i] = {
+                              ...newPostGrads[i],
+                              degree_custom: newCustom,
+                              degree_name: newName
+                            };
+                            setPostGrads(newPostGrads);
+                          }} 
+                        />
+                        <button 
+                          type="button" 
+                          className="btn-secondary" 
+                          style={{ whiteSpace: 'nowrap', padding: '0 0.75rem', fontSize: '0.875rem' }}
+                          onClick={() => {
+                            const newName = buildDegreeName('', g.degree_spec, '');
+                            const newPostGrads = [...postGrads];
+                            newPostGrads[i] = {
+                              ...newPostGrads[i],
+                              degree_select: '',
+                              degree_custom: '',
+                              degree_name: newName
+                            };
+                            setPostGrads(newPostGrads);
+                          }}
+                        >
+                          Select List
+                        </button>
+                      </div>
+                    ) : (
+                      <select 
+                        className="form-input" 
+                        value={g.degree_select || ''} 
+                        onChange={e => {
+                          const newSelect = e.target.value;
+                          const newName = buildDegreeName(newSelect, g.degree_spec, g.degree_custom);
+                          const newPostGrads = [...postGrads];
+                          newPostGrads[i] = {
+                            ...newPostGrads[i],
+                            degree_select: newSelect,
+                            degree_name: newName
+                          };
+                          setPostGrads(newPostGrads);
+                        }}
+                      >
+                        <option value="">-- Select Degree --</option>
+                        {PG_DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
+                        <option value="Other">Other (please specify)</option>
+                      </select>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Specialization / Discipline</label>
+                    <SpecializationInput 
+                      required={false}
+                      className="form-input" 
+                      placeholder="e.g. Economics, Finance" 
+                      value={g.degree_spec || ''} 
+                      onChange={newSpec => {
+                        const newName = buildDegreeName(g.degree_select, newSpec, g.degree_custom);
+                        const newPostGrads = [...postGrads];
+                        newPostGrads[i] = {
+                          ...newPostGrads[i],
+                          degree_spec: newSpec,
+                          degree_name: newName
+                        };
+                        setPostGrads(newPostGrads);
+                      }} 
+                    />
+                  </div>
                   <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
                   <div className="form-group"><label className="form-label">Score</label><input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_value', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Year of Passing (1950 - 2030)</label><input required={!!g.university || !!g.degree_name || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setPostGrads, postGrads, i, 'grad_year', e.target.value)} /></div>
                 </div>
               ))}
-              <button type="button" className="btn-secondary" disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Post Graduation</button>
+              <button type="button" className="btn-secondary" disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Post Graduation</button>
+
 
               <hr style={dividerStyle} />
 
@@ -1563,57 +1737,86 @@ export default function ApplicationForm() {
                           <label className="resume-inline-label">University</label>
                           <input className="resume-inline-input" value={g.university} onChange={e => updateEntry(setGrads, grads, i, 'university', e.target.value)} />
                         </div>
-                        {(() => {
-                          const { type, spec, custom } = parseDegree(g.degree_name, 'Bachelors');
-                          return (
-                            <>
-                              <div className="resume-inline-group">
-                                <label className="resume-inline-label">Degree Type</label>
-                                <select 
-                                  className="resume-inline-input" 
-                                  value={type} 
-                                  onChange={e => {
-                                    const newType = e.target.value;
-                                    const newName = buildDegreeName(newType, spec, newType === 'Other' ? custom : '');
-                                    updateEntry(setGrads, grads, i, 'degree_name', newName);
-                                  }}
-                                >
-                                  <option value="">-- Select Degree --</option>
-                                  {UG_DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
-                                  <option value="Other">Other</option>
-                                </select>
-                              </div>
-                              {type === 'Other' && (
-                                <div className="resume-inline-group">
-                                  <label className="resume-inline-label">Custom Degree Name</label>
-                                  <input 
-                                    className="resume-inline-input" 
-                                    placeholder="e.g. B.Sc. Hons" 
-                                    value={custom} 
-                                    onChange={e => {
-                                      const newCustom = e.target.value;
-                                      const newName = buildDegreeName('Other', spec, newCustom);
-                                      updateEntry(setGrads, grads, i, 'degree_name', newName);
-                                    }} 
-                                  />
-                                </div>
-                              )}
-                              <div className="resume-inline-group">
-                                <label className="resume-inline-label">Specialization / Discipline</label>
-                                <input 
-                                  className="resume-inline-input" 
-                                  placeholder="e.g. Economics, Physics" 
-                                  value={spec} 
-                                  onChange={e => {
-                                    const newSpec = e.target.value;
-                                    const newName = buildDegreeName(type, newSpec, custom);
-                                    updateEntry(setGrads, grads, i, 'degree_name', newName);
-                                  }} 
-                                />
-                              </div>
-                            </>
-                          );
-                        })()}
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Degree Type</label>
+                          {g.degree_select === 'Other' ? (
+                            <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                              <input 
+                                className="resume-inline-input" 
+                                placeholder="e.g. B.Sc. Hons" 
+                                value={g.degree_custom || ''} 
+                                onChange={e => {
+                                  const newCustom = e.target.value;
+                                  const newName = buildDegreeName('Other', g.degree_spec, newCustom);
+                                  const newGrads = [...grads];
+                                  newGrads[i] = {
+                                    ...newGrads[i],
+                                    degree_custom: newCustom,
+                                    degree_name: newName
+                                  };
+                                  setGrads(newGrads);
+                                }} 
+                              />
+                              <button 
+                                type="button" 
+                                className="btn-secondary" 
+                                style={{ whiteSpace: 'nowrap', padding: '0 0.5rem', fontSize: '0.75rem' }}
+                                onClick={() => {
+                                  const newName = buildDegreeName('', g.degree_spec, '');
+                                  const newGrads = [...grads];
+                                  newGrads[i] = {
+                                    ...newGrads[i],
+                                    degree_select: '',
+                                    degree_custom: '',
+                                    degree_name: newName
+                                  };
+                                  setGrads(newGrads);
+                                }}
+                              >
+                                List
+                              </button>
+                            </div>
+                          ) : (
+                            <select 
+                              className="resume-inline-input" 
+                              value={g.degree_select || ''} 
+                              onChange={e => {
+                                const newSelect = e.target.value;
+                                const newName = buildDegreeName(newSelect, g.degree_spec, g.degree_custom);
+                                const newGrads = [...grads];
+                                newGrads[i] = {
+                                  ...newGrads[i],
+                                  degree_select: newSelect,
+                                  degree_name: newName
+                                };
+                                setGrads(newGrads);
+                              }}
+                            >
+                              <option value="">-- Select Degree --</option>
+                              {UG_DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
+                              <option value="Other">Other (please specify)</option>
+                            </select>
+                          )}
+                        </div>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Specialization / Discipline</label>
+                          <SpecializationInput 
+                            required={false}
+                            className="resume-inline-input" 
+                            placeholder="e.g. Economics, Physics" 
+                            value={g.degree_spec || ''} 
+                            onChange={newSpec => {
+                              const newName = buildDegreeName(g.degree_select, newSpec, g.degree_custom);
+                              const newGrads = [...grads];
+                              newGrads[i] = {
+                                ...newGrads[i],
+                                degree_spec: newSpec,
+                                degree_name: newName
+                              };
+                              setGrads(newGrads);
+                            }} 
+                          />
+                        </div>
                         <div className="resume-inline-group">
                           <label className="resume-inline-label">Score Type</label>
                           <select className="resume-inline-input" value={g.score_type} onChange={e => updateEntry(setGrads, grads, i, 'score_type', e.target.value)}>
@@ -1636,7 +1839,7 @@ export default function ApplicationForm() {
                         )}
                       </div>
                     ))}
-                    <button type="button" className="btn-secondary" style={{ marginTop: '0', marginBottom: '1.5rem' }} disabled={grads.length>=3} onClick={() => addEntry(setGrads, grads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Graduation Detail</button>
+                    <button type="button" className="btn-secondary" style={{ marginTop: '0', marginBottom: '1.5rem' }} disabled={grads.length>=3} onClick={() => addEntry(setGrads, grads, 3, { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Graduation Detail</button>
 
                     <h4 style={{ marginBottom: '0.5rem' }}>Post Graduation Details</h4>
                     {postGrads.map((g, i) => (
@@ -1645,57 +1848,86 @@ export default function ApplicationForm() {
                           <label className="resume-inline-label">University</label>
                           <input className="resume-inline-input" value={g.university} onChange={e => updateEntry(setPostGrads, postGrads, i, 'university', e.target.value)} />
                         </div>
-                        {(() => {
-                          const { type, spec, custom } = parseDegree(g.degree_name, 'Masters');
-                          return (
-                            <>
-                              <div className="resume-inline-group">
-                                <label className="resume-inline-label">Degree Type</label>
-                                <select 
-                                  className="resume-inline-input" 
-                                  value={type} 
-                                  onChange={e => {
-                                    const newType = e.target.value;
-                                    const newName = buildDegreeName(newType, spec, newType === 'Other' ? custom : '');
-                                    updateEntry(setPostGrads, postGrads, i, 'degree_name', newName);
-                                  }}
-                                >
-                                  <option value="">-- Select Degree --</option>
-                                  {PG_DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
-                                  <option value="Other">Other</option>
-                                </select>
-                              </div>
-                              {type === 'Other' && (
-                                <div className="resume-inline-group">
-                                  <label className="resume-inline-label">Custom Degree Name</label>
-                                  <input 
-                                    className="resume-inline-input" 
-                                    placeholder="e.g. M.Sc. Hons" 
-                                    value={custom} 
-                                    onChange={e => {
-                                      const newCustom = e.target.value;
-                                      const newName = buildDegreeName('Other', spec, newCustom);
-                                      updateEntry(setPostGrads, postGrads, i, 'degree_name', newName);
-                                    }} 
-                                  />
-                                </div>
-                              )}
-                              <div className="resume-inline-group">
-                                <label className="resume-inline-label">Specialization / Discipline</label>
-                                <input 
-                                  className="resume-inline-input" 
-                                  placeholder="e.g. Economics, Finance" 
-                                  value={spec} 
-                                  onChange={e => {
-                                    const newSpec = e.target.value;
-                                    const newName = buildDegreeName(type, newSpec, custom);
-                                    updateEntry(setPostGrads, postGrads, i, 'degree_name', newName);
-                                  }} 
-                                />
-                              </div>
-                            </>
-                          );
-                        })()}
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Degree Type</label>
+                          {g.degree_select === 'Other' ? (
+                            <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                              <input 
+                                className="resume-inline-input" 
+                                placeholder="e.g. M.Sc. Hons" 
+                                value={g.degree_custom || ''} 
+                                onChange={e => {
+                                  const newCustom = e.target.value;
+                                  const newName = buildDegreeName('Other', g.degree_spec, newCustom);
+                                  const newPostGrads = [...postGrads];
+                                  newPostGrads[i] = {
+                                    ...newPostGrads[i],
+                                    degree_custom: newCustom,
+                                    degree_name: newName
+                                  };
+                                  setPostGrads(newPostGrads);
+                                }} 
+                              />
+                              <button 
+                                type="button" 
+                                className="btn-secondary" 
+                                style={{ whiteSpace: 'nowrap', padding: '0 0.5rem', fontSize: '0.75rem' }}
+                                onClick={() => {
+                                  const newName = buildDegreeName('', g.degree_spec, '');
+                                  const newPostGrads = [...postGrads];
+                                  newPostGrads[i] = {
+                                    ...newPostGrads[i],
+                                    degree_select: '',
+                                    degree_custom: '',
+                                    degree_name: newName
+                                  };
+                                  setPostGrads(newPostGrads);
+                                }}
+                              >
+                                List
+                              </button>
+                            </div>
+                          ) : (
+                            <select 
+                              className="resume-inline-input" 
+                              value={g.degree_select || ''} 
+                              onChange={e => {
+                                const newSelect = e.target.value;
+                                const newName = buildDegreeName(newSelect, g.degree_spec, g.degree_custom);
+                                const newPostGrads = [...postGrads];
+                                newPostGrads[i] = {
+                                  ...newPostGrads[i],
+                                  degree_select: newSelect,
+                                  degree_name: newName
+                                };
+                                setPostGrads(newPostGrads);
+                              }}
+                            >
+                              <option value="">-- Select Degree --</option>
+                              {PG_DEGREES.map(d => <option key={d} value={d}>{d}</option>)}
+                              <option value="Other">Other (please specify)</option>
+                            </select>
+                          )}
+                        </div>
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Specialization / Discipline</label>
+                          <SpecializationInput 
+                            required={false}
+                            className="resume-inline-input" 
+                            placeholder="e.g. Economics, Finance" 
+                            value={g.degree_spec || ''} 
+                            onChange={newSpec => {
+                              const newName = buildDegreeName(g.degree_select, newSpec, g.degree_custom);
+                              const newPostGrads = [...postGrads];
+                              newPostGrads[i] = {
+                                ...newPostGrads[i],
+                                degree_spec: newSpec,
+                                degree_name: newName
+                              };
+                              setPostGrads(newPostGrads);
+                            }} 
+                          />
+                        </div>
                         <div className="resume-inline-group">
                           <label className="resume-inline-label">Score Type</label>
                           <select className="resume-inline-input" value={g.score_type} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_type', e.target.value)}>
@@ -1716,7 +1948,7 @@ export default function ApplicationForm() {
                         </div>
                       </div>
                     ))}
-                    <button type="button" className="btn-secondary" style={{ marginTop: '0', marginBottom: '1.5rem' }} disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Post Graduation</button>
+                    <button type="button" className="btn-secondary" style={{ marginTop: '0', marginBottom: '1.5rem' }} disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Post Graduation</button>
 
                     <h4 style={{ marginBottom: '0.5rem' }}>Doctorate Details</h4>
                     {doctorates.map((g, i) => (
