@@ -165,29 +165,94 @@ textarea.form-input {
   background-color: #cbd5e1;
 }
 
-.step-indicator {
+.stepper-container {
+  max-width: 650px;
+  margin: 0 auto 2.5rem auto;
+  padding: 0 1rem;
+}
+
+.stepper-wrapper {
+  position: relative;
   display: flex;
-  justify-content: center;
   align-items: center;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 1rem;
+  justify-content: space-between;
 }
 
-.step-pill {
-  background-color: var(--input-bg);
+.stepper-track {
+  position: absolute;
+  top: 18px; /* half of 36px circle */
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: var(--border-color);
+  border-radius: 2px;
+  z-index: 1;
+}
+
+.stepper-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand-secondary) 0%, var(--brand-primary) 100%);
+  border-radius: 2px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stepper-steps {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.stepper-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80px;
+}
+
+.stepper-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 2px solid var(--border-color);
   color: var(--text-secondary);
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 0.875rem;
-  margin: 0 0.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
 }
 
-.step-pill.active {
-  background-color: #eff6ff;
+.stepper-label {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
+  white-space: nowrap;
+}
+
+/* active state */
+.stepper-step.active .stepper-circle {
+  border-color: var(--brand-secondary);
   color: var(--brand-primary);
-  border: 1px solid var(--brand-secondary);
+  background-color: #eff6ff;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+}
+
+.stepper-step.active .stepper-label {
+  color: var(--brand-primary);
+  font-weight: 700;
+}
+
+/* completed state */
+.stepper-step.completed .stepper-circle {
+  background-color: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: #ffffff;
 }
 
 .form-grid {
@@ -1528,7 +1593,7 @@ textarea.form-input {
     margin: 15mm 20mm !important; /* Re-establishes clean margins for the printable layout */
   }
   .app-header,
-  .step-indicator,
+  .stepper-container,
   .resume-actions-container,
   .section-edit-btn,
   .resume-section-actions,

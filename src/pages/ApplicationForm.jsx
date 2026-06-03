@@ -1081,12 +1081,35 @@ export default function ApplicationForm() {
       </header>
 
       <main className="main-container">
-        <div className="step-indicator" style={{ display: step === 0 ? 'none' : 'flex' }}>
-          <span className={`step-pill ${step >= 1 ? 'active' : ''}`}>1. Info</span>
-          <span className={`step-pill ${step >= 2 ? 'active' : ''}`}>2. Education</span>
-          <span className={`step-pill ${step >= 3 ? 'active' : ''}`}>3. Work Experience</span>
-          <span className={`step-pill ${step >= 4 ? 'active' : ''}`}>4. Publications</span>
-          <span className={`step-pill ${step >= 5 ? 'active' : ''}`}>5. Review & Submit</span>
+        <div className="stepper-container" style={{ display: step === 0 ? 'none' : 'block' }}>
+          <div className="stepper-wrapper">
+            <div className="stepper-track">
+              <div 
+                className="stepper-progress-fill" 
+                style={{ width: `${((step - 1) / 4) * 100}%` }}
+              />
+            </div>
+            <div className="stepper-steps">
+              {[
+                { label: 'Info', num: 1 },
+                { label: 'Education', num: 2 },
+                { label: 'Work Experience', num: 3 },
+                { label: 'Publications', num: 4 },
+                { label: 'Review & Submit', num: 5 }
+              ].map((s) => {
+                const isActive = step >= s.num;
+                const isCompleted = step > s.num;
+                return (
+                  <div key={s.num} className={`stepper-step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}>
+                    <div className="stepper-circle">
+                      {isCompleted ? '✓' : s.num}
+                    </div>
+                    <span className="stepper-label">{s.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {submitError && <div style={{background: '#fef2f2', color: '#ef4444', padding: '1rem', borderRadius: '8px', marginBottom: '1rem'}}>{submitError}</div>}
