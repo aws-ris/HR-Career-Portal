@@ -632,7 +632,7 @@ export default function ApplicationForm() {
       if (hasWork) {
         workExps.forEach((w, i) => {
           if (!w.company_name.trim() || !w.role.trim() || !w.start_date) {
-            errors.push(`Work Entry #${i + 1}: Company Name, Position, and Start Date are required.`);
+            errors.push(`Work Entry #${i + 1}: Organization, Designation, and Start Date are required.`);
           }
           if (w.description && countWords(w.description) > 40) {
             errors.push(`Work Entry #${i + 1}: Description exceeds 40 words.`);
@@ -794,8 +794,8 @@ export default function ApplicationForm() {
     if (hasWork) {
       workExps.forEach((w, i) => {
         if (w.company_name || w.role || w.start_date || w.description) {
-          if (!w.company_name.trim()) errors.push(`Work Entry #${i + 1}: Company Name is required.`);
-          if (!w.role.trim()) errors.push(`Work Entry #${i + 1}: Position Held is required.`);
+          if (!w.company_name.trim()) errors.push(`Work Entry #${i + 1}: Organization is required.`);
+          if (!w.role.trim()) errors.push(`Work Entry #${i + 1}: Designation is required.`);
           if (!w.start_date) errors.push(`Work Entry #${i + 1}: Start Date is required.`);
           if (w.description && countWords(w.description) > 40) {
             errors.push(`Work Entry #${i + 1}: Description exceeds 40 words.`);
@@ -864,6 +864,38 @@ export default function ApplicationForm() {
         return alert("Extracurriculars must not exceed 100 words.");
       }
     }
+
+    // Check required fields for Step 3 (Work Experience Details)
+    if (step === 3) {
+      if (!resumeFile) {
+        alert("Please upload your Resume (PDF) first.");
+        return;
+      }
+      if (expYears === '' && expMonths === '') {
+        alert("Please specify your professional experience in years/months.");
+        return;
+      }
+      const yrs = parseInt(expYears) || 0;
+      const mths = parseInt(expMonths) || 0;
+      if (yrs < 0 || mths < 0 || mths > 11) {
+        alert("Please enter valid Experience Years (>=0) and Months (0-11).");
+        return;
+      }
+
+      if (hasWork) {
+        for (let i = 0; i < workExps.length; i++) {
+          const w = workExps[i];
+          if (!w.company_name || !w.role || !w.start_date) {
+            alert(`Please fill in all required fields (Organization, Designation, Start Date) for Work Entry #${i + 1}.`);
+            return;
+          }
+          if (w.description && countWords(w.description) > 40) {
+            alert(`Description for Work Entry #${i + 1} exceeds 40 words.`);
+            return;
+          }
+        }
+      }
+    }
     
     setStep(step + 1);
     setTriedSubmit(false);
@@ -872,36 +904,6 @@ export default function ApplicationForm() {
   const handleProceedToPreview = (e) => {
     e.preventDefault();
     setTriedSubmit(true);
-
-    if (!resumeFile) {
-      alert("Please upload your Resume (PDF) first.");
-      return;
-    }
-    if (expYears === '' && expMonths === '') {
-      alert("Please specify your professional experience in years/months.");
-      return;
-    }
-    const yrs = parseInt(expYears) || 0;
-    const mths = parseInt(expMonths) || 0;
-    if (yrs < 0 || mths < 0 || mths > 11) {
-      alert("Please enter valid Experience Years (>=0) and Months (0-11).");
-      return;
-    }
-
-    if (hasWork) {
-      for (let i = 0; i < workExps.length; i++) {
-        const w = workExps[i];
-        if (!w.company_name || !w.role || !w.start_date) {
-          alert(`Please fill in all required fields (Company, Position, Start Date) for Work Entry #${i + 1}.`);
-          return;
-        }
-        if (w.description && countWords(w.description) > 40) {
-          alert(`Description for Work Entry #${i + 1} exceeds 40 words.`);
-          return;
-        }
-      }
-    }
-
     setStep(5);
     setTriedSubmit(false);
   };
@@ -1082,8 +1084,8 @@ export default function ApplicationForm() {
         <div className="step-indicator" style={{ display: step === 0 ? 'none' : 'flex' }}>
           <span className={`step-pill ${step >= 1 ? 'active' : ''}`}>1. Info</span>
           <span className={`step-pill ${step >= 2 ? 'active' : ''}`}>2. Education</span>
-          <span className={`step-pill ${step >= 3 ? 'active' : ''}`}>3. Publications</span>
-          <span className={`step-pill ${step >= 4 ? 'active' : ''}`}>4. Work Experience</span>
+          <span className={`step-pill ${step >= 3 ? 'active' : ''}`}>3. Work Experience</span>
+          <span className={`step-pill ${step >= 4 ? 'active' : ''}`}>4. Publications</span>
           <span className={`step-pill ${step >= 5 ? 'active' : ''}`}>5. Review & Submit</span>
         </div>
 
@@ -1579,69 +1581,12 @@ export default function ApplicationForm() {
 
               <div style={{display: 'flex'}}>
                 <button type="button" className="btn-secondary" onClick={() => setStep(1)}>Back</button>
-                <button type="submit" className="btn-primary" style={{flex: 1}}>Proceed to Publications</button>
-              </div>
-            </>
-          )}
-
-          {step === 3 && (
-            <>
-              <h3>Publications / Works Authored</h3>
-              <p style={{marginBottom: '1rem', color: 'var(--text-secondary)'}}>Select all that apply:</p>
-              <div style={{display: 'flex', gap: '2rem', marginBottom: '2rem'}}>
-                <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.none} onChange={e => setPubTypes({...pubTypes, none: e.target.checked, books: false, chapters: false, papers: false})} /> None</label>
-                <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.books} onChange={e => setPubTypes({...pubTypes, books: e.target.checked, none: false})} /> Books</label>
-                <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.chapters} onChange={e => setPubTypes({...pubTypes, chapters: e.target.checked, none: false})} /> Chapters in Books</label>
-                <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.papers} onChange={e => setPubTypes({...pubTypes, papers: e.target.checked, none: false})} /> Papers</label>
-              </div>
-
-              {pubTypes.books && (
-                <div style={{marginBottom: '2rem'}}>
-                  <h4>Books Authored</h4>
-                  {books.map((b, i) => (
-                    <div className="form-group" key={i}><input className="form-input" placeholder="Book Title" value={b.title} onChange={e => updateEntry(setBooks, books, i, 'title', e.target.value)} /></div>
-                  ))}
-                  <button type="button" className="btn-secondary" disabled={books.length>=3} onClick={() => addEntry(setBooks, books, 3, { title: '' })}>+ Add Book</button>
-                </div>
-              )}
-
-              {pubTypes.chapters && (
-                <div style={{marginBottom: '2rem'}}>
-                  <h4>Chapters in Books</h4>
-                  {chapters.map((c, i) => (
-                    <div className="form-grid" key={i}>
-                      <div className="form-group"><input className="form-input" placeholder="Chapter Name" value={c.title} onChange={e => updateEntry(setChapters, chapters, i, 'title', e.target.value)} /></div>
-                      <div className="form-group"><input className="form-input" placeholder="Corresponding Book" value={c.parent_title} onChange={e => updateEntry(setChapters, chapters, i, 'parent_title', e.target.value)} /></div>
-                    </div>
-                  ))}
-                  <button type="button" className="btn-secondary" disabled={chapters.length>=3} onClick={() => addEntry(setChapters, chapters, 3, { title: '', parent_title: '' })}>+ Add Chapter</button>
-                </div>
-              )}
-
-              {pubTypes.papers && (
-                <div style={{marginBottom: '2rem'}}>
-                  <h4>Papers</h4>
-                  {papers.map((p, i) => (
-                    <div className="form-group" key={i}><input className="form-input" placeholder="Paper Title" value={p.title} onChange={e => updateEntry(setPapers, papers, i, 'title', e.target.value)} /></div>
-                  ))}
-                  <button type="button" className="btn-secondary" disabled={papers.length>=3} onClick={() => addEntry(setPapers, papers, 3, { title: '' })}>+ Add Paper</button>
-                </div>
-              )}
-
-              <hr style={dividerStyle} />
-              <div className="form-group">
-                <label className="form-label">Google Scholar Link (Optional)</label>
-                <input type="url" className="form-input" value={scholarLink} onChange={e => setScholarLink(e.target.value)} />
-              </div>
-
-              <div style={{display: 'flex'}}>
-                <button type="button" className="btn-secondary" onClick={() => setStep(2)}>Back</button>
                 <button type="submit" className="btn-primary" style={{flex: 1}}>Proceed to Work Experience</button>
               </div>
             </>
           )}
 
-          {step === 4 && (
+          {step === 3 && (
             <>
               <h3>Work Experience Details</h3>
               <p style={{marginBottom: '1rem'}}>Do you have prior work experience?</p>
@@ -1693,8 +1638,8 @@ export default function ApplicationForm() {
                   {workExps.map((w, i) => (
                     <div key={i} style={{marginBottom: '1.5rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
                       <div className="form-grid">
-                        <div className="form-group"><label className="form-label">Company Name</label><input required className="form-input" value={w.company_name} onChange={e => updateEntry(setWorkExps, workExps, i, 'company_name', e.target.value)} /></div>
-                        <div className="form-group"><label className="form-label">Position Held</label><input required className="form-input" value={w.role} onChange={e => updateEntry(setWorkExps, workExps, i, 'role', e.target.value)} /></div>
+                        <div className="form-group"><label className="form-label">Organization</label><input required className="form-input" value={w.company_name} onChange={e => updateEntry(setWorkExps, workExps, i, 'company_name', e.target.value)} /></div>
+                        <div className="form-group"><label className="form-label">Designation</label><input required className="form-input" value={w.role} onChange={e => updateEntry(setWorkExps, workExps, i, 'role', e.target.value)} /></div>
                         <div className="form-group"><label className="form-label">Start Date</label><input required type="date" className="form-input" value={w.start_date} onChange={e => updateEntry(setWorkExps, workExps, i, 'start_date', e.target.value)} /></div>
                         <div className="form-group"><label className="form-label">End Date (Leave blank if present)</label><input type="date" className="form-input" value={w.end_date} onChange={e => updateEntry(setWorkExps, workExps, i, 'end_date', e.target.value)} /></div>
                       </div>
@@ -1710,6 +1655,63 @@ export default function ApplicationForm() {
               )}
 
               <hr style={dividerStyle} />
+              <div style={{display: 'flex'}}>
+                <button type="button" className="btn-secondary" onClick={() => setStep(2)}>Back</button>
+                <button type="submit" className="btn-primary" style={{flex: 1}}>Proceed to Publications</button>
+              </div>
+            </>
+          )}
+
+          {step === 4 && (
+            <>
+              <h3>Publications / Works Authored</h3>
+              <p style={{marginBottom: '1rem', color: 'var(--text-secondary)'}}>Select all that apply:</p>
+              <div style={{display: 'flex', gap: '2rem', marginBottom: '2rem'}}>
+                <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.none} onChange={e => setPubTypes({...pubTypes, none: e.target.checked, books: false, chapters: false, papers: false})} /> None</label>
+                <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.books} onChange={e => setPubTypes({...pubTypes, books: e.target.checked, none: false})} /> Books</label>
+                <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.chapters} onChange={e => setPubTypes({...pubTypes, chapters: e.target.checked, none: false})} /> Chapters in Books</label>
+                <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.papers} onChange={e => setPubTypes({...pubTypes, papers: e.target.checked, none: false})} /> Papers</label>
+              </div>
+
+              {pubTypes.books && (
+                <div style={{marginBottom: '2rem'}}>
+                  <h4>Books Authored</h4>
+                  {books.map((b, i) => (
+                    <div className="form-group" key={i}><input className="form-input" placeholder="Book Title" value={b.title} onChange={e => updateEntry(setBooks, books, i, 'title', e.target.value)} /></div>
+                  ))}
+                  <button type="button" className="btn-secondary" disabled={books.length>=3} onClick={() => addEntry(setBooks, books, 3, { title: '' })}>+ Add Book</button>
+                </div>
+              )}
+
+              {pubTypes.chapters && (
+                <div style={{marginBottom: '2rem'}}>
+                  <h4>Chapters in Books</h4>
+                  {chapters.map((c, i) => (
+                    <div className="form-grid" key={i}>
+                      <div className="form-group"><input className="form-input" placeholder="Chapter Name" value={c.title} onChange={e => updateEntry(setChapters, chapters, i, 'title', e.target.value)} /></div>
+                      <div className="form-group"><input className="form-input" placeholder="Corresponding Book" value={c.parent_title} onChange={e => updateEntry(setChapters, chapters, i, 'parent_title', e.target.value)} /></div>
+                    </div>
+                  ))}
+                  <button type="button" className="btn-secondary" disabled={chapters.length>=3} onClick={() => addEntry(setChapters, chapters, 3, { title: '', parent_title: '' })}>+ Add Chapter</button>
+                </div>
+              )}
+
+              {pubTypes.papers && (
+                <div style={{marginBottom: '2rem'}}>
+                  <h4>Papers</h4>
+                  {papers.map((p, i) => (
+                    <div className="form-group" key={i}><input className="form-input" placeholder="Paper Title" value={p.title} onChange={e => updateEntry(setPapers, papers, i, 'title', e.target.value)} /></div>
+                  ))}
+                  <button type="button" className="btn-secondary" disabled={papers.length>=3} onClick={() => addEntry(setPapers, papers, 3, { title: '' })}>+ Add Paper</button>
+                </div>
+              )}
+
+              <hr style={dividerStyle} />
+              <div className="form-group">
+                <label className="form-label">Google Scholar Link (Optional)</label>
+                <input type="url" className="form-input" value={scholarLink} onChange={e => setScholarLink(e.target.value)} />
+              </div>
+
               <div style={{display: 'flex'}}>
                 <button type="button" className="btn-secondary" onClick={() => setStep(3)}>Back</button>
                 <button type="submit" className="btn-primary" style={{flex: 1, backgroundColor: 'var(--brand-accent)', color: '#000'}}>Proceed to Preview</button>
@@ -2287,8 +2289,122 @@ export default function ApplicationForm() {
                 )}
               </div>
 
-              {/* Publications Section */}
+              {/* Work Experience Section */}
               <div className="resume-section">
+                <div className="resume-section-title-container">
+                  <h3 className="resume-section-title">Professional Experience</h3>
+                  <button 
+                    type="button" 
+                    className="section-edit-btn no-print" 
+                    onClick={handleToggleEditWork}
+                  >
+                    {editWork ? "Save Experience" : "Edit Experience"}
+                  </button>
+                </div>
+
+                {editWork ? (
+                  <div>
+                    <div className="resume-inline-grid-edit" style={{ marginBottom: '1rem' }}>
+                      <div className="resume-inline-group">
+                        <label className="resume-inline-label">Total Exp Years</label>
+                        <input 
+                          type="number" min="0" className="resume-inline-input"
+                          value={expYears} onChange={e => setExpYears(e.target.value)}
+                        />
+                      </div>
+                      <div className="resume-inline-group">
+                        <label className="resume-inline-label">Total Exp Months</label>
+                        <input 
+                          type="number" min="0" max="11" className="resume-inline-input"
+                          value={expMonths} onChange={e => setExpMonths(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="resume-inline-group" style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
+                      <label className="resume-inline-label" style={{ fontWeight: '700' }}>Uploaded Resume (PDF)</label>
+                      {resumeFile && <div style={{ fontSize: '0.85rem', color: '#16a34a', marginBottom: '0.5rem', fontWeight: '600' }}>✓ Current file: {resumeFile.name}</div>}
+                      <input type="file" accept=".pdf" className="resume-inline-input" onChange={e => setResumeFile(e.target.files[0])} />
+                    </div>
+
+                    <div className="resume-inline-group" style={{ marginBottom: '1.5rem' }}>
+                      <label className="resume-inline-label">Do you want to add specific detailed work entries?</label>
+                      <div style={{ display: 'flex', gap: '2rem', marginTop: '0.25rem' }}>
+                        <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="radio" name="resume_has_work" checked={hasWork} onChange={() => setHasWork(true)} /> Yes</label>
+                        <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="radio" name="resume_has_work" checked={!hasWork} onChange={() => setHasWork(false)} /> No</label>
+                      </div>
+                    </div>
+
+                    {hasWork && (
+                      <div>
+                        {workExps.map((w, i) => (
+                          <div key={i} style={{ marginBottom: '1.25rem', background: '#f8fafc', padding: '1rem', borderRadius: '6px' }}>
+                            <div className="resume-inline-grid-edit">
+                              <div className="resume-inline-group">
+                                <label className="resume-inline-label">Organization</label>
+                                <input className="resume-inline-input" value={w.company_name} onChange={e => updateEntry(setWorkExps, workExps, i, 'company_name', e.target.value)} />
+                              </div>
+                              <div className="resume-inline-group">
+                                <label className="resume-inline-label">Designation</label>
+                                <input className="resume-inline-input" value={w.role} onChange={e => updateEntry(setWorkExps, workExps, i, 'role', e.target.value)} />
+                              </div>
+                              <div className="resume-inline-group">
+                                <label className="resume-inline-label">Start Date</label>
+                                <input type="date" className="resume-inline-input" value={w.start_date} onChange={e => updateEntry(setWorkExps, workExps, i, 'start_date', e.target.value)} />
+                              </div>
+                              <div className="resume-inline-group">
+                                <label className="resume-inline-label">End Date (Leave blank if present)</label>
+                                <input type="date" className="resume-inline-input" value={w.end_date} onChange={e => updateEntry(setWorkExps, workExps, i, 'end_date', e.target.value)} />
+                              </div>
+                              <div className="resume-inline-group" style={{ gridColumn: 'span 2' }}>
+                                <label className="resume-inline-label">Description (Max 40 Words)</label>
+                                <textarea className="resume-inline-input resume-inline-textarea" value={w.description} onChange={e => updateEntry(setWorkExps, workExps, i, 'description', e.target.value)} />
+                                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Current word count: {countWords(w.description)}/40</div>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                              <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setWorkExps, workExps, i)}>❌ Remove Work Entry</button>
+                            </div>
+                          </div>
+                        ))}
+                        <button type="button" className="btn-secondary" style={{ marginTop: '0' }} disabled={workExps.length>=3} onClick={() => addEntry(setWorkExps, workExps, 3, { company_name: '', start_date: '', end_date: '', role: '', description: '' })}>+ Add Work Experience</button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <p style={{ fontSize: '0.95rem', marginBottom: '1rem' }}>
+                      💼 <strong>Total Experience:</strong> {expYears || 0} Years, {expMonths || 0} Months
+                      {resumeFile && <span style={{ marginLeft: '1.5rem', color: 'var(--brand-primary)', fontWeight: '600' }}>📄 Attachment: {resumeFile.name}</span>}
+                    </p>
+
+                    {!hasWork ? (
+                      <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No detailed timeline entries added.</p>
+                    ) : (
+                      <div>
+                        {workExps.map((w, i) => w.company_name && (
+                          <div className="resume-timeline-item" key={`w-${i}`}>
+                            <div className="resume-timeline-header">
+                              <div>
+                                <span className="resume-item-title">{w.role}</span>
+                                <span style={{ color: 'var(--text-secondary)' }}> at </span>
+                                <span style={{ fontWeight: 600, color: 'var(--brand-primary)' }}>{w.company_name}</span>
+                              </div>
+                              <span className="resume-timeline-date">
+                                {w.start_date ? new Date(w.start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''} - {w.end_date ? new Date(w.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Present'}
+                              </span>
+                            </div>
+                            {w.description && <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.5rem', lineHeight: '1.5' }}>{w.description}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Publications Section */}
+              <div className="resume-section" style={{ marginBottom: '0' }}>
                 <div className="resume-section-title-container">
                   <h3 className="resume-section-title">Publications & Works</h3>
                   <button 
@@ -2392,120 +2508,6 @@ export default function ApplicationForm() {
                             </ul>
                           </div>
                         )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Work Experience Section */}
-              <div className="resume-section" style={{ marginBottom: '0' }}>
-                <div className="resume-section-title-container">
-                  <h3 className="resume-section-title">Professional Experience</h3>
-                  <button 
-                    type="button" 
-                    className="section-edit-btn no-print" 
-                    onClick={handleToggleEditWork}
-                  >
-                    {editWork ? "Save Experience" : "Edit Experience"}
-                  </button>
-                </div>
-
-                {editWork ? (
-                  <div>
-                    <div className="resume-inline-grid-edit" style={{ marginBottom: '1rem' }}>
-                      <div className="resume-inline-group">
-                        <label className="resume-inline-label">Total Exp Years</label>
-                        <input 
-                          type="number" min="0" className="resume-inline-input"
-                          value={expYears} onChange={e => setExpYears(e.target.value)}
-                        />
-                      </div>
-                      <div className="resume-inline-group">
-                        <label className="resume-inline-label">Total Exp Months</label>
-                        <input 
-                          type="number" min="0" max="11" className="resume-inline-input"
-                          value={expMonths} onChange={e => setExpMonths(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="resume-inline-group" style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
-                      <label className="resume-inline-label" style={{ fontWeight: '700' }}>Uploaded Resume (PDF)</label>
-                      {resumeFile && <div style={{ fontSize: '0.85rem', color: '#16a34a', marginBottom: '0.5rem', fontWeight: '600' }}>✓ Current file: {resumeFile.name}</div>}
-                      <input type="file" accept=".pdf" className="resume-inline-input" onChange={e => setResumeFile(e.target.files[0])} />
-                    </div>
-
-                    <div className="resume-inline-group" style={{ marginBottom: '1.5rem' }}>
-                      <label className="resume-inline-label">Do you want to add specific detailed work entries?</label>
-                      <div style={{ display: 'flex', gap: '2rem', marginTop: '0.25rem' }}>
-                        <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="radio" name="resume_has_work" checked={hasWork} onChange={() => setHasWork(true)} /> Yes</label>
-                        <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="radio" name="resume_has_work" checked={!hasWork} onChange={() => setHasWork(false)} /> No</label>
-                      </div>
-                    </div>
-
-                    {hasWork && (
-                      <div>
-                        {workExps.map((w, i) => (
-                          <div key={i} style={{ marginBottom: '1.25rem', background: '#f8fafc', padding: '1rem', borderRadius: '6px' }}>
-                            <div className="resume-inline-grid-edit">
-                              <div className="resume-inline-group">
-                                <label className="resume-inline-label">Company Name</label>
-                                <input className="resume-inline-input" value={w.company_name} onChange={e => updateEntry(setWorkExps, workExps, i, 'company_name', e.target.value)} />
-                              </div>
-                              <div className="resume-inline-group">
-                                <label className="resume-inline-label">Position Held</label>
-                                <input className="resume-inline-input" value={w.role} onChange={e => updateEntry(setWorkExps, workExps, i, 'role', e.target.value)} />
-                              </div>
-                              <div className="resume-inline-group">
-                                <label className="resume-inline-label">Start Date</label>
-                                <input type="date" className="resume-inline-input" value={w.start_date} onChange={e => updateEntry(setWorkExps, workExps, i, 'start_date', e.target.value)} />
-                              </div>
-                              <div className="resume-inline-group">
-                                <label className="resume-inline-label">End Date (Leave blank if present)</label>
-                                <input type="date" className="resume-inline-input" value={w.end_date} onChange={e => updateEntry(setWorkExps, workExps, i, 'end_date', e.target.value)} />
-                              </div>
-                              <div className="resume-inline-group" style={{ gridColumn: 'span 2' }}>
-                                <label className="resume-inline-label">Description (Max 40 Words)</label>
-                                <textarea className="resume-inline-input resume-inline-textarea" value={w.description} onChange={e => updateEntry(setWorkExps, workExps, i, 'description', e.target.value)} />
-                                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Current word count: {countWords(w.description)}/40</div>
-                              </div>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                              <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setWorkExps, workExps, i)}>❌ Remove Work Entry</button>
-                            </div>
-                          </div>
-                        ))}
-                        <button type="button" className="btn-secondary" style={{ marginTop: '0' }} disabled={workExps.length>=3} onClick={() => addEntry(setWorkExps, workExps, 3, { company_name: '', start_date: '', end_date: '', role: '', description: '' })}>+ Add Work Experience</button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <p style={{ fontSize: '0.95rem', marginBottom: '1rem' }}>
-                      💼 <strong>Total Experience:</strong> {expYears || 0} Years, {expMonths || 0} Months
-                      {resumeFile && <span style={{ marginLeft: '1.5rem', color: 'var(--brand-primary)', fontWeight: '600' }}>📄 Attachment: {resumeFile.name}</span>}
-                    </p>
-
-                    {!hasWork ? (
-                      <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No detailed timeline entries added.</p>
-                    ) : (
-                      <div>
-                        {workExps.map((w, i) => w.company_name && (
-                          <div className="resume-timeline-item" key={`w-${i}`}>
-                            <div className="resume-timeline-header">
-                              <div>
-                                <span className="resume-item-title">{w.role}</span>
-                                <span style={{ color: 'var(--text-secondary)' }}> at </span>
-                                <span style={{ fontWeight: 600, color: 'var(--brand-primary)' }}>{w.company_name}</span>
-                              </div>
-                              <span className="resume-timeline-date">
-                                {w.start_date ? new Date(w.start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''} - {w.end_date ? new Date(w.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Present'}
-                              </span>
-                            </div>
-                            {w.description && <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.5rem', lineHeight: '1.5' }}>{w.description}</p>}
-                          </div>
-                        ))}
                       </div>
                     )}
                   </div>
