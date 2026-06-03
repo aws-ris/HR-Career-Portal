@@ -10,7 +10,8 @@ def run():
             c.id, c.full_name, c.dob, c.mobile_no, c.email, 
             t.position_applied, t.admin_department,
             l.about, l.google_scholar,
-            s.class_x_percentage, s.class_xii_percentage
+            s.class_x_school, s.class_x_board, s.class_x_score_type, s.class_x_score_value,
+            s.class_xii_school, s.class_xii_board, s.class_xii_score_type, s.class_xii_score_value
         FROM candidate_metadata c
         LEFT JOIN application_tracking t ON t.candidate_id = c.id
         LEFT JOIN candidate_links_about l ON l.candidate_id = c.id
@@ -26,7 +27,7 @@ def run():
     # Define the top-level categories and their sub-columns
     sections = [
         ("Basic Info", '4F81BD', ['Full Name', 'DOB', 'Mobile Number', 'Email', 'Description', 'Position Applied', 'Admin Department']),
-        ("Secondary Education", '76923C', ['Class X', 'Class XII']),
+        ("Secondary Education", '76923C', ['Class X School', 'Class X Board', 'Class X Score', 'Class XII School', 'Class XII Board', 'Class XII Score']),
         ("Graduation Details", '9BBB59', ['University', 'Degree', 'Score Type', 'Score Value', 'Year of Passing'] * 3),
         ("Postgraduate Details", '8064A2', ['University', 'Degree', 'Score Type', 'Score Value', 'Year of Passing'] * 3),
         ("Doctorate Details", '4BACC6', ['University', 'Thesis', 'Score Type', 'Score Value', 'Year of Passing'] * 3),
@@ -68,12 +69,27 @@ def run():
 
         row_data = []
 
-        # 1. Basic Info
+        # Formatting helper for schooling
+        def get_schooling_display(val, stype):
+            if val is None:
+                return ""
+            val_str = f"{int(val)}" if val == int(val) else f"{val}"
+            if stype == 'Percentage':
+                return f"{val_str}%"
+            elif stype == 'CGPA':
+                return f"{val_str} CGPA"
+            return val_str
+
+        x_score = get_schooling_display(app_dict['class_x_score_value'], app_dict['class_x_score_type'])
+        xii_score = get_schooling_display(app_dict['class_xii_score_value'], app_dict['class_xii_score_type'])
+
+        # 1. Basic Info & Schooling
         row_data.extend([
             app_dict['full_name'], str(app_dict['dob']), 
             app_dict['mobile_no'], app_dict['email'], app_dict['about'] or '', 
             app_dict['position_applied'], app_dict['admin_department'] or 'None', 
-            app_dict['class_x_percentage'] or 0.0, app_dict['class_xii_percentage'] or 0.0
+            app_dict['class_x_school'] or '', app_dict['class_x_board'] or '', x_score,
+            app_dict['class_xii_school'] or '', app_dict['class_xii_board'] or '', xii_score
         ])
 
         # 2. Graduations (Level = undergrad)

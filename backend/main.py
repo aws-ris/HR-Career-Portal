@@ -663,9 +663,15 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
 
         # 4. Schooling (1:1)
         db.add(models.CandidateSchooling(
-            candidate_id         = candidate.id,
-            class_x_percentage   = payload.schooling.class_x_percentage,
-            class_xii_percentage = payload.schooling.class_xii_percentage,
+            candidate_id          = candidate.id,
+            class_x_school        = payload.schooling.class_x_school,
+            class_x_board         = payload.schooling.class_x_board,
+            class_x_score_type    = payload.schooling.class_x_score_type.value if hasattr(payload.schooling.class_x_score_type, 'value') else payload.schooling.class_x_score_type,
+            class_x_score_value   = payload.schooling.class_x_score_value,
+            class_xii_school       = payload.schooling.class_xii_school,
+            class_xii_board        = payload.schooling.class_xii_board,
+            class_xii_score_type   = payload.schooling.class_xii_score_type.value if hasattr(payload.schooling.class_xii_score_type, 'value') else payload.schooling.class_xii_score_type,
+            class_xii_score_value  = payload.schooling.class_xii_score_value,
         ))
 
         # 5. Higher Education (1:N)
@@ -1023,8 +1029,14 @@ def get_full_profile(candidate_id: str, db: Session = Depends(get_db)):
     schooling_data = None
     if candidate.schooling:
         schooling_data = {
-            "class_x_percentage": candidate.schooling.class_x_percentage,
-            "class_xii_percentage": candidate.schooling.class_xii_percentage
+            "class_x_school": candidate.schooling.class_x_school,
+            "class_x_board": candidate.schooling.class_x_board,
+            "class_x_score_type": candidate.schooling.class_x_score_type,
+            "class_x_score_value": candidate.schooling.class_x_score_value,
+            "class_xii_school": candidate.schooling.class_xii_school,
+            "class_xii_board": candidate.schooling.class_xii_board,
+            "class_xii_score_type": candidate.schooling.class_xii_score_type,
+            "class_xii_score_value": candidate.schooling.class_xii_score_value
         }
 
     # Format higher education by level
@@ -1134,10 +1146,12 @@ class CandidateFilter(BaseModel):
     role_keyword: Optional[str] = None
     company_keyword: Optional[str] = None
     publication_keyword: Optional[str] = None
-    # Score type awareness for education filters
+    # Score type awareness for education and schooling filters
     ug_score_type: Optional[str] = None    # 'Percentage' or 'CGPA'
     pg_score_type: Optional[str] = None
     phd_score_type: Optional[str] = None
+    x_score_type: Optional[str] = None
+    xii_score_type: Optional[str] = None
 
 
 class ExportRequest(BaseModel):
@@ -1187,20 +1201,29 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     return f"{int(value)}{suffix}"
                 return f"{value}{suffix}"
 
-        def format_schooling_score(schooling, field_name):
+        def format_schooling_score(schooling, level):
             if not schooling:
                 return ""
-            value = getattr(schooling, field_name, None)
-            if value is None:
+            if level == 'x':
+                val = getattr(schooling, 'class_x_score_value', None)
+                stype = getattr(schooling, 'class_x_score_type', '')
+            else:
+                val = getattr(schooling, 'class_xii_score_value', None)
+                stype = getattr(schooling, 'class_xii_score_type', '')
+                
+            if val is None:
                 return ""
-            if value == int(value):
-                return int(value)
-            return value
+            val_str = f"{int(val)}" if val == int(val) else f"{val}"
+            if stype == 'Percentage':
+                return f"{val_str}%"
+            elif stype == 'CGPA':
+                return f"{val_str} CGPA"
+            return val_str
 
         # 2. Build Headers and Rows based on report type
         if req.report_type == 'standardized':
             headers = [
-                "Full Name", "Class X %", "Class XII %", 
+                "Full Name", "Class X Score", "Class XII Score", 
                 "Bachelors (UG)", "Bachelors Score", "Bachelors Year",
                 "Masters (PG)", "Masters Score", "Masters Year",
                 "Doctorate (PhD)", "Doctorate Score", "Doctorate Year",
@@ -1240,8 +1263,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 
                 row = [
                     full_c.full_name,
-                    format_schooling_score(full_c.schooling, "class_x_percentage"),
-                    format_schooling_score(full_c.schooling, "class_xii_percentage"),
+                    format_schooling_score(full_c.schooling, "x"),
+                    format_schooling_score(full_c.schooling, "xii"),
                     ug_text,
                     format_score(ug.score_value, ug.score_type) if ug else "",
                     ug.grad_year if ug else "",
@@ -1263,7 +1286,9 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             # Detailed Report (Grouped Roster)
             headers = [
                 "Full Name", "Email", "Mobile", "DOB", "Gender", "State", "City", "Pincode", 
-                "Extracurriculars", "Total Exp (Yrs)", "Highest Edu", "Class X %", "Class XII %",
+                "Extracurriculars", "Total Exp (Yrs)", "Highest Edu", 
+                "Class X School", "Class X Board", "Class X Score",
+                "Class XII School", "Class XII Board", "Class XII Score",
                 "Graduation Univ", "Graduation Degree", "Graduation Score", "Graduation Year",
                 "Postgrad Univ", "Postgrad Degree", "Postgrad Score", "Postgrad Year",
                 "PhD Univ", "PhD Thesis", "PhD Score", "PhD Year",
@@ -1297,12 +1322,12 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 
                 # Setup merge ranges if max_rows > 1
                 if max_rows > 1:
-                    # Merge columns 1 to 13, and column 29 (Scholar Link)
-                    for col in list(range(1, 14)) + [29]:
+                    # Merge columns 1 to 17, and column 33 (Scholar Link)
+                    for col in list(range(1, 18)) + [33]:
                         merge_ranges.append((current_r, current_r + max_rows - 1, col))
                 
                 for i in range(max_rows):
-                    row = [""] * 33
+                    row = [""] * 37
                     if i == 0:
                         # Basic details
                         row[0] = full_c.full_name
@@ -1316,43 +1341,47 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[8] = (full_c.links_about.extracurriculars if full_c.links_about else "") or ""
                         row[9] = full_c.years_of_experience
                         row[10] = c['highest_education']
-                        row[11] = format_schooling_score(full_c.schooling, "class_x_percentage")
-                        row[12] = format_schooling_score(full_c.schooling, "class_xii_percentage")
-                        row[28] = (full_c.links_about.google_scholar if full_c.links_about else "") or ""
+                        row[11] = full_c.schooling.class_x_school if full_c.schooling else ""
+                        row[12] = full_c.schooling.class_x_board if full_c.schooling else ""
+                        row[13] = format_schooling_score(full_c.schooling, "x")
+                        row[14] = full_c.schooling.class_xii_school if full_c.schooling else ""
+                        row[15] = full_c.schooling.class_xii_board if full_c.schooling else ""
+                        row[16] = format_schooling_score(full_c.schooling, "xii")
+                        row[32] = (full_c.links_about.google_scholar if full_c.links_about else "") or ""
                     
                     # UG details
                     if i < len(undergrads):
-                        row[13] = undergrads[i].university or ""
-                        row[14] = undergrads[i].degree_name or ""
-                        row[15] = format_score(undergrads[i].score_value, undergrads[i].score_type) if undergrads[i].score_value else ""
-                        row[16] = undergrads[i].grad_year or ""
+                        row[17] = undergrads[i].university or ""
+                        row[18] = undergrads[i].degree_name or ""
+                        row[19] = format_score(undergrads[i].score_value, undergrads[i].score_type) if undergrads[i].score_value else ""
+                        row[20] = undergrads[i].grad_year or ""
                     
                     # PG details
                     if i < len(postgrads):
-                        row[17] = postgrads[i].university or ""
-                        row[18] = postgrads[i].degree_name or ""
-                        row[19] = format_score(postgrads[i].score_value, postgrads[i].score_type) if postgrads[i].score_value else ""
-                        row[20] = postgrads[i].grad_year or ""
+                        row[21] = postgrads[i].university or ""
+                        row[22] = postgrads[i].degree_name or ""
+                        row[23] = format_score(postgrads[i].score_value, postgrads[i].score_type) if postgrads[i].score_value else ""
+                        row[24] = postgrads[i].grad_year or ""
                     
                     # PhD details
                     if i < len(phds):
-                        row[21] = phds[i].university or ""
-                        row[22] = phds[i].degree_name or "" # thesis title is saved as degree_name in models
-                        row[23] = format_score(phds[i].score_value, phds[i].score_type) if phds[i].score_value else ""
-                        row[24] = phds[i].grad_year or ""
+                        row[25] = phds[i].university or ""
+                        row[26] = phds[i].degree_name or "" # thesis title is saved as degree_name in models
+                        row[27] = format_score(phds[i].score_value, phds[i].score_type) if phds[i].score_value else ""
+                        row[28] = phds[i].grad_year or ""
                     
                     # Publications
                     if i < len(pubs):
-                        row[25] = pubs[i].pub_type or ""
-                        row[26] = pubs[i].title or ""
-                        row[27] = pubs[i].parent_book or ""
+                        row[29] = pubs[i].pub_type or ""
+                        row[30] = pubs[i].title or ""
+                        row[31] = pubs[i].parent_book or ""
                     
                     # Work Experience
                     if i < len(works):
-                        row[29] = works[i].company_name or ""
-                        row[30] = works[i].role or ""
-                        row[31] = str(works[i].start_date) if works[i].start_date else ""
-                        row[32] = str(works[i].end_date or "Present") if works[i].start_date else ""
+                        row[33] = works[i].company_name or ""
+                        row[34] = works[i].role or ""
+                        row[35] = str(works[i].start_date) if works[i].start_date else ""
+                        row[36] = str(works[i].end_date or "Present") if works[i].start_date else ""
                     
                     rows_to_write.append(row)
                     current_r += 1
@@ -1608,12 +1637,20 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
 
         # Academic Schooling Filters
         if filters.min_x_score is not None:
-            sub = db.query(models.CandidateSchooling.candidate_id).filter(models.CandidateSchooling.class_x_percentage >= float(filters.min_x_score)).subquery()
-            id_query = id_query.filter(models.CandidateMetadata.id.in_(sub))
+            sub = db.query(models.CandidateSchooling.candidate_id).filter(
+                models.CandidateSchooling.class_x_score_value >= float(filters.min_x_score)
+            )
+            if filters.x_score_type:
+                sub = sub.filter(models.CandidateSchooling.class_x_score_type == filters.x_score_type)
+            id_query = id_query.filter(models.CandidateMetadata.id.in_(sub.subquery()))
 
         if filters.min_xii_score is not None:
-            sub = db.query(models.CandidateSchooling.candidate_id).filter(models.CandidateSchooling.class_xii_percentage >= float(filters.min_xii_score)).subquery()
-            id_query = id_query.filter(models.CandidateMetadata.id.in_(sub))
+            sub = db.query(models.CandidateSchooling.candidate_id).filter(
+                models.CandidateSchooling.class_xii_score_value >= float(filters.min_xii_score)
+            )
+            if filters.xii_score_type:
+                sub = sub.filter(models.CandidateSchooling.class_xii_score_type == filters.xii_score_type)
+            id_query = id_query.filter(models.CandidateMetadata.id.in_(sub.subquery()))
 
         # Work Experience Filters
         if filters.role_keyword:
@@ -1944,6 +1981,21 @@ def delete_job(job_id: str, db: Session = Depends(get_db)):
     return {"status": "deleted"}
 
 
+# Schooling Schema Migration Endpoint (Vercel-compatible)
+# ─────────────────────────────────────────────
+@app.post("/api/v1/debug/migrate-schooling")
+def migrate_schooling_endpoint():
+    try:
+        from migrate_schooling import run_migration
+        success = run_migration()
+        if success:
+            return {"status": "success", "message": "Schooling schema migration completed successfully!"}
+        else:
+            return {"status": "error", "message": "Schooling schema migration failed. Check server logs."}
+    except Exception as e:
+        return {"status": "error", "message": f"Exception occurred during migration: {str(e)}"}
+
+
 # Fix DAKSHIN Candidate Data Debug Route
 # ─────────────────────────────────────────────
 @app.post("/api/v1/debug/fix-dakshin-candidates")
@@ -2095,8 +2147,14 @@ def fix_dakshin_candidates(db: Session = Depends(get_db)):
             import random
             sch_rec = models.CandidateSchooling(
                 candidate_id=c.id,
-                class_x_percentage=round(random.uniform(80.0, 98.0), 1),
-                class_xii_percentage=round(random.uniform(80.0, 98.0), 1)
+                class_x_school="Model Secondary School",
+                class_x_board="CBSE",
+                class_x_score_type="Percentage",
+                class_x_score_value=round(random.uniform(80.0, 98.0), 1),
+                class_xii_school="Model Senior Secondary School",
+                class_xii_board="CBSE",
+                class_xii_score_type="Percentage",
+                class_xii_score_value=round(random.uniform(80.0, 98.0), 1)
             )
             db.add(sch_rec)
             
@@ -2183,8 +2241,8 @@ def fix_dakshin_candidates(db: Session = Depends(get_db)):
                 "city": c.city,
                 "state": c.state,
                 "has_phd": ("phd_uni" in p),
-                "class_x_percentage": sch_rec.class_x_percentage,
-                "class_xii_percentage": sch_rec.class_xii_percentage
+                "class_x_percentage": sch_rec.class_x_score_value,
+                "class_xii_percentage": sch_rec.class_xii_score_value
             })
             
         db.commit()

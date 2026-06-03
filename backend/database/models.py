@@ -141,8 +141,14 @@ class CandidateSchooling(Base):
 
     id                   = Column(String(36), primary_key=True, default=generate_uuid)
     candidate_id         = Column(String(36), ForeignKey('candidate_metadata.id', ondelete='CASCADE'), nullable=False)
-    class_x_percentage   = Column(Float, nullable=False)
-    class_xii_percentage = Column(Float, nullable=False)
+    class_x_school       = Column(String(250), nullable=False, default='')
+    class_x_board        = Column(String(100), nullable=False, default='Other')
+    class_x_score_type   = Column(String(20),  nullable=False, default='Percentage')
+    class_x_score_value  = Column(Float,       nullable=False, default=0.0)
+    class_xii_school     = Column(String(250), nullable=False, default='')
+    class_xii_board      = Column(String(100), nullable=False, default='Other')
+    class_xii_score_type = Column(String(20),  nullable=False, default='Percentage')
+    class_xii_score_value = Column(Float,       nullable=False, default=0.0)
 
     candidate = relationship("CandidateMetadata", back_populates="schooling")
 

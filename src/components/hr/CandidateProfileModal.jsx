@@ -52,8 +52,8 @@ export default function CandidateProfileModal({ candidateId, onClose }) {
     if (data?.postgraduate?.[0]?.score_value) {
       parts.push(`PG: ${data.postgraduate[0].score_value}${data.postgraduate[0].score_type === 'Percentage' ? '%' : ''}`);
     }
-    if (data?.schooling?.class_xii_percentage) {
-      parts.push(`XII: ${data.schooling.class_xii_percentage}%`);
+    if (data?.schooling?.class_xii_score_value) {
+      parts.push(`XII: ${data.schooling.class_xii_score_value}${data.schooling.class_xii_score_type === 'Percentage' ? '%' : ' CGPA'}`);
     }
     return parts.length > 0 ? parts.join(" | ") : "N/A";
   })();
@@ -335,18 +335,34 @@ export default function CandidateProfileModal({ candidateId, onClose }) {
                       </div>
                     ))}
 
-                    {/* Schooling Percentage Rollup */}
+                    {/* Schooling Details Rollup */}
                     {data.schooling && (
-                      <div style={{ padding: '20px', background: '#f8fafc', borderLeft: '4px solid #64748b', borderRadius: '8px' }}>
+                      <div style={{ padding: '20px', background: '#f8fafc', borderLeft: '4px solid #64748b', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <span style={{ fontWeight: '800', color: '#64748b', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Schooling (Class X & XII)</span>
-                        <div style={{ display: 'flex', gap: '24px', marginTop: '8px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                           <div>
-                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Senior Secondary (XII):</span>
-                            <div style={{ fontSize: '15px', fontWeight: '800', color: '#1e293b' }}>{data.schooling.class_xii_percentage}%</div>
+                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase' }}>Senior Secondary (XII)</span>
+                            <div style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', marginTop: '4px' }}>
+                              {data.schooling.class_xii_score_value}{data.schooling.class_xii_score_type === 'Percentage' ? '%' : ' CGPA'}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#475569', fontWeight: '600', marginTop: '2px' }}>
+                              {data.schooling.class_xii_school}
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>
+                              Board: {data.schooling.class_xii_board}
+                            </div>
                           </div>
                           <div>
-                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Secondary (X):</span>
-                            <div style={{ fontSize: '15px', fontWeight: '800', color: '#1e293b' }}>{data.schooling.class_x_percentage}%</div>
+                            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase' }}>Secondary (Class X)</span>
+                            <div style={{ fontSize: '14px', fontWeight: '800', color: '#1e293b', marginTop: '4px' }}>
+                              {data.schooling.class_x_score_value}{data.schooling.class_x_score_type === 'Percentage' ? '%' : ' CGPA'}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#475569', fontWeight: '600', marginTop: '2px' }}>
+                              {data.schooling.class_x_school}
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>
+                              Board: {data.schooling.class_x_board}
+                            </div>
                           </div>
                         </div>
                       </div>

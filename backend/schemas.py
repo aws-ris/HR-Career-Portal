@@ -70,8 +70,34 @@ class PublicationType(str, Enum):
 # Schooling
 # ─────────────────────────────────────────────
 class SchoolingCreate(BaseModel):
-    class_x_percentage:   float = Field(..., ge=0, le=100)
-    class_xii_percentage: float = Field(..., ge=0, le=100)
+    class_x_school:       str = Field(default='')
+    class_x_board:        str = Field(default='Other')
+    class_x_score_type:   ScoreType = Field(default=ScoreType.Percentage)
+    class_x_score_value:  float = Field(..., ge=0)
+    class_xii_school:     str = Field(default='')
+    class_xii_board:      str = Field(default='Other')
+    class_xii_score_type: ScoreType = Field(default=ScoreType.Percentage)
+    class_xii_score_value: float = Field(..., ge=0)
+
+    @field_validator('class_x_score_value')
+    @classmethod
+    def validate_x_score(cls, v, info):
+        score_type = info.data.get('class_x_score_type')
+        if score_type == ScoreType.Percentage and v > 100:
+            raise ValueError('Percentage score_value must be <= 100')
+        elif score_type == ScoreType.CGPA and v > 10:
+            raise ValueError('CGPA score_value must be <= 10')
+        return v
+
+    @field_validator('class_xii_score_value')
+    @classmethod
+    def validate_xii_score(cls, v, info):
+        score_type = info.data.get('class_xii_score_type')
+        if score_type == ScoreType.Percentage and v > 100:
+            raise ValueError('Percentage score_value must be <= 100')
+        elif score_type == ScoreType.CGPA and v > 10:
+            raise ValueError('CGPA score_value must be <= 10')
+        return v
 
 class SchoolingResponse(SchoolingCreate):
     id: str

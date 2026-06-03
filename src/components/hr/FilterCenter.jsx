@@ -37,7 +37,9 @@ export default function FilterCenter({ job_id, onFilterChange }) {
     min_age: 18,
     max_age: 65,
     min_x_score: null,
+    x_score_type: 'Percentage',
     min_xii_score: null,
+    xii_score_type: 'Percentage',
     role_keyword: '',
     company_keyword: '',
     publication_keyword: ''
@@ -113,7 +115,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button onClick={() => {
-             const reset = { states: [], genders: [], ug_uni: '', min_ug_score: null, pg_uni: '', pg_min_score: null, phd_uni: '', phd_thesis: '', phd_min_score: null, min_experience_years: 0, min_papers: 0, min_books: 0, min_chapters: 0, min_age: 18, max_age: 65, min_x_score: null, min_xii_score: null, role_keyword: '', company_keyword: '', publication_keyword: '' };
+             const reset = { states: [], genders: [], ug_uni: '', min_ug_score: null, pg_uni: '', pg_min_score: null, phd_uni: '', phd_thesis: '', phd_min_score: null, min_experience_years: 0, min_papers: 0, min_books: 0, min_chapters: 0, min_age: 18, max_age: 65, min_x_score: null, x_score_type: 'Percentage', min_xii_score: null, xii_score_type: 'Percentage', role_keyword: '', company_keyword: '', publication_keyword: '' };
              setFilters(reset);
              onFilterChange(reset);
           }} style={{ fontSize: '12px', color: '#94a3b8', background: 'none', border: 'none', fontWeight: '700', cursor: 'pointer' }}>
@@ -234,15 +236,23 @@ export default function FilterCenter({ job_id, onFilterChange }) {
 
           {activeCategory === 'schooling' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Min Class X (%)</label>
-                <input type="number" placeholder="e.g. 80" value={filters.min_x_score || ''} onChange={(e) => updateFilter('min_x_score', e.target.value)}
-                  style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none' }} />
+              <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '10px', fontWeight: '900', color: '#10b981', marginBottom: '10px', textTransform: 'uppercase' }}>Class X Details</div>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                  {['Percentage', 'CGPA'].map(t => (
+                    <button key={t} onClick={() => updateFilter('x_score_type', filters.x_score_type === t ? null : t)} style={{ flex: 1, padding: '4px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.x_score_type === t ? '#10b981' : '#e2e8f0', background: filters.x_score_type === t ? '#ecfdf5' : 'white', color: filters.x_score_type === t ? '#059669' : '#94a3b8', cursor: 'pointer' }}>{t}</button>
+                  ))}
+                </div>
+                <input type="number" placeholder={`Min Score (${filters.x_score_type === 'CGPA' ? '≤10' : '≤100'})`} value={filters.min_x_score || ''} onChange={(e) => updateFilter('min_x_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Min Class XII (%)</label>
-                <input type="number" placeholder="e.g. 80" value={filters.min_xii_score || ''} onChange={(e) => updateFilter('min_xii_score', e.target.value)}
-                  style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none' }} />
+              <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '10px', fontWeight: '900', color: '#3b82f6', marginBottom: '10px', textTransform: 'uppercase' }}>Class XII Details</div>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                  {['Percentage', 'CGPA'].map(t => (
+                    <button key={t} onClick={() => updateFilter('xii_score_type', filters.xii_score_type === t ? null : t)} style={{ flex: 1, padding: '4px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.xii_score_type === t ? '#3b82f6' : '#e2e8f0', background: filters.xii_score_type === t ? '#eff6ff' : 'white', color: filters.xii_score_type === t ? '#2563eb' : '#94a3b8', cursor: 'pointer' }}>{t}</button>
+                  ))}
+                </div>
+                <input type="number" placeholder={`Min Score (${filters.xii_score_type === 'CGPA' ? '≤10' : '≤100'})`} value={filters.min_xii_score || ''} onChange={(e) => updateFilter('min_xii_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
               </div>
             </div>
           )}

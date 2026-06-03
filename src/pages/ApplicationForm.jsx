@@ -131,6 +131,16 @@ const buildDegreeName = (type, spec, custom) => {
 };
 
 
+const INDIAN_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 
+  'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 
+  'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 
+  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 
+  'Uttarakhand', 'West Bengal', 'Andaman and Nicobar Islands', 'Chandigarh', 
+  'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Jammu and Kashmir', 'Ladakh', 
+  'Lakshadweep', 'Puducherry'
+];
+
 export default function ApplicationForm() {
   const { jobId } = useParams();
   const navigate = useNavigate();
@@ -175,8 +185,19 @@ export default function ApplicationForm() {
   const [dobError, setDobError] = useState('');
 
   // Step 2
-  const [classX, setClassX] = useState(() => savedDraft.classX || '');
-  const [classXII, setClassXII] = useState(() => savedDraft.classXII || '');
+  const [classXSchool, setClassXSchool] = useState(() => savedDraft.classXSchool || '');
+  const [classXBoard, setClassXBoard] = useState(() => savedDraft.classXBoard || 'CBSE');
+  const [classXBoardState, setClassXBoardState] = useState(() => savedDraft.classXBoardState || '');
+  const [classXBoardOther, setClassXBoardOther] = useState(() => savedDraft.classXBoardOther || '');
+  const [classXScoreType, setClassXScoreType] = useState(() => savedDraft.classXScoreType || 'Percentage');
+  const [classXScoreValue, setClassXScoreValue] = useState(() => savedDraft.classXScoreValue || savedDraft.classX || '');
+
+  const [classXIISchool, setClassXIISchool] = useState(() => savedDraft.classXIISchool || '');
+  const [classXIIBoard, setClassXIIBoard] = useState(() => savedDraft.classXIIBoard || 'CBSE');
+  const [classXIIBoardState, setClassXIIBoardState] = useState(() => savedDraft.classXIIBoardState || '');
+  const [classXIIBoardOther, setClassXIIBoardOther] = useState(() => savedDraft.classXIIBoardOther || '');
+  const [classXIIScoreType, setClassXIIScoreType] = useState(() => savedDraft.classXIIScoreType || 'Percentage');
+  const [classXIIScoreValue, setClassXIIScoreValue] = useState(() => savedDraft.classXIIScoreValue || savedDraft.classXII || '');
   const [grads, setGrads] = useState(() => {
     const raw = savedDraft.grads || [{ university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' }];
     return raw.map(g => {
@@ -252,8 +273,18 @@ export default function ApplicationForm() {
       city,
       pincode,
       extracurriculars,
-      classX,
-      classXII,
+      classXSchool,
+      classXBoard,
+      classXBoardState,
+      classXBoardOther,
+      classXScoreType,
+      classXScoreValue,
+      classXIISchool,
+      classXIIBoard,
+      classXIIBoardState,
+      classXIIBoardOther,
+      classXIIScoreType,
+      classXIIScoreValue,
       grads,
       postGrads,
       doctorates,
@@ -271,9 +302,10 @@ export default function ApplicationForm() {
     localStorage.setItem('hr_application_draft', JSON.stringify(draft));
   }, [
     position_applied, admin_department, full_name, email, mobile_number, dob, gender,
-    candidateState, city, pincode, extracurriculars, classX, classXII, grads,
-    postGrads, doctorates, pubTypes, books, chapters, papers, scholarLink,
-    expYears, expMonths, hasWork, workExps, step, jobId
+    candidateState, city, pincode, extracurriculars, grads, postGrads, doctorates, 
+    pubTypes, books, chapters, papers, scholarLink, expYears, expMonths, hasWork, workExps, step, jobId,
+    classXSchool, classXBoard, classXBoardState, classXBoardOther, classXScoreType, classXScoreValue,
+    classXIISchool, classXIIBoard, classXIIBoardState, classXIIBoardOther, classXIIScoreType, classXIIScoreValue
   ]);
 
   // Scroll to top on step change
@@ -437,13 +469,40 @@ export default function ApplicationForm() {
     if (editEducation) {
       // Validate education details
       const errors = [];
-      const valClassX = parseFloat(classX);
-      if (isNaN(valClassX) || valClassX < 0 || valClassX > 100) {
-        errors.push("Class X Percentage must be a number between 0 and 100.");
+      if (!classXSchool.trim()) {
+        errors.push("Class X School name is required.");
       }
-      const valClassXII = parseFloat(classXII);
-      if (isNaN(valClassXII) || valClassXII < 0 || valClassXII > 100) {
-        errors.push("Class XII Percentage must be a number between 0 and 100.");
+      if (classXBoard === 'State Board' && !classXBoardState) {
+        errors.push("Please select the State for your Class X State Board.");
+      }
+      if (classXBoard === 'Other' && !classXBoardOther.trim()) {
+        errors.push("Please specify your Class X Board.");
+      }
+      const valClassX = parseFloat(classXScoreValue);
+      if (isNaN(valClassX) || valClassX < 0) {
+        errors.push("Class X score must be a valid positive number.");
+      } else if (classXScoreType === 'Percentage' && valClassX > 100) {
+        errors.push("Class X Percentage cannot exceed 100.");
+      } else if (classXScoreType === 'CGPA' && valClassX > 10) {
+        errors.push("Class X CGPA cannot exceed 10.");
+      }
+
+      if (!classXIISchool.trim()) {
+        errors.push("Class XII School name is required.");
+      }
+      if (classXIIBoard === 'State Board' && !classXIIBoardState) {
+        errors.push("Please select the State for your Class XII State Board.");
+      }
+      if (classXIIBoard === 'Other' && !classXIIBoardOther.trim()) {
+        errors.push("Please specify your Class XII Board.");
+      }
+      const valClassXII = parseFloat(classXIIScoreValue);
+      if (isNaN(valClassXII) || valClassXII < 0) {
+        errors.push("Class XII score must be a valid positive number.");
+      } else if (classXIIScoreType === 'Percentage' && valClassXII > 100) {
+        errors.push("Class XII Percentage cannot exceed 100.");
+      } else if (classXIIScoreType === 'CGPA' && valClassXII > 10) {
+        errors.push("Class XII CGPA cannot exceed 10.");
       }
       grads.forEach((g, i) => {
         if (i === 0 || g.university || g.degree_name || g.score_value || g.grad_year) {
@@ -894,8 +953,22 @@ export default function ApplicationForm() {
       position_applied, 
       admin_department: position_applied === 'Admin' ? admin_department : null,
       schooling: {
-        class_x_percentage: parseFloat(classX), 
-        class_xii_percentage: parseFloat(classXII)
+        class_x_school: classXSchool.trim(),
+        class_x_board: classXBoard === 'State Board' 
+          ? `State Board - ${classXBoardState}` 
+          : classXBoard === 'Other' 
+            ? classXBoardOther.trim() 
+            : classXBoard,
+        class_x_score_type: classXScoreType,
+        class_x_score_value: parseFloat(classXScoreValue),
+        class_xii_school: classXIISchool.trim(),
+        class_xii_board: classXIIBoard === 'State Board'
+          ? `State Board - ${classXIIBoardState}`
+          : classXIIBoard === 'Other'
+            ? classXIIBoardOther.trim()
+            : classXIIBoard,
+        class_xii_score_type: classXIIScoreType,
+        class_xii_score_value: parseFloat(classXIIScoreValue)
       },
       higher_education: educations.map(e => ({
         ...e,
@@ -1196,14 +1269,107 @@ export default function ApplicationForm() {
           {step === 2 && (
             <>
               <h3>Basic Schooling</h3>
-              <div className="form-grid" style={{marginTop: '1rem'}}>
-                <div className="form-group">
-                  <label className="form-label">Secondary School / Class X Percentage</label>
-                  <input required type="number" step="0.01" max="100" className="form-input" value={classX} onChange={e => setClassX(e.target.value)} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '1.5rem' }}>
+                {/* Class X Details */}
+                <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <h4 style={{ margin: '0 0 1rem 0', color: '#1e293b', fontSize: '1.1rem', fontWeight: '700' }}>Class X (Secondary)</h4>
+                  
+                  <div className="form-group" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label">School Name</label>
+                    <input required type="text" className="form-input" placeholder="e.g. St. Xavier's High School" value={classXSchool} onChange={e => setClassXSchool(e.target.value)} />
+                  </div>
+                  
+                  <div className="form-group" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label">Board</label>
+                    <select required className="form-input" value={classXBoard} onChange={e => setClassXBoard(e.target.value)}>
+                      <option value="CBSE">CBSE</option>
+                      <option value="CISCE">CISCE (ICSE)</option>
+                      <option value="NIOS">NIOS</option>
+                      <option value="State Board">State Board</option>
+                      <option value="International Board">International Board (IB/Cambridge)</option>
+                      <option value="Other">Other (Please Specify)</option>
+                    </select>
+                  </div>
+
+                  {classXBoard === 'State Board' && (
+                    <div className="form-group" style={{ marginBottom: '1rem', animation: 'fadeIn 0.2s ease-out' }}>
+                      <label className="form-label">Select State Board</label>
+                      <select required className="form-input" value={classXBoardState} onChange={e => setClassXBoardState(e.target.value)}>
+                        <option value="">Select State / UT</option>
+                        {INDIAN_STATES.map(s => (
+                          <option key={s} value={s}>{s} Board</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {classXBoard === 'Other' && (
+                    <div className="form-group" style={{ marginBottom: '1rem', animation: 'fadeIn 0.2s ease-out' }}>
+                      <label className="form-label">Specify Board Name</label>
+                      <input required type="text" className="form-input" placeholder="e.g. CBSE International" value={classXBoardOther} onChange={e => setClassXBoardOther(e.target.value)} />
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label className="form-label">Scoring System & Value</label>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      {['Percentage', 'CGPA'].map(t => (
+                        <button type="button" key={t} onClick={() => setClassXScoreType(t)} style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700', border: '1px solid', borderColor: classXScoreType === t ? 'var(--accent-primary, #1e3a8a)' : '#cbd5e1', background: classXScoreType === t ? '#eff6ff' : '#ffffff', color: classXScoreType === t ? 'var(--accent-primary, #1e3a8a)' : '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}>{t}</button>
+                      ))}
+                    </div>
+                    <input required type="number" step="0.01" max={classXScoreType === 'CGPA' ? '10' : '100'} className="form-input" placeholder={classXScoreType === 'CGPA' ? 'e.g. 9.5' : 'e.g. 95.00'} value={classXScoreValue} onChange={e => setClassXScoreValue(e.target.value)} />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Senior Secondary / Class XII Percentage</label>
-                  <input required type="number" step="0.01" max="100" className="form-input" value={classXII} onChange={e => setClassXII(e.target.value)} />
+
+                {/* Class XII Details */}
+                <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <h4 style={{ margin: '0 0 1rem 0', color: '#1e293b', fontSize: '1.1rem', fontWeight: '700' }}>Class XII (Senior Secondary)</h4>
+                  
+                  <div className="form-group" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label">School Name</label>
+                    <input required type="text" className="form-input" placeholder="e.g. Bishop Cotton School" value={classXIISchool} onChange={e => setClassXIISchool(e.target.value)} />
+                  </div>
+                  
+                  <div className="form-group" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label">Board</label>
+                    <select required className="form-input" value={classXIIBoard} onChange={e => setClassXIIBoard(e.target.value)}>
+                      <option value="CBSE">CBSE</option>
+                      <option value="CISCE">CISCE (ISC)</option>
+                      <option value="NIOS">NIOS</option>
+                      <option value="State Board">State Board</option>
+                      <option value="International Board">International Board (IB/Cambridge)</option>
+                      <option value="Other">Other (Please Specify)</option>
+                    </select>
+                  </div>
+
+                  {classXIIBoard === 'State Board' && (
+                    <div className="form-group" style={{ marginBottom: '1rem', animation: 'fadeIn 0.2s ease-out' }}>
+                      <label className="form-label">Select State Board</label>
+                      <select required className="form-input" value={classXIIBoardState} onChange={e => setClassXIIBoardState(e.target.value)}>
+                        <option value="">Select State / UT</option>
+                        {INDIAN_STATES.map(s => (
+                          <option key={s} value={s}>{s} Board</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {classXIIBoard === 'Other' && (
+                    <div className="form-group" style={{ marginBottom: '1rem', animation: 'fadeIn 0.2s ease-out' }}>
+                      <label className="form-label">Specify Board Name</label>
+                      <input required type="text" className="form-input" placeholder="e.g. CBSE International" value={classXIIBoardOther} onChange={e => setClassXIIBoardOther(e.target.value)} />
+                    </div>
+                  )}
+
+                  <div className="form-group">
+                    <label className="form-label">Scoring System & Value</label>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      {['Percentage', 'CGPA'].map(t => (
+                        <button type="button" key={t} onClick={() => setClassXIIScoreType(t)} style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700', border: '1px solid', borderColor: classXIIScoreType === t ? 'var(--accent-primary, #1e3a8a)' : '#cbd5e1', background: classXIIScoreType === t ? '#eff6ff' : '#ffffff', color: classXIIScoreType === t ? 'var(--accent-primary, #1e3a8a)' : '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}>{t}</button>
+                      ))}
+                    </div>
+                    <input required type="number" step="0.01" max={classXIIScoreType === 'CGPA' ? '10' : '100'} className="form-input" placeholder={classXIIScoreType === 'CGPA' ? 'e.g. 9.5' : 'e.g. 95.00'} value={classXIIScoreValue} onChange={e => setClassXIIScoreValue(e.target.value)} />
+                  </div>
                 </div>
               </div>
 
@@ -1715,24 +1881,95 @@ export default function ApplicationForm() {
                 {editEducation ? (
                   <div>
                     <h4 style={{ marginBottom: '0.5rem' }}>Basic Schooling</h4>
-                    <div className="resume-inline-grid-edit" style={{ marginBottom: '1.5rem' }}>
-                      <div className="resume-inline-group">
-                        <label className="resume-inline-label">Class X Percentage</label>
-                        <input 
-                          type="number" step="0.01" max="100"
-                          className="resume-inline-input"
-                          value={classX}
-                          onChange={e => setClassX(e.target.value)}
-                        />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid #e2e8f0' }}>
+                      {/* Class X Edit */}
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '11px', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Class X Details</div>
+                        <div className="resume-inline-group" style={{ marginBottom: '0.5rem' }}>
+                          <label className="resume-inline-label">School Name</label>
+                          <input type="text" className="resume-inline-input" value={classXSchool} onChange={e => setClassXSchool(e.target.value)} />
+                        </div>
+                        <div className="resume-inline-group" style={{ marginBottom: '0.5rem' }}>
+                          <label className="resume-inline-label">Board</label>
+                          <select className="resume-inline-input" value={classXBoard} onChange={e => setClassXBoard(e.target.value)}>
+                            <option value="CBSE">CBSE</option>
+                            <option value="CISCE">CISCE (ICSE)</option>
+                            <option value="NIOS">NIOS</option>
+                            <option value="State Board">State Board</option>
+                            <option value="International Board">International Board</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        {classXBoard === 'State Board' && (
+                          <div className="resume-inline-group" style={{ marginBottom: '0.5rem' }}>
+                            <label className="resume-inline-label">State</label>
+                            <select className="resume-inline-input" value={classXBoardState} onChange={e => setClassXBoardState(e.target.value)}>
+                              <option value="">Select State</option>
+                              {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          </div>
+                        )}
+                        {classXBoard === 'Other' && (
+                          <div className="resume-inline-group" style={{ marginBottom: '0.5rem' }}>
+                            <label className="resume-inline-label">Specify Board</label>
+                            <input type="text" className="resume-inline-input" value={classXBoardOther} onChange={e => setClassXBoardOther(e.target.value)} />
+                          </div>
+                        )}
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Score</label>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <select className="resume-inline-input" style={{ width: '80px', flexShrink: 0 }} value={classXScoreType} onChange={e => setClassXScoreType(e.target.value)}>
+                              <option value="Percentage">%</option>
+                              <option value="CGPA">CGPA</option>
+                            </select>
+                            <input type="number" step="0.01" max={classXScoreType === 'CGPA' ? '10' : '100'} className="resume-inline-input" value={classXScoreValue} onChange={e => setClassXScoreValue(e.target.value)} />
+                          </div>
+                        </div>
                       </div>
-                      <div className="resume-inline-group">
-                        <label className="resume-inline-label">Class XII Percentage</label>
-                        <input 
-                          type="number" step="0.01" max="100"
-                          className="resume-inline-input"
-                          value={classXII}
-                          onChange={e => setClassXII(e.target.value)}
-                        />
+
+                      {/* Class XII Edit */}
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '11px', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Class XII Details</div>
+                        <div className="resume-inline-group" style={{ marginBottom: '0.5rem' }}>
+                          <label className="resume-inline-label">School Name</label>
+                          <input type="text" className="resume-inline-input" value={classXIISchool} onChange={e => setClassXIISchool(e.target.value)} />
+                        </div>
+                        <div className="resume-inline-group" style={{ marginBottom: '0.5rem' }}>
+                          <label className="resume-inline-label">Board</label>
+                          <select className="resume-inline-input" value={classXIIBoard} onChange={e => setClassXIIBoard(e.target.value)}>
+                            <option value="CBSE">CBSE</option>
+                            <option value="CISCE">CISCE (ISC)</option>
+                            <option value="NIOS">NIOS</option>
+                            <option value="State Board">State Board</option>
+                            <option value="International Board">International Board</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        {classXIIBoard === 'State Board' && (
+                          <div className="resume-inline-group" style={{ marginBottom: '0.5rem' }}>
+                            <label className="resume-inline-label">State</label>
+                            <select className="resume-inline-input" value={classXIIBoardState} onChange={e => setClassXIIBoardState(e.target.value)}>
+                              <option value="">Select State</option>
+                              {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          </div>
+                        )}
+                        {classXIIBoard === 'Other' && (
+                          <div className="resume-inline-group" style={{ marginBottom: '0.5rem' }}>
+                            <label className="resume-inline-label">Specify Board</label>
+                            <input type="text" className="resume-inline-input" value={classXIIBoardOther} onChange={e => setClassXIIBoardOther(e.target.value)} />
+                          </div>
+                        )}
+                        <div className="resume-inline-group">
+                          <label className="resume-inline-label">Score</label>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <select className="resume-inline-input" style={{ width: '80px', flexShrink: 0 }} value={classXIIScoreType} onChange={e => setClassXIIScoreType(e.target.value)}>
+                              <option value="Percentage">%</option>
+                              <option value="CGPA">CGPA</option>
+                            </select>
+                            <input type="number" step="0.01" max={classXIIScoreType === 'CGPA' ? '10' : '100'} className="resume-inline-input" value={classXIIScoreValue} onChange={e => setClassXIIScoreValue(e.target.value)} />
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -2000,14 +2237,20 @@ export default function ApplicationForm() {
                     </thead>
                     <tbody>
                       <tr>
-                        <td><span className="resume-item-title">Class X</span></td>
-                        <td>Secondary Schooling</td>
-                        <td>{classX}%</td>
+                        <td>
+                          <span className="resume-item-title">Class X</span>
+                          <div className="resume-item-subtitle">{classXBoard === 'State Board' ? `State Board - ${classXBoardState}` : classXBoard === 'Other' ? classXBoardOther : classXBoard}</div>
+                        </td>
+                        <td>{classXSchool || 'Secondary Schooling'}</td>
+                        <td>{classXScoreValue}{classXScoreType === 'Percentage' ? '%' : ' CGPA'}</td>
                       </tr>
                       <tr>
-                        <td><span className="resume-item-title">Class XII</span></td>
-                        <td>Senior Secondary Schooling</td>
-                        <td>{classXII}%</td>
+                        <td>
+                          <span className="resume-item-title">Class XII</span>
+                          <div className="resume-item-subtitle">{classXIIBoard === 'State Board' ? `State Board - ${classXIIBoardState}` : classXIIBoard === 'Other' ? classXIIBoardOther : classXIIBoard}</div>
+                        </td>
+                        <td>{classXIISchool || 'Senior Secondary Schooling'}</td>
+                        <td>{classXIIScoreValue}{classXIIScoreType === 'Percentage' ? '%' : ' CGPA'}</td>
                       </tr>
                       {grads.map((g, i) => g.university && (
                         <tr key={`g-${i}`}>
