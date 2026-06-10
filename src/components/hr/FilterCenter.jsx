@@ -20,6 +20,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
   const [filters, setFilters] = useState({
     states: [],
     genders: [],
+    min_profile_score: null,
     ug_uni: '',
     min_ug_score: null,
     ug_score_type: 'Percentage',
@@ -65,7 +66,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
 
   const getActiveCount = (catId) => {
     switch(catId) {
-      case 'bio': return filters.states.length + filters.genders.length + (filters.min_age > 18 || filters.max_age < 65 ? 1 : 0);
+      case 'bio': return filters.states.length + filters.genders.length + (filters.min_age > 18 || filters.max_age < 65 ? 1 : 0) + (filters.min_profile_score ? 1 : 0);
       case 'schooling': return (filters.min_x_score ? 1 : 0) + (filters.min_xii_score ? 1 : 0);
       case 'higher_edu': return (filters.ug_uni ? 1 : 0) + (filters.min_ug_score ? 1 : 0) + (filters.pg_uni ? 1 : 0) + (filters.pg_min_score ? 1 : 0) + (filters.phd_uni ? 1 : 0) + (filters.phd_min_score ? 1 : 0);
       case 'professional': return (filters.min_experience_years > 0 ? 1 : 0) + (filters.role_keyword ? 1 : 0) + (filters.company_keyword ? 1 : 0);
@@ -84,7 +85,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
 
   const updateFilter = (key, value) => {
     let finalValue = value;
-    if (['min_ug_score', 'min_experience_years', 'min_age', 'max_age', 'min_x_score', 'min_xii_score', 'pg_min_score', 'phd_min_score'].includes(key)) {
+    if (['min_ug_score', 'min_experience_years', 'min_age', 'max_age', 'min_x_score', 'min_xii_score', 'pg_min_score', 'phd_min_score', 'min_profile_score'].includes(key)) {
       if (value === '' || value === null) finalValue = null;
       else finalValue = parseFloat(value);
     }
@@ -115,7 +116,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button onClick={() => {
-             const reset = { states: [], genders: [], ug_uni: '', min_ug_score: null, pg_uni: '', pg_min_score: null, phd_uni: '', phd_thesis: '', phd_min_score: null, min_experience_years: 0, min_papers: 0, min_books: 0, min_chapters: 0, min_age: 18, max_age: 65, min_x_score: null, x_score_type: 'Percentage', min_xii_score: null, xii_score_type: 'Percentage', role_keyword: '', company_keyword: '', publication_keyword: '' };
+             const reset = { states: [], genders: [], min_profile_score: null, ug_uni: '', min_ug_score: null, pg_uni: '', pg_min_score: null, phd_uni: '', phd_thesis: '', phd_min_score: null, min_experience_years: 0, min_papers: 0, min_books: 0, min_chapters: 0, min_age: 18, max_age: 65, min_x_score: null, x_score_type: 'Percentage', min_xii_score: null, xii_score_type: 'Percentage', role_keyword: '', company_keyword: '', publication_keyword: '' };
              setFilters(reset);
              onFilterChange(reset);
           }} style={{ fontSize: '12px', color: '#94a3b8', background: 'none', border: 'none', fontWeight: '700', cursor: 'pointer' }}>
@@ -228,6 +229,17 @@ export default function FilterCenter({ job_id, onFilterChange }) {
                       <button key={g} onClick={() => updateFilter('genders', filters.genders.includes(g) ? filters.genders.filter(x => x !== g) : [...filters.genders, g])}
                         style={{ padding: '6px 14px', borderRadius: '8px', fontSize: '11px', fontWeight: '800', border: '1.5px solid', borderColor: filters.genders.includes(g) ? '#0f172a' : '#e2e8f0', background: filters.genders.includes(g) ? '#f1f5f9' : 'white', color: '#0f172a' }}>{g}</button>
                     ))}
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '10px', textTransform: 'uppercase' }}>Min Profile Score: {filters.min_profile_score || 0} / 85</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input 
+                      type="range" min="0" max="85" step="0.5" 
+                      value={filters.min_profile_score || 0} 
+                      onChange={(e) => updateFilter('min_profile_score', e.target.value === '0' ? null : e.target.value)} 
+                      style={{ width: '100%', accentColor: '#10b981' }} 
+                    />
                   </div>
                 </div>
               </div>

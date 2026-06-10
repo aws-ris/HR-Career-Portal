@@ -3,22 +3,27 @@ import { X, Mail, Phone, MapPin, Calendar, GraduationCap, Briefcase, BookOpen, F
 
 import { API_BASE as API } from '../../api';
 
-export default function CandidateProfileModal({ candidateId, onClose }) {
+export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!candidateId) return;
-    // In a real DynamoDB setup, this would be a single fetch. 
-    // For now, we simulate with the existing Postgres relations.
-    fetch(`${API}/candidates/${candidateId}/full_profile`)
+    setLoading(true);
+    const url = jobId 
+      ? `${API}/candidates/${candidateId}/full_profile?job_id=${jobId}`
+      : `${API}/candidates/${candidateId}/full_profile`;
+    fetch(url)
       .then(res => res.json())
       .then(d => {
         setData(d);
         setLoading(false);
       })
-      .catch(e => console.error(e));
-  }, [candidateId]);
+      .catch(e => {
+        console.error(e);
+        setLoading(false);
+      });
+  }, [candidateId, jobId]);
 
   if (!candidateId) return null;
 
@@ -205,7 +210,17 @@ export default function CandidateProfileModal({ candidateId, onClose }) {
           ) : (
             <div className="hr-dossier-layout">
               {/* Executive Rundown Panels (Top row) */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '20px', marginBottom: '32px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 1fr 1fr', gap: '16px', marginBottom: '32px' }}>
+                {/* Panel 0: Profile Score */}
+                <div style={{ background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)', borderRadius: '16px', padding: '16px 20px', border: '1px solid #10b98133', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ fontSize: '10px', fontWeight: '800', color: '#065f46', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Award size={13} style={{ color: '#059669' }} /> Profile Score
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: '900', color: '#064e3b' }}>
+                    {data?.profile_score !== undefined ? `${data.profile_score.toFixed(1)} / 85` : 'N/A'}
+                  </div>
+                </div>
+
                 {/* Panel 1: Experience */}
                 <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '16px 20px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -256,6 +271,51 @@ export default function CandidateProfileModal({ candidateId, onClose }) {
                   </div>
                 </div>
               </div>
+
+              {/* Profile Score Detailed Breakdown Panel */}
+              {data?.profile_score_breakdown && (
+                <div style={{ 
+                  background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)', 
+                  border: '1px solid #e2e8f0', 
+                  borderRadius: '16px', 
+                  padding: '20px 24px', 
+                  marginBottom: '32px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}>
+                  <h4 style={{ margin: 0, fontSize: '11px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Award size={14} style={{ color: '#059669' }} /> Profile Evaluation Rubric Breakdown (out of 85)
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginTop: '4px' }}>
+                    <div style={{ background: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                      <span style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Schooling (X/XII)</span>
+                      <span style={{ fontSize: '15px', fontWeight: '800', color: '#1e293b' }}>{data.profile_score_breakdown.schooling?.toFixed(1) || '0.0'} <span style={{fontSize: '11px', color: '#94a3b8'}}>/ 10</span></span>
+                      <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '4px' }}>X: {data.profile_score_breakdown.school_x?.toFixed(1) || '0.0'} | XII: {data.profile_score_breakdown.school_xii?.toFixed(1) || '0.0'}</div>
+                    </div>
+                    <div style={{ background: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                      <span style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Essential Qual (EQ)</span>
+                      <span style={{ fontSize: '15px', fontWeight: '800', color: '#1e293b' }}>{data.profile_score_breakdown.eq?.toFixed(1) || '0.0'} <span style={{fontSize: '11px', color: '#94a3b8'}}>/ 30</span></span>
+                      <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '4px' }}>0.3 pts per %</div>
+                    </div>
+                    <div style={{ background: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                      <span style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Desirable Qual (DQ)</span>
+                      <span style={{ fontSize: '15px', fontWeight: '800', color: '#1e293b' }}>{data.profile_score_breakdown.dq?.toFixed(1) || '0.0'} <span style={{fontSize: '11px', color: '#94a3b8'}}>/ 10</span></span>
+                      <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '4px' }}>0.1 pts per %</div>
+                    </div>
+                    <div style={{ background: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                      <span style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Univ Brand Tier</span>
+                      <span style={{ fontSize: '15px', fontWeight: '800', color: '#1e293b' }}>{data.profile_score_breakdown.brand?.toFixed(1) || '0.0'} <span style={{fontSize: '11px', color: '#94a3b8'}}>/ 10</span></span>
+                      <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={data.profile_score_breakdown.brand_classification}>{data.profile_score_breakdown.brand_classification || 'Other'}</div>
+                    </div>
+                    <div style={{ background: '#ffffff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                      <span style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Domain Experience</span>
+                      <span style={{ fontSize: '15px', fontWeight: '800', color: '#1e293b' }}>{data.profile_score_breakdown.experience?.toFixed(1) || '0.0'} <span style={{fontSize: '11px', color: '#94a3b8'}}>/ 25</span></span>
+                      <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={data.profile_score_breakdown.experience_desc}>{data.years_of_experience || 0} Yrs (Req {data.profile_score_breakdown.min_exp_req || 1} Yrs)</div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Stacked Contact Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px', borderBottom: '1px solid #f1f5f9', paddingBottom: '20px' }}>

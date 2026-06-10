@@ -102,6 +102,7 @@ class ApplicationTracking(Base):
     current_status    = Column(String(30),  nullable=False, default='received')
     submitted_at      = Column(DateTime,    nullable=False, default=datetime.utcnow)
     updated_at        = Column(DateTime,    nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    profile_score     = Column(Float,       nullable=True)
 
     # Relationships
     candidate         = relationship("CandidateMetadata",       back_populates="applications")

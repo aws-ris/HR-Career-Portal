@@ -101,6 +101,160 @@ const SpecializationInput = ({ required, value, onChange, placeholder, className
 };
 
 
+let globalUniversitiesList = [];
+
+const UniversityAutocomplete = ({ required, value, onChange, placeholder, className }) => {
+  const [inputValue, setInputValue] = useState(value || '');
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isCustomMode, setIsCustomMode] = useState(value && globalUniversitiesList.length > 0 && !globalUniversitiesList.includes(value));
+
+  useEffect(() => {
+    setInputValue(value || '');
+  }, [value]);
+
+  const [universitiesList, setUniversitiesList] = useState(globalUniversitiesList);
+
+  useEffect(() => {
+    if (globalUniversitiesList.length > 0) {
+      setUniversitiesList(globalUniversitiesList);
+      if (value && !globalUniversitiesList.includes(value)) {
+        setIsCustomMode(true);
+      }
+    } else {
+      fetch(`${API}/universities`)
+        .then(res => res.json())
+        .then(data => {
+          globalUniversitiesList = data;
+          setUniversitiesList(data);
+          if (value && !data.includes(value)) {
+            setIsCustomMode(true);
+          }
+        })
+        .catch(err => console.error("Error fetching universities list:", err));
+    }
+  }, [value]);
+
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setInputValue(val);
+    onChange(val);
+
+    if (isCustomMode) {
+      return;
+    }
+
+    if (!val.trim()) {
+      setSuggestions([]);
+      return;
+    }
+
+    const filtered = universitiesList.filter(u => 
+      u.toLowerCase().includes(val.toLowerCase())
+    ).slice(0, 8);
+
+    setSuggestions([...filtered, "Other (Type custom university name...)"]);
+  };
+
+  const handleSelect = (univ) => {
+    if (univ.startsWith("Other")) {
+      setIsCustomMode(true);
+      setInputValue('');
+      onChange('');
+    } else {
+      setInputValue(univ);
+      onChange(univ);
+    }
+    setShowSuggestions(false);
+  };
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <input
+        required={required}
+        className={className}
+        placeholder={isCustomMode ? "Type custom university name..." : placeholder}
+        value={inputValue}
+        onChange={handleInputChange}
+        onFocus={() => {
+          if (!isCustomMode) {
+            if (inputValue.trim()) {
+              const filtered = universitiesList.filter(u => 
+                u.toLowerCase().includes(inputValue.toLowerCase())
+              ).slice(0, 8);
+              setSuggestions([...filtered, "Other (Type custom university name...)"]);
+            } else {
+              setSuggestions(universitiesList.slice(0, 8).concat(["Other (Type custom university name...)"]));
+            }
+            setShowSuggestions(true);
+          }
+        }}
+        onBlur={() => {
+          setTimeout(() => setShowSuggestions(false), 200);
+        }}
+      />
+      {isCustomMode && (
+        <button 
+          type="button" 
+          onClick={() => { setIsCustomMode(false); setInputValue(''); onChange(''); }}
+          style={{
+            position: 'absolute',
+            right: '10px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            background: 'none',
+            border: 'none',
+            color: '#ef4444',
+            fontSize: '11px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            zIndex: 10
+          }}
+        >
+          Reset to List
+        </button>
+      )}
+      {showSuggestions && suggestions.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          background: '#ffffff',
+          border: '1px solid #cbd5e1',
+          borderRadius: '8px',
+          maxHeight: '200px',
+          overflowY: 'auto',
+          zIndex: 999,
+          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+          marginTop: '4px'
+        }}>
+          {suggestions.map((s, idx) => (
+            <div
+              key={idx}
+              style={{
+                padding: '8px 12px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                borderBottom: '1px solid #f1f5f9',
+                color: s.startsWith("Other") ? '#ef4444' : '#1e293b',
+                fontWeight: s.startsWith("Other") ? '700' : '500',
+                backgroundColor: '#ffffff'
+              }}
+              onMouseDown={() => handleSelect(s)}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#ffffff'}
+            >
+              {s}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 const parseDegree = (degreeName, level) => {
   if (!degreeName) return { type: '', spec: '', custom: '' };
   const match = degreeName.match(/^([^(]+)\s*\(([^)]+)\)$/);
@@ -1403,7 +1557,7 @@ export default function ApplicationForm() {
               <h3 style={{marginBottom: '1rem'}}>Graduation Details</h3>
               {grads.map((g, i) => (
                 <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
-                  <div className="form-group"><label className="form-label">University</label><input required className="form-input" value={g.university} onChange={e => updateEntry(setGrads, grads, i, 'university', e.target.value)} /></div>
+                  <div className="form-group"><label className="form-label">University</label><UniversityAutocomplete required className="form-input" value={g.university} onChange={val => updateEntry(setGrads, grads, i, 'university', val)} placeholder="Search university..." /></div>
                   <div className="form-group">
                     <label className="form-label">Degree Type</label>
                     {g.degree_select === 'Other' ? (
@@ -1499,7 +1653,7 @@ export default function ApplicationForm() {
               <h3 style={{marginBottom: '1rem'}}>Post Graduation Details</h3>
               {postGrads.map((g, i) => (
                 <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
-                  <div className="form-group"><label className="form-label">University</label><input className="form-input" value={g.university} onChange={e => updateEntry(setPostGrads, postGrads, i, 'university', e.target.value)} /></div>
+                  <div className="form-group"><label className="form-label">University</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setPostGrads, postGrads, i, 'university', val)} placeholder="Search university..." /></div>
                   <div className="form-group">
                     <label className="form-label">Degree Type</label>
                     {g.degree_select === 'Other' ? (
@@ -1593,7 +1747,7 @@ export default function ApplicationForm() {
               <h3 style={{marginBottom: '1rem'}}>Doctorate Details</h3>
               {doctorates.map((g, i) => (
                 <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
-                  <div className="form-group"><label className="form-label">University</label><input className="form-input" value={g.university} onChange={e => updateEntry(setDoctorates, doctorates, i, 'university', e.target.value)} /></div>
+                  <div className="form-group"><label className="form-label">University</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setDoctorates, doctorates, i, 'university', val)} placeholder="Search university..." /></div>
                   <div className="form-group"><label className="form-label">Thesis Title</label><input className="form-input" value={g.thesis_title} onChange={e => updateEntry(setDoctorates, doctorates, i, 'thesis_title', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
                   <div className="form-group"><label className="form-label">Score</label><input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_value', e.target.value)} /></div>
@@ -2003,7 +2157,7 @@ export default function ApplicationForm() {
                       <div className="resume-inline-grid-edit" key={i} style={{ marginBottom: '1rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
                         <div className="resume-inline-group">
                           <label className="resume-inline-label">University</label>
-                          <input className="resume-inline-input" value={g.university} onChange={e => updateEntry(setGrads, grads, i, 'university', e.target.value)} />
+                          <UniversityAutocomplete className="resume-inline-input" value={g.university} onChange={val => updateEntry(setGrads, grads, i, 'university', val)} placeholder="Search university..." />
                         </div>
                         <div className="resume-inline-group">
                           <label className="resume-inline-label">Degree Type</label>
@@ -2114,7 +2268,7 @@ export default function ApplicationForm() {
                       <div className="resume-inline-grid-edit" key={i} style={{ marginBottom: '1rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
                         <div className="resume-inline-group">
                           <label className="resume-inline-label">University</label>
-                          <input className="resume-inline-input" value={g.university} onChange={e => updateEntry(setPostGrads, postGrads, i, 'university', e.target.value)} />
+                          <UniversityAutocomplete className="resume-inline-input" value={g.university} onChange={val => updateEntry(setPostGrads, postGrads, i, 'university', val)} placeholder="Search university..." />
                         </div>
                         <div className="resume-inline-group">
                           <label className="resume-inline-label">Degree Type</label>
@@ -2223,7 +2377,7 @@ export default function ApplicationForm() {
                       <div className="resume-inline-grid-edit" key={i} style={{ marginBottom: '1rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
                         <div className="resume-inline-group">
                           <label className="resume-inline-label">University</label>
-                          <input className="resume-inline-input" value={g.university} onChange={e => updateEntry(setDoctorates, doctorates, i, 'university', e.target.value)} />
+                          <UniversityAutocomplete className="resume-inline-input" value={g.university} onChange={val => updateEntry(setDoctorates, doctorates, i, 'university', val)} placeholder="Search university..." />
                         </div>
                         <div className="resume-inline-group">
                           <label className="resume-inline-label">Thesis Title</label>

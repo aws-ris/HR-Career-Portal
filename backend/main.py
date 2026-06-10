@@ -76,7 +76,10 @@ def startup_migration():
 
             # Application Status History columns
             "ALTER TABLE application_status_history ADD COLUMN IF NOT EXISTS application_tracking_id VARCHAR(36);",
-            "ALTER TABLE application_status_history ALTER COLUMN candidate_id DROP NOT NULL;"
+            "ALTER TABLE application_status_history ALTER COLUMN candidate_id DROP NOT NULL;",
+            
+            # Application Tracking columns
+            "ALTER TABLE application_tracking ADD COLUMN IF NOT EXISTS profile_score FLOAT;"
         ]
         
         for query in migrations:
@@ -196,6 +199,52 @@ def migrate_v2_endpoint(db: Session = Depends(get_db)):
             db.rollback()
 
         return {"status": "success", "message": "Successfully migrated candidate_metadata and candidate_links_about tables to V2, and populated candidate ages."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/system/backfill-scores")
+def backfill_candidate_scores(db: Session = Depends(get_db)):
+    """
+    Backfill scores for all existing candidate applications in the database.
+    """
+    from sqlalchemy import text
+    from utils.scoring import calculate_candidate_score
+    try:
+        # Ensure column exists (safety fallback)
+        try:
+            db.execute(text("ALTER TABLE application_tracking ADD COLUMN IF NOT EXISTS profile_score FLOAT;"))
+            db.commit()
+        except Exception as schema_err:
+            print(f"Schema change warning: {schema_err}")
+            db.rollback()
+
+        # Query all application trackers
+        trackers = db.query(models.ApplicationTracking).all()
+        updated_count = 0
+
+        for t in trackers:
+            candidate = db.query(models.CandidateMetadata).filter(
+                models.CandidateMetadata.id == t.candidate_id
+            ).first()
+            if not candidate:
+                continue
+
+            job_posting = db.query(models.JobPosting).filter(
+                models.JobPosting.id == t.job_id
+            ).first()
+            min_exp = job_posting.min_experience if job_posting else 1.0
+
+            score_res = calculate_candidate_score(candidate, min_exp)
+            t.profile_score = score_res["total_score"]
+            updated_count += 1
+
+        db.commit()
+        return {
+            "status": "success",
+            "message": f"Successfully backfilled profile scores for {updated_count} application records."
+        }
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -709,6 +758,14 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
                 entry_order  = w.entry_order,
             ))
 
+        db.flush()
+        # Calculate and save candidate score for this job posting
+        job_posting = db.query(models.JobPosting).filter(models.JobPosting.id == payload.job_id).first()
+        min_exp = job_posting.min_experience if job_posting else 1.0
+        from utils.scoring import calculate_candidate_score
+        score_res = calculate_candidate_score(candidate, min_exp)
+        app_tracking.profile_score = score_res["total_score"]
+
         # 8. Seed status history
         db.add(models.ApplicationStatusHistory(
             application_tracking_id = app_tracking.id,
@@ -1007,7 +1064,7 @@ def get_job_analytics(job_id: str, db: Session = Depends(get_db)):
     }
 
 @app.get("/api/v1/candidates/{candidate_id}/full_profile")
-def get_full_profile(candidate_id: str, db: Session = Depends(get_db)):
+def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Session = Depends(get_db)):
     candidate = db.query(models.CandidateMetadata).options(
         joinedload(models.CandidateMetadata.schooling),
         joinedload(models.CandidateMetadata.higher_education),
@@ -1021,11 +1078,24 @@ def get_full_profile(candidate_id: str, db: Session = Depends(get_db)):
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate not found")
 
-    # Fetch applications tracking separately
-    tracking_entries = db.query(models.ApplicationTracking).filter(
-        models.ApplicationTracking.candidate_id == candidate_id
-    ).all()
-    
+    min_exp = 1.0
+    if job_id:
+        job_posting = db.query(models.JobPosting).filter(models.JobPosting.id == job_id).first()
+        if job_posting and job_posting.min_experience is not None:
+            min_exp = job_posting.min_experience
+    else:
+        # Fallback: check if they have applied to any job, use the latest application's min_experience
+        latest_app = db.query(models.ApplicationTracking).filter(
+            models.ApplicationTracking.candidate_id == candidate_id
+        ).order_by(models.ApplicationTracking.submitted_at.desc()).first()
+        if latest_app and latest_app.job_id:
+            job_posting = db.query(models.JobPosting).filter(models.JobPosting.id == latest_app.job_id).first()
+            if job_posting and job_posting.min_experience is not None:
+                min_exp = job_posting.min_experience
+
+    from utils.scoring import calculate_candidate_score
+    score_res = calculate_candidate_score(candidate, min_exp)
+
     schooling_data = None
     if candidate.schooling:
         schooling_data = {
@@ -1059,6 +1129,8 @@ def get_full_profile(candidate_id: str, db: Session = Depends(get_db)):
             if candidate.dob else None
         ),
         "years_of_experience": candidate.years_of_experience,
+        "profile_score": score_res["total_score"],
+        "profile_score_breakdown": score_res["breakdown"],
         "about": candidate.links_about.about if candidate.links_about else None,
         "extracurriculars": candidate.links_about.extracurriculars if candidate.links_about else None,
         "google_scholar": candidate.links_about.google_scholar if candidate.links_about else None,
@@ -1128,6 +1200,7 @@ class CandidateFilter(BaseModel):
 
     states: Optional[List[str]] = None
     genders: Optional[List[str]] = None
+    min_profile_score: Optional[float] = None
     ug_uni: Optional[str] = None
     min_ug_score: Optional[float] = None
     pg_uni: Optional[str] = None
@@ -1152,6 +1225,12 @@ class CandidateFilter(BaseModel):
     phd_score_type: Optional[str] = None
     x_score_type: Optional[str] = None
     xii_score_type: Optional[str] = None
+
+
+@app.get("/api/v1/universities")
+def get_universities():
+    from utils.scoring import UNIVERSITIES_DB
+    return sorted(list(UNIVERSITIES_DB.keys()))
 
 
 class ExportRequest(BaseModel):
@@ -1685,6 +1764,7 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
             models.CandidateMetadata.id.in_(matching_ids)
         ).options(
             joinedload(models.CandidateMetadata.higher_education),
+            joinedload(models.CandidateMetadata.schooling),
             joinedload(models.CandidateMetadata.publications),
             joinedload(models.CandidateMetadata.work_experiences)
         ).all()
@@ -1696,8 +1776,21 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
         ).all()
         tracker_map = {t.candidate_id: t for t in trackers}
 
+        job_posting = db.query(models.JobPosting).filter(models.JobPosting.id == clean_job_id).first()
+        min_exp = job_posting.min_experience if job_posting else 1.0
+
+        from utils.scoring import calculate_candidate_score
+
         result = []
         for c in candidates:
+            score_res = calculate_candidate_score(c, min_exp)
+            profile_score = score_res["total_score"]
+            profile_score_breakdown = score_res["breakdown"]
+
+            if filters.min_profile_score is not None:
+                if profile_score < filters.min_profile_score:
+                    continue
+
             track = tracker_map.get(c.id)
             grad = [e for e in c.higher_education if e.level == 'undergrad']
             postgrad = [e for e in c.higher_education if e.level == 'postgrad']
@@ -1725,6 +1818,8 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
                 "years_of_experience": c.years_of_experience,
                 "highest_education": highest_edu,
                 "current_status": track.current_status if track else 'received',
+                "profile_score": profile_score,
+                "profile_score_breakdown": profile_score_breakdown,
                 "graduation": [{"degree_name": g.degree_name, "university": g.university, "score": f"{g.score_value} {g.score_type}"} for g in grad],
                 "postgraduate": [{"degree_name": p.degree_name, "university": p.university, "score": f"{p.score_value} {p.score_type}"} for p in postgrad],
                 "doctorate": [{"university": d.university, "thesis_title": d.degree_name, "score": f"{d.score_value} {d.score_type}"} for d in phd],
@@ -1792,11 +1887,15 @@ def get_job_candidates(job_id: str, db: Session = Depends(get_db)):
     if not trackers:
         return []
 
+    job_posting = db.query(models.JobPosting).filter(models.JobPosting.id == job_id).first()
+    min_exp = job_posting.min_experience if job_posting else 1.0
+
     candidate_ids = [t.candidate_id for t in trackers]
     candidates = db.query(models.CandidateMetadata).filter(
         models.CandidateMetadata.id.in_(candidate_ids)
     ).options(
         joinedload(models.CandidateMetadata.higher_education),
+        joinedload(models.CandidateMetadata.schooling),
         joinedload(models.CandidateMetadata.publications),
         joinedload(models.CandidateMetadata.work_experiences)
     ).all()
@@ -1804,12 +1903,16 @@ def get_job_candidates(job_id: str, db: Session = Depends(get_db)):
     # Map for sorting order preservation
     cand_map = {c.id: c for c in candidates}
     
+    from utils.scoring import calculate_candidate_score
+
     result = []
     for t in trackers:
         c = cand_map.get(t.candidate_id)
         if not c:
             continue
             
+        score_res = calculate_candidate_score(c, min_exp)
+
         grad = [e for e in c.higher_education if e.level == 'undergrad']
         postgrad = [e for e in c.higher_education if e.level == 'postgrad']
         phd = [e for e in c.higher_education if e.level == 'phd']
@@ -1835,6 +1938,8 @@ def get_job_candidates(job_id: str, db: Session = Depends(get_db)):
             "years_of_experience": c.years_of_experience,
             "highest_education": highest_edu,
             "current_status": t.current_status,
+            "profile_score": score_res["total_score"],
+            "profile_score_breakdown": score_res["breakdown"],
             "ai_match_score": None,
             "graduation": [{"degree_name": g.degree_name, "university": g.university, "score": f"{g.score_value} {g.score_type}"} for g in grad],
             "postgraduate": [{"degree_name": p.degree_name, "university": p.university, "score": f"{p.score_value} {p.score_type}"} for p in postgrad],
