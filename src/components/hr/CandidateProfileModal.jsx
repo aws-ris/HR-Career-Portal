@@ -27,6 +27,50 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
 
   if (!candidateId) return null;
 
+  if (!loading && !data) {
+    return (
+      <div className="hr-modal-overlay" style={{ 
+        background: 'rgba(15, 23, 42, 0.8)', 
+        backdropFilter: 'blur(8px)',
+        position: 'fixed',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px',
+        zIndex: 9999
+      }}>
+        <div style={{ 
+          background: '#ffffff', 
+          width: '100%', 
+          maxWidth: '500px', 
+          borderRadius: '24px', 
+          padding: '40px',
+          textAlign: 'center',
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+          position: 'relative'
+        }}>
+          <p style={{ color: '#ef4444', fontWeight: '800', fontSize: '18px', margin: '0 0 20px 0' }}>Failed to retrieve dossier.</p>
+          <p style={{ color: '#64748b', fontSize: '14px', margin: '0 0 30px 0' }}>The candidate details could not be loaded. Please ensure the backend server is running.</p>
+          <button 
+            onClick={onClose} 
+            style={{ 
+              padding: '10px 24px', 
+              background: '#1e293b', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '8px', 
+              cursor: 'pointer', 
+              fontWeight: '700' 
+            }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const books = data?.publications?.filter(p => p.pub_type?.toLowerCase() === 'book') || [];
   const papers = data?.publications?.filter(p => p.pub_type?.toLowerCase() === 'paper') || [];
   const chapters = data?.publications?.filter(p => p.pub_type?.toLowerCase() === 'chapter') || [];
@@ -217,7 +261,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                     <Award size={13} style={{ color: '#059669' }} /> Profile Score
                   </div>
                   <div style={{ fontSize: '18px', fontWeight: '900', color: '#064e3b' }}>
-                    {data?.profile_score !== undefined ? `${data.profile_score.toFixed(1)} / 85` : 'N/A'}
+                    {(data?.profile_score !== undefined && data?.profile_score !== null) ? `${Number(data.profile_score).toFixed(1)} / 85` : 'N/A'}
                   </div>
                 </div>
 

@@ -151,7 +151,7 @@ const UniversityAutocomplete = ({ required, value, onChange, placeholder, classN
 
     const filtered = universitiesList.filter(u => 
       u.toLowerCase().includes(val.toLowerCase())
-    ).slice(0, 8);
+    );
 
     setSuggestions([...filtered, "Other (Type custom university name...)"]);
   };
@@ -181,10 +181,10 @@ const UniversityAutocomplete = ({ required, value, onChange, placeholder, classN
             if (inputValue.trim()) {
               const filtered = universitiesList.filter(u => 
                 u.toLowerCase().includes(inputValue.toLowerCase())
-              ).slice(0, 8);
+              );
               setSuggestions([...filtered, "Other (Type custom university name...)"]);
             } else {
-              setSuggestions(universitiesList.slice(0, 8).concat(["Other (Type custom university name...)"]));
+              setSuggestions(universitiesList.concat(["Other (Type custom university name...)"]));
             }
             setShowSuggestions(true);
           }
@@ -826,13 +826,22 @@ export default function ApplicationForm() {
     }
 
     // Education (Step 2)
-    const valClassX = parseFloat(classX);
-    if (isNaN(valClassX) || valClassX < 0 || valClassX > 100) {
-      errors.push("Class X Percentage must be a number between 0 and 100.");
+    const valClassX = parseFloat(classXScoreValue);
+    if (isNaN(valClassX) || valClassX < 0) {
+      errors.push("Class X score must be a valid positive number.");
+    } else if (classXScoreType === 'Percentage' && valClassX > 100) {
+      errors.push("Class X Percentage cannot exceed 100.");
+    } else if (classXScoreType === 'CGPA' && valClassX > 10) {
+      errors.push("Class X CGPA cannot exceed 10.");
     }
-    const valClassXII = parseFloat(classXII);
-    if (isNaN(valClassXII) || valClassXII < 0 || valClassXII > 100) {
-      errors.push("Class XII Percentage must be a number between 0 and 100.");
+
+    const valClassXII = parseFloat(classXIIScoreValue);
+    if (isNaN(valClassXII) || valClassXII < 0) {
+      errors.push("Class XII score must be a valid positive number.");
+    } else if (classXIIScoreType === 'Percentage' && valClassXII > 100) {
+      errors.push("Class XII Percentage cannot exceed 100.");
+    } else if (classXIIScoreType === 'CGPA' && valClassXII > 10) {
+      errors.push("Class XII CGPA cannot exceed 10.");
     }
 
     // Graduation
