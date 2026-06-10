@@ -1071,6 +1071,7 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
         joinedload(models.CandidateMetadata.publications),
         joinedload(models.CandidateMetadata.work_experiences),
         joinedload(models.CandidateMetadata.links_about),
+        joinedload(models.CandidateMetadata.applications),
     ).filter(
         models.CandidateMetadata.id == candidate_id
     ).first()
@@ -1147,7 +1148,7 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
             "admin_department": app.admin_department,
             "current_status": app.current_status,
             "submitted_at": app.submitted_at.isoformat() if app.submitted_at else None
-        } for app in tracking_entries]
+        } for app in candidate.applications]
     }
 
 
