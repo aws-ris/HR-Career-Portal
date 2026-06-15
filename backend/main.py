@@ -11,7 +11,7 @@ from typing import List, Optional
 
 # Note: In production, use Alembic migrations instead of create_all
 # create_all is safe here — it only creates tables that don't exist yet
-# Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="RIS Hiring Portal API", version="2.0.0")
 
@@ -1154,28 +1154,48 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
 
 @app.get("/api/v1/applications/{candidate_id}/resume/download")
 def download_resume(candidate_id: str, preview: bool = False, db: Session = Depends(get_db)):
-    from fastapi import Response
+    from fastapi.responses import RedirectResponse, Response
     payload = db.query(models.CandidateResumePayload).filter(
         models.CandidateResumePayload.candidate_id == candidate_id
     ).first()
     
-    # Check if we have the blob (Database-First Storage)
+    filename = os.path.basename(payload.resume_path) if (payload and payload.resume_path) else "resume.pdf"
+    
+    # S3 Storage Path Integration
+    S3_BUCKET = os.getenv("S3_BUCKET_NAME")
+    if S3_BUCKET and payload and payload.resume_path and payload.resume_path.startswith("resumes/"):
+        try:
+            import boto3
+            s3_client = boto3.client('s3')
+            disposition = "inline" if preview else "attachment"
+            presigned_url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={
+                    'Bucket': S3_BUCKET,
+                    'Key': payload.resume_path,
+                    'ResponseContentDisposition': f'{disposition}; filename="{filename}"'
+                },
+                ExpiresIn=900
+            )
+            return RedirectResponse(url=presigned_url)
+        except Exception as e:
+            print(f"[S3 Download] Error generating pre-signed URL: {e}. Falling back to database/local file storage.")
+
+    # Check if we have the blob (Database-First Storage Fallback)
     if not payload or not payload.pdf_blob:
-        # Fallback to path if blob is missing for some reason
+        # Fallback to local path if blob is missing for some reason
         if payload and payload.resume_path and os.path.exists(payload.resume_path):
             headers = {}
             if preview:
-                headers["Content-Disposition"] = f'inline; filename="{os.path.basename(payload.resume_path)}"'
+                headers["Content-Disposition"] = f'inline; filename="{filename}"'
             else:
-                headers["Content-Disposition"] = f'attachment; filename="{os.path.basename(payload.resume_path)}"'
+                headers["Content-Disposition"] = f'attachment; filename="{filename}"'
             return FileResponse(path=payload.resume_path, headers=headers, media_type="application/pdf")
         
         raise HTTPException(status_code=404, detail="Resume not found in persistent storage")
     
-    # STREAM DIRECTLY FROM DATABASE BLOB
-    filename = os.path.basename(payload.resume_path) if payload.resume_path else "resume.pdf"
+    # Stream directly from database blob (fallback)
     disposition = "inline" if preview else "attachment"
-    
     return Response(
         content=payload.pdf_blob,
         media_type="application/pdf",

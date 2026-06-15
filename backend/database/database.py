@@ -15,8 +15,8 @@ SQLALCHEMY_DATABASE_URL = os.getenv(
 if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
     SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Ensure SSL is enabled for cloud databases
-if "localhost" not in SQLALCHEMY_DATABASE_URL and "sslmode" not in SQLALCHEMY_DATABASE_URL:
+# Ensure SSL is enabled for cloud databases, unless local or container networks are used
+if not any(h in SQLALCHEMY_DATABASE_URL for h in ["localhost", "db", "postgres", "127.0.0.1"]) and "sslmode" not in SQLALCHEMY_DATABASE_URL:
     if "?" in SQLALCHEMY_DATABASE_URL:
         SQLALCHEMY_DATABASE_URL += "&sslmode=require"
     else:

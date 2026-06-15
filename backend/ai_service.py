@@ -95,6 +95,26 @@ def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, f
     if not candidate:
         raise ValueError(f"Candidate {candidate_id} not found")
 
+    # Check if S3 is configured
+    S3_BUCKET = os.getenv("S3_BUCKET_NAME")
+    s3_key = f"resumes/{candidate_id}_{filename}"
+    uploaded_to_s3 = False
+
+    if S3_BUCKET:
+        try:
+            import boto3
+            s3_client = boto3.client('s3')
+            s3_client.put_object(
+                Bucket=S3_BUCKET,
+                Key=s3_key,
+                Body=file_bytes,
+                ContentType='application/pdf'
+            )
+            uploaded_to_s3 = True
+            print(f"[S3] Uploaded resume for candidate {candidate_id} to S3 bucket {S3_BUCKET}")
+        except Exception as e:
+            print(f"[S3] Error uploading to S3: {e}. Falling back to database/local file storage.")
+
     # Local save (fallback/legacy)
     upload_dir = os.path.join(os.path.dirname(__file__), "uploads", "resumes")
     os.makedirs(upload_dir, exist_ok=True)
@@ -106,14 +126,18 @@ def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, f
     except:
         pass # Vercel might deny write access in some contexts
 
-    rel_path = os.path.join("uploads", "resumes", safe_filename).replace("\\", "/")
+    rel_path = s3_key if uploaded_to_s3 else os.path.join("uploads", "resumes", safe_filename).replace("\\", "/")
 
     payload = db.query(CandidateResumePayload).filter(CandidateResumePayload.candidate_id == candidate_id).first()
     if payload:
         payload.resume_path = rel_path
-        payload.pdf_blob = file_bytes # STORE IN DB
+        payload.pdf_blob = None if uploaded_to_s3 else file_bytes # Save DB storage if uploaded to S3!
     else:
-        payload = CandidateResumePayload(candidate_id=candidate_id, resume_path=rel_path, pdf_blob=file_bytes)
+        payload = CandidateResumePayload(
+            candidate_id=candidate_id, 
+            resume_path=rel_path, 
+            pdf_blob=None if uploaded_to_s3 else file_bytes
+        )
         db.add(payload)
 
     db.commit()
@@ -127,8 +151,20 @@ def background_vectorize_resume(candidate_id: str, file_path: str):
         if not payload:
             return
 
-        # Try file first, then fallback to DB stream
-        raw_text = extract_text_from_pdf(pdf_path=file_path, pdf_stream=payload.pdf_blob)
+        # Try file first, then fallback to DB stream, then S3 stream!
+        pdf_bytes = payload.pdf_blob
+        if not pdf_bytes:
+            S3_BUCKET = os.getenv("S3_BUCKET_NAME")
+            if S3_BUCKET and payload.resume_path:
+                try:
+                    import boto3
+                    s3_client = boto3.client('s3')
+                    response = s3_client.get_object(Bucket=S3_BUCKET, Key=payload.resume_path)
+                    pdf_bytes = response['Body'].read()
+                except Exception as e:
+                    print(f"[BG] Error downloading from S3 for vectorization: {e}")
+
+        raw_text = extract_text_from_pdf(pdf_path=file_path, pdf_stream=pdf_bytes)
         # Limit text for API if necessary, but MiniLM handles up to 512 tokens
         embedding = compute_embedding(raw_text[:2000]) 
 

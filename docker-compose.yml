@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: hr-db
+    restart: always
+    environment:
+      POSTGRES_DB: ris_db
+      POSTGRES_USER: ris_admin
+      POSTGRES_PASSWORD: SecretProductionPassword123! # Secure postgres password inside Docker network
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432" # Bind to localhost loopback only, securing it from external access
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hr-backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://ris_admin:SecretProductionPassword123!@db:5432/ris_db
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - HF_TOKEN=${HF_TOKEN}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:alpine
+    container_name: hr-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+
+volumes:
+  pg_data:
