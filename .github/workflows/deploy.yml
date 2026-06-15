@@ -1,0 +1,69 @@
+name: Production CI-CD Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js Environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Compile React Frontend
+      run: npm run build
+
+    - name: Copy Files to EC2 Server
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        source: "dist/,backend/,docker-compose.yml,nginx.conf"
+        target: "/home/ubuntu/hr-portal-temp"
+        overwrite: true
+
+    - name: Run Remote SSH Deploy Commands
+      uses: appleboy/ssh-action@v0.1.6
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          # 1. Create directory if not exists
+          mkdir -p /home/ubuntu/hr-portal/frontend
+          
+          # 2. Swap backend files
+          rm -rf /home/ubuntu/hr-portal/backend
+          cp -r /home/ubuntu/hr-portal-temp/backend /home/ubuntu/hr-portal/
+          
+          # 3. Swap config files
+          cp /home/ubuntu/hr-portal-temp/docker-compose.yml /home/ubuntu/hr-portal/
+          cp /home/ubuntu/hr-portal-temp/nginx.conf /home/ubuntu/hr-portal/
+          
+          # 4. Swap frontend built assets
+          rm -rf /home/ubuntu/hr-portal/frontend/dist
+          cp -r /home/ubuntu/hr-portal-temp/dist /home/ubuntu/hr-portal/frontend/dist
+          
+          # 5. Clean up temp folder
+          rm -rf /home/ubuntu/hr-portal-temp
+          
+          # 6. Navigate to deployment folder and rebuild backend container
+          cd /home/ubuntu/hr-portal
+          docker compose build backend
+          docker compose up -d --remove-orphans
+          
+          # 7. Clean up dangling images to conserve disk space
+          docker image prune -f
