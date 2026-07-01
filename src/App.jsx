@@ -6,7 +6,7 @@ import JobPostings from './pages/hr/JobPostings';
 import JobAnalytics from './pages/hr/JobAnalytics';
 import GlobalAnalytics from './pages/hr/GlobalAnalytics';
 import HRLayout from './pages/hr/HRLayout';
-
+import HRLogin from './pages/hr/HRLogin';
 import JobBoard from './pages/JobBoard';
 
 function App() {
@@ -18,6 +18,9 @@ function App() {
 
         {/* Dynamic Application Form */}
         <Route path="/apply/:jobId" element={<ApplicationForm />} />
+
+        {/* HR Login Screen */}
+        <Route path="/hr/login" element={<HRLogin />} />
 
         {/* HR Portal Protected Routes (Shell) */}
         <Route path="/hr" element={<HRLayout />}>

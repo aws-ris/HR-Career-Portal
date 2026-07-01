@@ -1,8 +1,22 @@
-import React from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
-import { Briefcase, BarChart2, Settings, ChevronRight } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Briefcase, BarChart2, Settings, ChevronRight, LogOut } from 'lucide-react';
 
 export default function HRLayout() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('hr_token');
+    if (!token) {
+      navigate('/hr/login', { replace: true });
+    }
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('hr_token');
+    navigate('/');
+  };
+
   return (
     <div className="hr-shell">
       {/* ── Sidebar ── */}
@@ -33,8 +47,32 @@ export default function HRLayout() {
           </a>
         </nav>
 
-        <div className="hr-sidebar-footer">
-          <span>RIS · New Delhi</span>
+        <div className="hr-sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <button 
+            onClick={handleLogout}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              width: '100%',
+              padding: '10px 14px',
+              background: '#fee2e2',
+              color: '#ef4444',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              transition: 'background 0.2s, color 0.2s'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = '#fca5a5'; e.currentTarget.style.color = '#b91c1c'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#ef4444'; }}
+          >
+            <LogOut size={16} />
+            <span>Logout</span>
+          </button>
+          <span style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center' }}>RIS · New Delhi</span>
         </div>
       </aside>
 

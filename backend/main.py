@@ -8,6 +8,38 @@ import schemas
 import datetime
 from pydantic import BaseModel
 from typing import List, Optional
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from utils.auth import generate_token, verify_token
+
+auth_scheme = HTTPBearer(auto_error=False)
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+def get_current_admin(
+    token: Optional[str] = None,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(auth_scheme)
+):
+    actual_token = None
+    if credentials:
+        actual_token = credentials.credentials
+    elif token:
+        actual_token = token
+        
+    if not actual_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authentication credentials"
+        )
+        
+    username = verify_token(actual_token)
+    if not username:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired session token"
+        )
+    return username
 
 # Note: In production, use Alembic migrations instead of create_all
 # create_all is safe here — it only creates tables that don't exist yet
@@ -22,6 +54,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.post("/api/v1/auth/login")
+def login_admin(req: LoginRequest):
+    admin_user = os.getenv("HR_ADMIN_USERNAME", "hr_ris")
+    admin_pass = os.getenv("HR_ADMIN_PASSWORD", "ris@1234")
+    if req.username == admin_user and req.password == admin_pass:
+        token = generate_token(req.username)
+        return {"status": "success", "token": token}
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid username or password"
+    )
 
 from fastapi import File, UploadFile
 from fastapi.responses import FileResponse
@@ -911,6 +955,7 @@ def get_status(candidate_id: str, db: Session = Depends(get_db)):
 
 @app.post(
     "/api/v1/jobs",
+    dependencies=[Depends(get_current_admin)],
     response_model=schemas.JobPostingResponse,
     status_code=status.HTTP_201_CREATED
 )
@@ -926,7 +971,7 @@ def create_job(payload: schemas.JobPostingCreate, db: Session = Depends(get_db))
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.get("/api/v1/jobs/{job_id}", response_model=schemas.JobPostingResponse)
+@app.get("/api/v1/jobs/{job_id}", response_model=schemas.JobPostingResponse, dependencies=[Depends(get_current_admin)])
 def get_job(job_id: str, db: Session = Depends(get_db)):
     job = db.query(models.JobPosting).filter(
         models.JobPosting.id == job_id,
@@ -940,7 +985,7 @@ def get_job(job_id: str, db: Session = Depends(get_db)):
 # ─────────────────────────────────────────────
 # HR Stats (KPI Cards)
 # ─────────────────────────────────────────────
-@app.get("/api/v1/hr/stats")
+@app.get("/api/v1/hr/stats", dependencies=[Depends(get_current_admin)])
 def get_hr_stats(db: Session = Depends(get_db)):
     current_year = datetime.datetime.now().year
     today = datetime.date.today()
@@ -969,7 +1014,7 @@ def get_hr_stats(db: Session = Depends(get_db)):
         "closing_soon": closing_soon,
     }
 
-@app.get("/api/v1/hr/analytics/global")
+@app.get("/api/v1/hr/analytics/global", dependencies=[Depends(get_current_admin)])
 def get_global_analytics(db: Session = Depends(get_db)):
     gender_stats = db.query(
         models.CandidateMetadata.gender, 
@@ -1008,7 +1053,7 @@ def get_global_analytics(db: Session = Depends(get_db)):
         ]
     }
 
-@app.get("/api/v1/jobs/{job_id}/analytics")
+@app.get("/api/v1/jobs/{job_id}/analytics", dependencies=[Depends(get_current_admin)])
 def get_job_analytics(job_id: str, db: Session = Depends(get_db)):
     clean_id = str(job_id).strip()
 
@@ -1063,7 +1108,7 @@ def get_job_analytics(job_id: str, db: Session = Depends(get_db)):
         ]
     }
 
-@app.get("/api/v1/candidates/{candidate_id}/full_profile")
+@app.get("/api/v1/candidates/{candidate_id}/full_profile", dependencies=[Depends(get_current_admin)])
 def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Session = Depends(get_db)):
     candidate = db.query(models.CandidateMetadata).options(
         joinedload(models.CandidateMetadata.schooling),
@@ -1152,7 +1197,7 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
     }
 
 
-@app.get("/api/v1/applications/{candidate_id}/resume/download")
+@app.get("/api/v1/applications/{candidate_id}/resume/download", dependencies=[Depends(get_current_admin)])
 def download_resume(candidate_id: str, preview: bool = False, db: Session = Depends(get_db)):
     from fastapi.responses import RedirectResponse, Response
     payload = db.query(models.CandidateResumePayload).filter(
@@ -1261,7 +1306,7 @@ class ExportRequest(BaseModel):
     report_type: Optional[str] = 'detailed'
 
 
-@app.post("/api/v1/jobs/{job_id}/candidates/export")
+@app.post("/api/v1/jobs/{job_id}/candidates/export", dependencies=[Depends(get_current_admin)])
 def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends(get_db)):
     from io import StringIO, BytesIO
     import csv
@@ -1625,7 +1670,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
 
 
 # ── Autocomplete Suggestion Endpoint ──
-@app.get("/api/v1/jobs/{job_id}/suggest")
+@app.get("/api/v1/jobs/{job_id}/suggest", dependencies=[Depends(get_current_admin)])
 def suggest_tokens(job_id: str, field: str, q: str = "", db: Session = Depends(get_db)):
     """
     Returns substring-matched suggestions for filter fields.
@@ -1650,7 +1695,7 @@ def suggest_tokens(job_id: str, field: str, q: str = "", db: Session = Depends(g
     
     return [r[0] for r in results]
 
-@app.post("/api/v1/jobs/{job_id}/candidates/filter")
+@app.post("/api/v1/jobs/{job_id}/candidates/filter", dependencies=[Depends(get_current_admin)])
 def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = Depends(get_db)):
     try:
         clean_job_id = str(job_id).strip()
@@ -1856,7 +1901,7 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/v1/jobs/{job_id}/filter-options")
+@app.get("/api/v1/jobs/{job_id}/filter-options", dependencies=[Depends(get_current_admin)])
 def get_filter_options(job_id: str, db: Session = Depends(get_db)):
     clean_id = str(job_id).strip()
     
@@ -1899,7 +1944,7 @@ def get_filter_options(job_id: str, db: Session = Depends(get_db)):
         "phd_unis": sorted([u[0] for u in phd_unis if u[0]])
     }
 
-@app.get("/api/v1/jobs/{job_id}/candidates")
+@app.get("/api/v1/jobs/{job_id}/candidates", dependencies=[Depends(get_current_admin)])
 def get_job_candidates(job_id: str, db: Session = Depends(get_db)):
     trackers = db.query(models.ApplicationTracking).filter(
         models.ApplicationTracking.job_id == job_id
@@ -1977,7 +2022,7 @@ def get_job_candidates(job_id: str, db: Session = Depends(get_db)):
 # ─────────────────────────────────────────────
 # List Jobs (with application counts)
 # ─────────────────────────────────────────────
-@app.get("/api/v1/jobs")
+@app.get("/api/v1/jobs", dependencies=[Depends(get_current_admin)])
 def list_jobs(db: Session = Depends(get_db)):
     jobs = db.query(models.JobPosting).filter(
         models.JobPosting.is_deleted == False
@@ -2018,7 +2063,7 @@ def list_jobs(db: Session = Depends(get_db)):
 # ─────────────────────────────────────────────
 # Update Job (Edit)
 # ─────────────────────────────────────────────
-@app.patch("/api/v1/jobs/{job_id}")
+@app.patch("/api/v1/jobs/{job_id}", dependencies=[Depends(get_current_admin)])
 def update_job(job_id: str, payload: schemas.JobPostingCreate, db: Session = Depends(get_db)):
     job = db.query(models.JobPosting).filter(
         models.JobPosting.id == job_id,
@@ -2041,7 +2086,7 @@ def update_job(job_id: str, payload: schemas.JobPostingCreate, db: Session = Dep
 # ─────────────────────────────────────────────
 # Publish Draft → Open
 # ─────────────────────────────────────────────
-@app.patch("/api/v1/jobs/{job_id}/publish")
+@app.patch("/api/v1/jobs/{job_id}/publish", dependencies=[Depends(get_current_admin)])
 def publish_job(job_id: str, db: Session = Depends(get_db)):
     job = db.query(models.JobPosting).filter(
         models.JobPosting.id == job_id,
@@ -2058,7 +2103,7 @@ def publish_job(job_id: str, db: Session = Depends(get_db)):
 # ─────────────────────────────────────────────
 # Archive Job
 # ─────────────────────────────────────────────
-@app.patch("/api/v1/jobs/{job_id}/archive")
+@app.patch("/api/v1/jobs/{job_id}/archive", dependencies=[Depends(get_current_admin)])
 def archive_job(job_id: str, db: Session = Depends(get_db)):
     job = db.query(models.JobPosting).filter(
         models.JobPosting.id == job_id,
@@ -2075,7 +2120,7 @@ def archive_job(job_id: str, db: Session = Depends(get_db)):
 # ─────────────────────────────────────────────
 # Close Job
 # ─────────────────────────────────────────────
-@app.patch("/api/v1/jobs/{job_id}/close")
+@app.patch("/api/v1/jobs/{job_id}/close", dependencies=[Depends(get_current_admin)])
 def close_job(job_id: str, db: Session = Depends(get_db)):
     job = db.query(models.JobPosting).filter(
         models.JobPosting.id == job_id,
@@ -2092,7 +2137,7 @@ def close_job(job_id: str, db: Session = Depends(get_db)):
 # ─────────────────────────────────────────────
 # Soft Delete Draft
 # ─────────────────────────────────────────────
-@app.delete("/api/v1/jobs/{job_id}")
+@app.delete("/api/v1/jobs/{job_id}", dependencies=[Depends(get_current_admin)])
 def delete_job(job_id: str, db: Session = Depends(get_db)):
     job = db.query(models.JobPosting).filter(
         models.JobPosting.id == job_id,

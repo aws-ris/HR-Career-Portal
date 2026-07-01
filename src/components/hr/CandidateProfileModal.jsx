@@ -210,7 +210,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
           
           <div style={{ display: 'flex', gap: '12px' }}>
             <button 
-              onClick={() => window.open(`${API}/applications/${candidateId}/resume/download?preview=true`, '_blank')}
+              onClick={() => window.open(`${API}/applications/${candidateId}/resume/download?preview=true&token=${localStorage.getItem('hr_token') || ''}`, '_blank')}
               style={{ 
               display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', 
               background: '#f8fafc', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: '8px', 
@@ -219,7 +219,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
               <ExternalLink size={18} /> Preview CV
             </button>
             <button 
-              onClick={() => window.open(`${API}/applications/${candidateId}/resume/download`, '_blank')}
+              onClick={() => window.open(`${API}/applications/${candidateId}/resume/download?token=${localStorage.getItem('hr_token') || ''}`, '_blank')}
               style={{ 
               display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', 
               background: '#1e293b', color: 'white', border: 'none', borderRadius: '8px', 
@@ -291,7 +291,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
 
                 {/* Panel 4: Review Documents Button */}
                 <div 
-                  onClick={() => window.open(`${API}/applications/${candidateId}/resume/download?preview=true`, '_blank')}
+                  onClick={() => window.open(`${API}/applications/${candidateId}/resume/download?preview=true&token=${localStorage.getItem('hr_token') || ''}`, '_blank')}
                   style={{ 
                     background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)', 
                     borderRadius: '16px', 
