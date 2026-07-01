@@ -57,6 +57,7 @@ export default function GlobalAnalytics() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    document.title = "Global Analytics | RIS HR Portal";
     // Add timestamp to bust browser cache
     fetch(`${API}/hr/analytics/global?t=${new Date().getTime()}`)
       .then(res => res.json())

@@ -397,12 +397,14 @@ export default function ApplicationForm() {
 
   // Fetch Job details if ID is present
   useEffect(() => {
+    document.title = "Apply | RIS Recruitment Portal";
     if (jobId) {
       fetch(`${API}/public/jobs/${jobId}`)
         .then(res => res.json())
         .then(data => {
           if (data.id) {
             setJobDetail(data);
+            document.title = `Apply: ${data.title} | RIS Careers`;
             if (savedDraft.position_applied === undefined) {
               setPosition(data.position);
             }

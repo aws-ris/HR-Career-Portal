@@ -136,10 +136,16 @@ export default function JobAnalytics() {
   };
 
   useEffect(() => {
+    document.title = "Job Analytics | RIS HR Portal";
     const t = new Date().getTime();
     fetch(`${API}/jobs/${id}?t=${t}`)
       .then(res => res.json())
-      .then(j => setJob(j))
+      .then(j => {
+        setJob(j);
+        if (j && j.title) {
+          document.title = `${j.title} Analytics | RIS HR Portal`;
+        }
+      })
       .catch(e => console.error("Job fetch error:", e));
 
     fetch(`${API}/jobs/${id}/analytics?t=${t}`)

@@ -11,6 +11,7 @@ export default function JobBoard() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    document.title = "RIS Careers · Recruitment Portal";
     fetch(`${API}/public/jobs`)
       .then(res => res.json())
       .then(data => {

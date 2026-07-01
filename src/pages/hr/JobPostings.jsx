@@ -64,7 +64,10 @@ export default function JobPostings() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    document.title = "Jobs Management | RIS HR Portal";
+    load();
+  }, [load]);
 
   const filtered = activeTab === 'All'
     ? jobs

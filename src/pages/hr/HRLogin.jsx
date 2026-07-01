@@ -13,6 +13,7 @@ export default function HRLogin() {
 
   // If already logged in, redirect straight to dashboard
   useEffect(() => {
+    document.title = "Secure Login | RIS HR Portal";
     const token = localStorage.getItem('hr_token');
     if (token) {
       navigate('/hr', { replace: true });
