@@ -4,18 +4,22 @@ import { Briefcase, BarChart2, Settings, ChevronRight, LogOut } from 'lucide-rea
 
 export default function HRLayout() {
   const navigate = useNavigate();
+  const token = localStorage.getItem('hr_token');
 
   useEffect(() => {
-    const token = localStorage.getItem('hr_token');
     if (!token) {
       navigate('/hr/login', { replace: true });
     }
-  }, [navigate]);
+  }, [token, navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('hr_token');
     navigate('/');
   };
+
+  if (!token) {
+    return null;
+  }
 
   return (
     <div className="hr-shell">

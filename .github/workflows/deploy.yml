@@ -64,6 +64,7 @@ jobs:
           cd /home/ubuntu/hr-portal
           docker compose build backend
           docker compose up -d --remove-orphans
+          docker compose restart nginx
           
           # 7. Clean up dangling images to conserve disk space
           docker image prune -f
