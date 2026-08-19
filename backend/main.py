@@ -1181,10 +1181,12 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
             "class_x_board": candidate.schooling.class_x_board,
             "class_x_score_type": candidate.schooling.class_x_score_type,
             "class_x_score_value": candidate.schooling.class_x_score_value,
+            "class_x_year": getattr(candidate.schooling, "class_x_year", None),
             "class_xii_school": candidate.schooling.class_xii_school,
             "class_xii_board": candidate.schooling.class_xii_board,
             "class_xii_score_type": candidate.schooling.class_xii_score_type,
-            "class_xii_score_value": candidate.schooling.class_xii_score_value
+            "class_xii_score_value": candidate.schooling.class_xii_score_value,
+            "class_xii_year": getattr(candidate.schooling, "class_xii_year", None)
         }
 
     # Format higher education by level
@@ -1213,6 +1215,11 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
         "extracurriculars": candidate.links_about.extracurriculars if candidate.links_about else None,
         "google_scholar": candidate.links_about.google_scholar if candidate.links_about else None,
         "linkedin": candidate.links_about.linkedin if candidate.links_about else None,
+        "pub_books": candidate.links_about.pub_books if candidate.links_about else 0,
+        "pub_papers": candidate.links_about.pub_papers if candidate.links_about else 0,
+        "pub_chapters": candidate.links_about.pub_chapters if candidate.links_about else 0,
+        "pub_reports": candidate.links_about.pub_reports if candidate.links_about else 0,
+        "pub_policy_briefs": candidate.links_about.pub_policy_briefs if candidate.links_about else 0,
         "schooling": schooling_data,
         "graduation": [{"degree_name": g.degree_name, "university": g.university, "score_type": g.score_type, "score_value": g.score_value, "grad_year": g.grad_year} for g in grad],
         "postgraduate": [{"degree_name": p.degree_name, "university": p.university, "score_type": p.score_type, "score_value": p.score_value, "grad_year": p.grad_year} for p in postgrad],
