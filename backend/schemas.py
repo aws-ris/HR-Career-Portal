@@ -74,10 +74,12 @@ class SchoolingCreate(BaseModel):
     class_x_board:        str = Field(default='Other')
     class_x_score_type:   ScoreType = Field(default=ScoreType.Percentage)
     class_x_score_value:  float = Field(..., ge=0)
+    class_x_year:         int = Field(..., ge=1950, le=2030)
     class_xii_school:     str = Field(default='')
     class_xii_board:      str = Field(default='Other')
     class_xii_score_type: ScoreType = Field(default=ScoreType.Percentage)
     class_xii_score_value: float = Field(..., ge=0)
+    class_xii_year:        int = Field(..., ge=1950, le=2030)
 
     @field_validator('class_x_score_value')
     @classmethod
@@ -208,6 +210,11 @@ class LinksAboutCreate(BaseModel):
     extracurriculars: Optional[str] = Field(None, max_length=3000)
     google_scholar: Optional[str] = None
     linkedin:       Optional[str] = None
+    pub_books:      Optional[int] = 0
+    pub_papers:     Optional[int] = 0
+    pub_chapters:   Optional[int] = 0
+    pub_reports:    Optional[int] = 0
+    pub_policy_briefs: Optional[int] = 0
 
     @field_validator('about')
     @classmethod
@@ -252,6 +259,11 @@ class CandidateCreate(BaseModel):
     extracurriculars: Optional[str] = Field(None, max_length=3000)
     google_scholar: Optional[str] = None
     linkedin:       Optional[str] = None
+    pub_books:      Optional[int] = 0
+    pub_papers:     Optional[int] = 0
+    pub_chapters:   Optional[int] = 0
+    pub_reports:    Optional[int] = 0
+    pub_policy_briefs: Optional[int] = 0
 
     # Nested education and experience
     schooling:        SchoolingCreate

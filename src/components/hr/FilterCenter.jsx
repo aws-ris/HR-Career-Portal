@@ -231,17 +231,6 @@ export default function FilterCenter({ job_id, onFilterChange }) {
                     ))}
                   </div>
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '10px', textTransform: 'uppercase' }}>Min Profile Score: {filters.min_profile_score || 0} / 85</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <input 
-                      type="range" min="0" max="85" step="0.5" 
-                      value={filters.min_profile_score || 0} 
-                      onChange={(e) => updateFilter('min_profile_score', e.target.value === '0' ? null : e.target.value)} 
-                      style={{ width: '100%', accentColor: '#10b981' }} 
-                    />
-                  </div>
-                </div>
               </div>
             </div>
           )}

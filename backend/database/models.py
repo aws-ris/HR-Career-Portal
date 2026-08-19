@@ -150,6 +150,8 @@ class CandidateSchooling(Base):
     class_xii_board      = Column(String(100), nullable=False, default='Other')
     class_xii_score_type = Column(String(20),  nullable=False, default='Percentage')
     class_xii_score_value = Column(Float,       nullable=False, default=0.0)
+    class_x_year          = Column(Integer,     nullable=True)
+    class_xii_year         = Column(Integer,     nullable=True)
 
     candidate = relationship("CandidateMetadata", back_populates="schooling")
 
@@ -230,6 +232,11 @@ class CandidateLinksAbout(Base):
     extracurriculars = Column(Text,      nullable=True)
     google_scholar = Column(String(500), nullable=True)
     linkedin       = Column(String(500), nullable=True)
+    pub_books      = Column(Integer,     nullable=True, default=0)
+    pub_papers     = Column(Integer,     nullable=True, default=0)
+    pub_chapters   = Column(Integer,     nullable=True, default=0)
+    pub_reports    = Column(Integer,     nullable=True, default=0)
+    pub_policy_briefs = Column(Integer,  nullable=True, default=0)
 
     candidate = relationship("CandidateMetadata", back_populates="links_about")
 

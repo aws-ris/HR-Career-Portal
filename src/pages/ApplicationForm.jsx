@@ -5,6 +5,7 @@ import { CheckCircle2 } from 'lucide-react';
 
 const UG_DEGREES = ['B.A.', 'B.Sc.', 'B.Com', 'B.Tech', 'B.E.', 'B.B.A.', 'B.C.A.', 'LL.B.', 'MBBS', 'B.Arch', 'B.Ed.'];
 const PG_DEGREES = ['M.A.', 'M.Sc.', 'M.Com', 'M.Tech', 'M.E.', 'M.B.A.', 'M.C.A.', 'LL.M.', 'M.Ed.', 'MD', 'MS'];
+const PASSING_YEARS = Array.from({ length: 61 }, (_, i) => 2030 - i); // 2030 down to 1970
 
 const COMMON_SPECIALIZATIONS = [
   // Humanities & Arts
@@ -381,11 +382,18 @@ export default function ApplicationForm() {
 
   const [doctorates, setDoctorates] = useState(() => savedDraft.doctorates || [{ university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '' }]);
 
-  // Step 3
-  const [pubTypes, setPubTypes] = useState(() => savedDraft.pubTypes || { none: true, books: false, chapters: false, papers: false });
-  const [books, setBooks] = useState(() => savedDraft.books || [{ title: '' }]);
-  const [chapters, setChapters] = useState(() => savedDraft.chapters || [{ title: '', parent_title: '' }]);
-  const [papers, setPapers] = useState(() => savedDraft.papers || [{ title: '' }]);
+  // Step 2 & 3 custom states
+  const [classXYear, setClassXYear] = useState(() => savedDraft.classXYear || '');
+  const [classXIIYear, setClassXIIYear] = useState(() => savedDraft.classXIIYear || '');
+  const [linkedin, setLinkedin] = useState(() => savedDraft.linkedin || '');
+
+  // Step 3 Publication Counts
+  const [pubBooks, setPubBooks] = useState(() => savedDraft.pubBooks !== undefined ? savedDraft.pubBooks : 0);
+  const [pubPapers, setPubPapers] = useState(() => savedDraft.pubPapers !== undefined ? savedDraft.pubPapers : 0);
+  const [pubChapters, setPubChapters] = useState(() => savedDraft.pubChapters !== undefined ? savedDraft.pubChapters : 0);
+  const [pubReports, setPubReports] = useState(() => savedDraft.pubReports !== undefined ? savedDraft.pubReports : 0);
+  const [pubPolicyBriefs, setPubPolicyBriefs] = useState(() => savedDraft.pubPolicyBriefs !== undefined ? savedDraft.pubPolicyBriefs : 0);
+
   const [scholarLink, setScholarLink] = useState(() => savedDraft.scholarLink || '');
   const [expYears, setExpYears] = useState(() => savedDraft.expYears || '');
   const [expMonths, setExpMonths] = useState(() => savedDraft.expMonths || '');
@@ -435,19 +443,23 @@ export default function ApplicationForm() {
       classXBoardOther,
       classXScoreType,
       classXScoreValue,
+      classXYear,
       classXIISchool,
       classXIIBoard,
       classXIIBoardState,
       classXIIBoardOther,
       classXIIScoreType,
       classXIIScoreValue,
+      classXIIYear,
+      linkedin,
+      pubBooks,
+      pubPapers,
+      pubChapters,
+      pubReports,
+      pubPolicyBriefs,
       grads,
       postGrads,
       doctorates,
-      pubTypes,
-      books,
-      chapters,
-      papers,
       scholarLink,
       expYears,
       expMonths,
@@ -459,9 +471,10 @@ export default function ApplicationForm() {
   }, [
     position_applied, admin_department, full_name, email, mobile_number, dob, gender,
     candidateState, city, pincode, extracurriculars, grads, postGrads, doctorates, 
-    pubTypes, books, chapters, papers, scholarLink, expYears, expMonths, hasWork, workExps, step, jobId,
-    classXSchool, classXBoard, classXBoardState, classXBoardOther, classXScoreType, classXScoreValue,
-    classXIISchool, classXIIBoard, classXIIBoardState, classXIIBoardOther, classXIIScoreType, classXIIScoreValue
+    scholarLink, expYears, expMonths, hasWork, workExps, step, jobId,
+    classXSchool, classXBoard, classXBoardState, classXBoardOther, classXScoreType, classXScoreValue, classXYear,
+    classXIISchool, classXIIBoard, classXIIBoardState, classXIIBoardOther, classXIIScoreType, classXIIScoreValue, classXIIYear,
+    linkedin, pubBooks, pubPapers, pubChapters, pubReports, pubPolicyBriefs
   ]);
 
   // Scroll to top on step change
@@ -642,6 +655,9 @@ export default function ApplicationForm() {
       } else if (classXScoreType === 'CGPA' && valClassX > 10) {
         errors.push("Class X CGPA cannot exceed 10.");
       }
+      if (!classXYear) {
+        errors.push("Class X Passing Year is required.");
+      }
 
       if (!classXIISchool.trim()) {
         errors.push("Class XII School name is required.");
@@ -659,6 +675,9 @@ export default function ApplicationForm() {
         errors.push("Class XII Percentage cannot exceed 100.");
       } else if (classXIIScoreType === 'CGPA' && valClassXII > 10) {
         errors.push("Class XII CGPA cannot exceed 10.");
+      }
+      if (!classXIIYear) {
+        errors.push("Class XII Passing Year is required.");
       }
       grads.forEach((g, i) => {
         if (i === 0 || g.university || g.degree_name || g.score_value || g.grad_year) {
@@ -738,27 +757,14 @@ export default function ApplicationForm() {
   const handleToggleEditPublications = () => {
     if (editPublications) {
       const errors = [];
-      if (!pubTypes.none) {
-        if (pubTypes.books) {
-          books.forEach((b, i) => {
-            if (b.title && !b.title.trim()) errors.push(`Book #${i + 1}: Title cannot be blank.`);
-          });
-        }
-        if (pubTypes.chapters) {
-          chapters.forEach((c, i) => {
-            if ((c.title || c.parent_title) && (!c.title.trim() || !c.parent_title.trim())) {
-              errors.push(`Chapter #${i + 1}: Both Chapter Name and Corresponding Book are required.`);
-            }
-          });
-        }
-        if (pubTypes.papers) {
-          papers.forEach((p, i) => {
-            if (p.title && !p.title.trim()) errors.push(`Paper #${i + 1}: Title cannot be blank.`);
-          });
-        }
+      if (pubBooks < 0 || pubPapers < 0 || pubChapters < 0 || pubReports < 0 || pubPolicyBriefs < 0) {
+        errors.push("Publication counts cannot be negative.");
       }
       if (scholarLink && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(scholarLink)) {
         errors.push("Google Scholar Link must be a valid URL.");
+      }
+      if (linkedin && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(linkedin)) {
+        errors.push("LinkedIn Link must be a valid URL.");
       }
 
       if (errors.length > 0) {
@@ -836,6 +842,9 @@ export default function ApplicationForm() {
     } else if (classXScoreType === 'CGPA' && valClassX > 10) {
       errors.push("Class X CGPA cannot exceed 10.");
     }
+    if (!classXYear) {
+      errors.push("Class X Passing Year is required.");
+    }
 
     const valClassXII = parseFloat(classXIIScoreValue);
     if (isNaN(valClassXII) || valClassXII < 0) {
@@ -844,6 +853,9 @@ export default function ApplicationForm() {
       errors.push("Class XII Percentage cannot exceed 100.");
     } else if (classXIIScoreType === 'CGPA' && valClassXII > 10) {
       errors.push("Class XII CGPA cannot exceed 10.");
+    }
+    if (!classXIIYear) {
+      errors.push("Class XII Passing Year is required.");
     }
 
     // Graduation
@@ -919,27 +931,14 @@ export default function ApplicationForm() {
     });
 
     // Publications (Step 3)
-    if (!pubTypes.none) {
-      if (pubTypes.books) {
-        books.forEach((b, i) => {
-          if (b.title && !b.title.trim()) errors.push(`Book #${i + 1}: Title cannot be blank.`);
-        });
-      }
-      if (pubTypes.chapters) {
-        chapters.forEach((c, i) => {
-          if ((c.title || c.parent_title) && (!c.title.trim() || !c.parent_title.trim())) {
-            errors.push(`Chapter #${i + 1}: Both Chapter Name and Corresponding Book are required.`);
-          }
-        });
-      }
-      if (pubTypes.papers) {
-        papers.forEach((p, i) => {
-          if (p.title && !p.title.trim()) errors.push(`Paper #${i + 1}: Title cannot be blank.`);
-        });
-      }
+    if (pubBooks < 0 || pubPapers < 0 || pubChapters < 0 || pubReports < 0 || pubPolicyBriefs < 0) {
+      errors.push("Publication counts cannot be negative.");
     }
     if (scholarLink && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(scholarLink)) {
       errors.push("Google Scholar Link must be a valid URL.");
+    }
+    if (linkedin && !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(linkedin)) {
+      errors.push("LinkedIn Link must be a valid URL.");
     }
 
     // Work Experience (Step 4)
@@ -1112,6 +1111,13 @@ export default function ApplicationForm() {
       mobile_no: mobile_number, 
       about: null,
       extracurriculars: extracurriculars.trim() || null,
+      google_scholar: scholarLink.trim() || null,
+      linkedin: linkedin.trim() || null,
+      pub_books: pubBooks,
+      pub_papers: pubPapers,
+      pub_chapters: pubChapters,
+      pub_reports: pubReports,
+      pub_policy_briefs: pubPolicyBriefs,
       gender: gender || null,
       state: candidateState || null,
       city: city || null,
@@ -1128,6 +1134,7 @@ export default function ApplicationForm() {
             : classXBoard,
         class_x_score_type: classXScoreType,
         class_x_score_value: parseFloat(classXScoreValue),
+        class_x_year: parseInt(classXYear, 10) || null,
         class_xii_school: classXIISchool.trim(),
         class_xii_board: classXIIBoard === 'State Board'
           ? `State Board - ${classXIIBoardState}`
@@ -1135,19 +1142,15 @@ export default function ApplicationForm() {
             ? classXIIBoardOther.trim()
             : classXIIBoard,
         class_xii_score_type: classXIIScoreType,
-        class_xii_score_value: parseFloat(classXIIScoreValue)
+        class_xii_score_value: parseFloat(classXIIScoreValue),
+        class_xii_year: parseInt(classXIIYear, 10) || null
       },
       higher_education: educations.map(e => ({
         ...e,
         level: e.level === 'Bachelors' ? 'undergrad' : (e.level === 'Masters' ? 'postgrad' : 'phd'),
         grad_year: e.grad_year ? parseInt(e.grad_year, 10) : null
       })),
-      publications: publications.map(p => ({
-        pub_type: p.type.toLowerCase(),
-        title: p.title,
-        parent_book: p.parent_title || null,
-        entry_order: p.entry_order
-      })),
+      publications: [],
       work_experiences: works.map(w => ({
         ...w,
         start_date: w.start_date,
@@ -1500,7 +1503,7 @@ export default function ApplicationForm() {
                     </div>
                   )}
 
-                  <div className="form-group">
+                  <div className="form-group" style={{ marginBottom: '1rem' }}>
                     <label className="form-label">Scoring System & Value</label>
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                       {['Percentage', 'CGPA'].map(t => (
@@ -1508,6 +1511,16 @@ export default function ApplicationForm() {
                       ))}
                     </div>
                     <input required type="number" step="0.01" max={classXScoreType === 'CGPA' ? '10' : '100'} className="form-input" placeholder={classXScoreType === 'CGPA' ? 'e.g. 9.5' : 'e.g. 95.00'} value={classXScoreValue} onChange={e => setClassXScoreValue(e.target.value)} />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Passing Year</label>
+                    <select required className="form-input" value={classXYear} onChange={e => setClassXYear(e.target.value)}>
+                      <option value="">Select Passing Year</option>
+                      {PASSING_YEARS.map(yr => (
+                        <option key={yr} value={yr}>{yr}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -1551,7 +1564,7 @@ export default function ApplicationForm() {
                     </div>
                   )}
 
-                  <div className="form-group">
+                  <div className="form-group" style={{ marginBottom: '1rem' }}>
                     <label className="form-label">Scoring System & Value</label>
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                       {['Percentage', 'CGPA'].map(t => (
@@ -1559,6 +1572,16 @@ export default function ApplicationForm() {
                       ))}
                     </div>
                     <input required type="number" step="0.01" max={classXIIScoreType === 'CGPA' ? '10' : '100'} className="form-input" placeholder={classXIIScoreType === 'CGPA' ? 'e.g. 9.5' : 'e.g. 95.00'} value={classXIIScoreValue} onChange={e => setClassXIIScoreValue(e.target.value)} />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Passing Year</label>
+                    <select required className="form-input" value={classXIIYear} onChange={e => setClassXIIYear(e.target.value)}>
+                      <option value="">Select Passing Year</option>
+                      {PASSING_YEARS.map(yr => (
+                        <option key={yr} value={yr}>{yr}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -1853,51 +1876,44 @@ export default function ApplicationForm() {
           {step === 4 && (
             <>
               <h3>Publications / Works Authored</h3>
-              <p style={{marginBottom: '1rem', color: 'var(--text-secondary)'}}>Select all that apply:</p>
-              <div style={{display: 'flex', gap: '2rem', marginBottom: '2rem'}}>
-                <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.none} onChange={e => setPubTypes({...pubTypes, none: e.target.checked, books: false, chapters: false, papers: false})} /> None</label>
-                <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.books} onChange={e => setPubTypes({...pubTypes, books: e.target.checked, none: false})} /> Books</label>
-                <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.chapters} onChange={e => setPubTypes({...pubTypes, chapters: e.target.checked, none: false})} /> Chapters in Books</label>
-                <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.papers} onChange={e => setPubTypes({...pubTypes, papers: e.target.checked, none: false})} /> Papers</label>
+              <p style={{marginBottom: '1.5rem', color: 'var(--text-secondary)'}}>
+                Please enter the count of your publications under each category (enter 0 if none):
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                <div className="form-group" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <label className="form-label" style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Books Published</label>
+                  <input type="number" min="0" className="form-input" value={pubBooks} onChange={e => setPubBooks(Math.max(0, parseInt(e.target.value) || 0))} />
+                </div>
+                <div className="form-group" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <label className="form-label" style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Peer-Reviewed Journal Papers</label>
+                  <input type="number" min="0" className="form-input" value={pubPapers} onChange={e => setPubPapers(Math.max(0, parseInt(e.target.value) || 0))} />
+                </div>
+                <div className="form-group" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <label className="form-label" style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Book Chapters</label>
+                  <input type="number" min="0" className="form-input" value={pubChapters} onChange={e => setPubChapters(Math.max(0, parseInt(e.target.value) || 0))} />
+                </div>
+                <div className="form-group" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <label className="form-label" style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Research Reports</label>
+                  <input type="number" min="0" className="form-input" value={pubReports} onChange={e => setPubReports(Math.max(0, parseInt(e.target.value) || 0))} />
+                </div>
+                <div className="form-group" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <label className="form-label" style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Policy Briefs</label>
+                  <input type="number" min="0" className="form-input" value={pubPolicyBriefs} onChange={e => setPubPolicyBriefs(Math.max(0, parseInt(e.target.value) || 0))} />
+                </div>
               </div>
 
-              {pubTypes.books && (
-                <div style={{marginBottom: '2rem'}}>
-                  <h4>Books Authored</h4>
-                  {books.map((b, i) => (
-                    <div className="form-group" key={i}><input className="form-input" placeholder="Book Title" value={b.title} onChange={e => updateEntry(setBooks, books, i, 'title', e.target.value)} /></div>
-                  ))}
-                  <button type="button" className="btn-secondary" disabled={books.length>=3} onClick={() => addEntry(setBooks, books, 3, { title: '' })}>+ Add Book</button>
-                </div>
-              )}
-
-              {pubTypes.chapters && (
-                <div style={{marginBottom: '2rem'}}>
-                  <h4>Chapters in Books</h4>
-                  {chapters.map((c, i) => (
-                    <div className="form-grid" key={i}>
-                      <div className="form-group"><input className="form-input" placeholder="Chapter Name" value={c.title} onChange={e => updateEntry(setChapters, chapters, i, 'title', e.target.value)} /></div>
-                      <div className="form-group"><input className="form-input" placeholder="Corresponding Book" value={c.parent_title} onChange={e => updateEntry(setChapters, chapters, i, 'parent_title', e.target.value)} /></div>
-                    </div>
-                  ))}
-                  <button type="button" className="btn-secondary" disabled={chapters.length>=3} onClick={() => addEntry(setChapters, chapters, 3, { title: '', parent_title: '' })}>+ Add Chapter</button>
-                </div>
-              )}
-
-              {pubTypes.papers && (
-                <div style={{marginBottom: '2rem'}}>
-                  <h4>Papers</h4>
-                  {papers.map((p, i) => (
-                    <div className="form-group" key={i}><input className="form-input" placeholder="Paper Title" value={p.title} onChange={e => updateEntry(setPapers, papers, i, 'title', e.target.value)} /></div>
-                  ))}
-                  <button type="button" className="btn-secondary" disabled={papers.length>=3} onClick={() => addEntry(setPapers, papers, 3, { title: '' })}>+ Add Paper</button>
-                </div>
-              )}
-
               <hr style={dividerStyle} />
-              <div className="form-group">
-                <label className="form-label">Google Scholar Link (Optional)</label>
-                <input type="url" className="form-input" value={scholarLink} onChange={e => setScholarLink(e.target.value)} />
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Google Scholar Link (Optional)</label>
+                  <input type="url" className="form-input" value={scholarLink} onChange={e => setScholarLink(e.target.value)} placeholder="e.g. https://scholar.google.com/citations?user=..." />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">LinkedIn Profile Link (Optional)</label>
+                  <input type="url" className="form-input" value={linkedin} onChange={e => setLinkedin(e.target.value)} placeholder="e.g. https://linkedin.com/in/..." />
+                </div>
               </div>
 
               <div style={{display: 'flex'}}>
@@ -2428,7 +2444,7 @@ export default function ApplicationForm() {
                     <tbody>
                       <tr>
                         <td>
-                          <span className="resume-item-title">Class X</span>
+                          <span className="resume-item-title">Class X {classXYear && `(${classXYear})`}</span>
                           <div className="resume-item-subtitle">{classXBoard === 'State Board' ? `State Board - ${classXBoardState}` : classXBoard === 'Other' ? classXBoardOther : classXBoard}</div>
                         </td>
                         <td>{classXSchool || 'Secondary Schooling'}</td>
@@ -2436,7 +2452,7 @@ export default function ApplicationForm() {
                       </tr>
                       <tr>
                         <td>
-                          <span className="resume-item-title">Class XII</span>
+                          <span className="resume-item-title">Class XII {classXIIYear && `(${classXIIYear})`}</span>
                           <div className="resume-item-subtitle">{classXIIBoard === 'State Board' ? `State Board - ${classXIIBoardState}` : classXIIBoard === 'Other' ? classXIIBoardOther : classXIIBoard}</div>
                         </td>
                         <td>{classXIISchool || 'Senior Secondary Schooling'}</td>
@@ -2606,97 +2622,61 @@ export default function ApplicationForm() {
 
                 {editPublications ? (
                   <div>
-                    <div style={{ display: 'flex', gap: '2rem', marginBottom: '1.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
-                      <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.none} onChange={e => setPubTypes({...pubTypes, none: e.target.checked, books: false, chapters: false, papers: false})} /> None</label>
-                      <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.books} onChange={e => setPubTypes({...pubTypes, books: e.target.checked, none: false})} /> Books</label>
-                      <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.chapters} onChange={e => setPubTypes({...pubTypes, chapters: e.target.checked, none: false})} /> Chapters</label>
-                      <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="checkbox" checked={pubTypes.papers} onChange={e => setPubTypes({...pubTypes, papers: e.target.checked, none: false})} /> Papers</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                      <div className="resume-inline-group">
+                        <label className="resume-inline-label">Books Published</label>
+                        <input type="number" min="0" className="resume-inline-input" value={pubBooks} onChange={e => setPubBooks(Math.max(0, parseInt(e.target.value) || 0))} />
+                      </div>
+                      <div className="resume-inline-group">
+                        <label className="resume-inline-label">Peer-Reviewed Papers</label>
+                        <input type="number" min="0" className="resume-inline-input" value={pubPapers} onChange={e => setPubPapers(Math.max(0, parseInt(e.target.value) || 0))} />
+                      </div>
+                      <div className="resume-inline-group">
+                        <label className="resume-inline-label">Book Chapters</label>
+                        <input type="number" min="0" className="resume-inline-input" value={pubChapters} onChange={e => setPubChapters(Math.max(0, parseInt(e.target.value) || 0))} />
+                      </div>
+                      <div className="resume-inline-group">
+                        <label className="resume-inline-label">Research Reports</label>
+                        <input type="number" min="0" className="resume-inline-input" value={pubReports} onChange={e => setPubReports(Math.max(0, parseInt(e.target.value) || 0))} />
+                      </div>
+                      <div className="resume-inline-group" style={{ gridColumn: 'span 2' }}>
+                        <label className="resume-inline-label">Policy Briefs</label>
+                        <input type="number" min="0" className="resume-inline-input" value={pubPolicyBriefs} onChange={e => setPubPolicyBriefs(Math.max(0, parseInt(e.target.value) || 0))} />
+                      </div>
                     </div>
-
-                    {pubTypes.books && (
-                      <div style={{ marginBottom: '1.5rem' }}>
-                        <h4 style={{ marginBottom: '0.5rem' }}>Books Authored</h4>
-                        {books.map((b, i) => (
-                          <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <input className="resume-inline-input" placeholder="Book Title" value={b.title} onChange={e => updateEntry(setBooks, books, i, 'title', e.target.value)} />
-                            <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setBooks, books, i)}>❌</button>
-                          </div>
-                        ))}
-                        <button type="button" className="btn-secondary" style={{ marginTop: '0' }} disabled={books.length>=3} onClick={() => addEntry(setBooks, books, 3, { title: '' })}>+ Add Book</button>
-                      </div>
-                    )}
-
-                    {pubTypes.chapters && (
-                      <div style={{ marginBottom: '1.5rem' }}>
-                        <h4 style={{ marginBottom: '0.5rem' }}>Chapters in Books</h4>
-                        {chapters.map((c, i) => (
-                          <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem', background: '#f8fafc', padding: '0.5rem', borderRadius: '4px' }}>
-                            <input className="resume-inline-input" placeholder="Chapter Name" value={c.title} onChange={e => updateEntry(setChapters, chapters, i, 'title', e.target.value)} />
-                            <input className="resume-inline-input" placeholder="Corresponding Book" value={c.parent_title} onChange={e => updateEntry(setChapters, chapters, i, 'parent_title', e.target.value)} />
-                            <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setChapters, chapters, i)}>❌</button>
-                          </div>
-                        ))}
-                        <button type="button" className="btn-secondary" style={{ marginTop: '0' }} disabled={chapters.length>=3} onClick={() => addEntry(setChapters, chapters, 3, { title: '', parent_title: '' })}>+ Add Chapter</button>
-                      </div>
-                    )}
-
-                    {pubTypes.papers && (
-                      <div style={{ marginBottom: '1.5rem' }}>
-                        <h4 style={{ marginBottom: '0.5rem' }}>Research Papers</h4>
-                        {papers.map((p, i) => (
-                          <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <input className="resume-inline-input" placeholder="Paper Title" value={p.title} onChange={e => updateEntry(setPapers, papers, i, 'title', e.target.value)} />
-                            <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setPapers, papers, i)}>❌</button>
-                          </div>
-                        ))}
-                        <button type="button" className="btn-secondary" style={{ marginTop: '0' }} disabled={papers.length>=3} onClick={() => addEntry(setPapers, papers, 3, { title: '' })}>+ Add Paper</button>
-                      </div>
-                    )}
 
                     <div className="resume-inline-group" style={{ marginTop: '1rem' }}>
                       <label className="resume-inline-label">Google Scholar Link (Optional)</label>
                       <input type="url" className="resume-inline-input" value={scholarLink} onChange={e => setScholarLink(e.target.value)} placeholder="e.g. https://scholar.google.com/citations?user=..." />
                     </div>
+                    <div className="resume-inline-group" style={{ marginTop: '0.5rem' }}>
+                      <label className="resume-inline-label">LinkedIn Profile Link (Optional)</label>
+                      <input type="url" className="resume-inline-input" value={linkedin} onChange={e => setLinkedin(e.target.value)} placeholder="e.g. https://linkedin.com/in/..." />
+                    </div>
                   </div>
                 ) : (
                   <div>
                     {scholarLink && (
-                      <p style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
+                      <p style={{ marginBottom: '0.5rem', fontSize: '0.95rem' }}>
                         🌐 <strong>Google Scholar:</strong> <a href={scholarLink} target="_blank" rel="noreferrer" style={{ color: 'var(--brand-secondary)', textDecoration: 'underline' }}>{scholarLink}</a>
                       </p>
                     )}
+                    {linkedin && (
+                      <p style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
+                        🔗 <strong>LinkedIn:</strong> <a href={linkedin} target="_blank" rel="noreferrer" style={{ color: 'var(--brand-secondary)', textDecoration: 'underline' }}>{linkedin}</a>
+                      </p>
+                    )}
 
-                    {pubTypes.none && <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No publications or authored works declared.</p>}
-
-                    {!pubTypes.none && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {pubTypes.books && books.some(b => b.title) && (
-                          <div>
-                            <h4 className="resume-item-subtitle" style={{ fontSize: '0.95rem', borderBottom: '1px dotted var(--border-color)', paddingBottom: '0.2rem', marginBottom: '0.4rem' }}>Books</h4>
-                            <ul style={{ paddingLeft: '1.25rem', fontSize: '0.95rem' }}>
-                              {books.map((b, i) => b.title && <li key={`b-${i}`} style={{ marginBottom: '0.25rem' }}><span className="resume-item-title">"{b.title}"</span></li>)}
-                            </ul>
-                          </div>
-                        )}
-                        
-                        {pubTypes.chapters && chapters.some(c => c.title) && (
-                          <div>
-                            <h4 className="resume-item-subtitle" style={{ fontSize: '0.95rem', borderBottom: '1px dotted var(--border-color)', paddingBottom: '0.2rem', marginBottom: '0.4rem' }}>Book Chapters</h4>
-                            <ul style={{ paddingLeft: '1.25rem', fontSize: '0.95rem' }}>
-                              {chapters.map((c, i) => c.title && <li key={`c-${i}`} style={{ marginBottom: '0.25rem' }}>Chapter <span className="resume-item-title">"{c.title}"</span> in book <em>"{c.parent_title}"</em></li>)}
-                            </ul>
-                          </div>
-                        )}
-
-                        {pubTypes.papers && papers.some(p => p.title) && (
-                          <div>
-                            <h4 className="resume-item-subtitle" style={{ fontSize: '0.95rem', borderBottom: '1px dotted var(--border-color)', paddingBottom: '0.2rem', marginBottom: '0.4rem' }}>Papers</h4>
-                            <ul style={{ paddingLeft: '1.25rem', fontSize: '0.95rem' }}>
-                              {papers.map((p, i) => p.title && <li key={`p-${i}`} style={{ marginBottom: '0.25rem' }}><span className="resume-item-title">"{p.title}"</span></li>)}
-                            </ul>
-                          </div>
-                        )}
+                    {(pubBooks > 0 || pubPapers > 0 || pubChapters > 0 || pubReports > 0 || pubPolicyBriefs > 0) ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 24px', fontSize: '0.95rem', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        {pubBooks > 0 && <div>📚 <strong>Books Published:</strong> {pubBooks}</div>}
+                        {pubPapers > 0 && <div>📝 <strong>Peer-Reviewed Papers:</strong> {pubPapers}</div>}
+                        {pubChapters > 0 && <div>📖 <strong>Book Chapters:</strong> {pubChapters}</div>}
+                        {pubReports > 0 && <div>📊 <strong>Research Reports:</strong> {pubReports}</div>}
+                        {pubPolicyBriefs > 0 && <div>💡 <strong>Policy Briefs:</strong> {pubPolicyBriefs}</div>}
                       </div>
+                    ) : (
+                      <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No publications declared.</p>
                     )}
                   </div>
                 )}

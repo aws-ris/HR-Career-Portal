@@ -40,8 +40,8 @@ export default function JobAnalytics() {
   const [currentFilters, setCurrentFilters] = useState({});
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
-  const [sortBy, setSortBy] = useState('score');
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState('asc');
 
   useEffect(() => {
     if (!exportDropdownOpen) return;
@@ -363,19 +363,6 @@ export default function JobAnalytics() {
                 >
                   Applicant {sortBy === 'name' ? (sortOrder === 'asc' ? ' ▲' : ' ▼') : ''}
                 </th>
-                <th 
-                  style={{ cursor: 'pointer', userSelect: 'none' }}
-                  onClick={() => {
-                    if (sortBy === 'score') {
-                      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-                    } else {
-                      setSortBy('score');
-                      setSortOrder('desc');
-                    }
-                  }}
-                >
-                  Score {sortBy === 'score' ? (sortOrder === 'asc' ? ' ▲' : ' ▼') : ''}
-                </th>
                 {activeCols.includes('contact') && <th>Contact Info</th>}
                 {activeCols.includes('highest_edu') && <th>Top Qual.</th>}
                 {activeCols.includes('status') && <th>Status</th>}
@@ -422,21 +409,6 @@ export default function JobAnalytics() {
                       ) : (
                         <div style={{ fontSize: '10px', color: '#cbd5e1', fontWeight: '600' }}>↳ Additional Entry</div>
                       )}
-                    </td>
-                    <td>
-                      {isFirst ? (
-                        <span style={{ 
-                          padding: '3px 8px', 
-                          background: '#ecfdf5', 
-                          color: '#047857', 
-                          borderRadius: '12px', 
-                          fontSize: '11px', 
-                          fontWeight: '800',
-                          border: '1px solid #a7f3d0'
-                        }}>
-                          {c.profile_score !== undefined && c.profile_score !== null ? `${c.profile_score.toFixed(1)} / 85` : 'N/A'}
-                        </span>
-                      ) : null}
                     </td>
                     {activeCols.includes('contact') && <td>{isFirst ? c.email : null}</td>}
                     {activeCols.includes('highest_edu') && <td>{isFirst ? <span className="hr-state-chip">{c.highest_education}</span> : null}</td>}

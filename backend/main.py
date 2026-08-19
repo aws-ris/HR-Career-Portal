@@ -123,7 +123,18 @@ def startup_migration():
             "ALTER TABLE application_status_history ALTER COLUMN candidate_id DROP NOT NULL;",
             
             # Application Tracking columns
-            "ALTER TABLE application_tracking ADD COLUMN IF NOT EXISTS profile_score FLOAT;"
+            "ALTER TABLE application_tracking ADD COLUMN IF NOT EXISTS profile_score FLOAT;",
+
+            # Candidate Schooling passing years
+            "ALTER TABLE candidate_schooling ADD COLUMN IF NOT EXISTS class_x_year INTEGER;",
+            "ALTER TABLE candidate_schooling ADD COLUMN IF NOT EXISTS class_xii_year INTEGER;",
+
+            # Candidate Links & About publication counts
+            "ALTER TABLE candidate_links_about ADD COLUMN IF NOT EXISTS pub_books INTEGER DEFAULT 0;",
+            "ALTER TABLE candidate_links_about ADD COLUMN IF NOT EXISTS pub_papers INTEGER DEFAULT 0;",
+            "ALTER TABLE candidate_links_about ADD COLUMN IF NOT EXISTS pub_chapters INTEGER DEFAULT 0;",
+            "ALTER TABLE candidate_links_about ADD COLUMN IF NOT EXISTS pub_reports INTEGER DEFAULT 0;",
+            "ALTER TABLE candidate_links_about ADD COLUMN IF NOT EXISTS pub_policy_briefs INTEGER DEFAULT 0;"
         ]
         
         for query in migrations:
@@ -762,7 +773,12 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
             about          = payload.about,
             extracurriculars = payload.extracurriculars,
             google_scholar = payload.google_scholar,
-            linkedin       = payload.linkedin
+            linkedin       = payload.linkedin,
+            pub_books      = payload.pub_books,
+            pub_papers     = payload.pub_papers,
+            pub_chapters   = payload.pub_chapters,
+            pub_reports    = payload.pub_reports,
+            pub_policy_briefs = payload.pub_policy_briefs
         )
         db.add(links_about)
 
@@ -773,10 +789,12 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
             class_x_board         = payload.schooling.class_x_board,
             class_x_score_type    = payload.schooling.class_x_score_type.value if hasattr(payload.schooling.class_x_score_type, 'value') else payload.schooling.class_x_score_type,
             class_x_score_value   = payload.schooling.class_x_score_value,
+            class_x_year          = payload.schooling.class_x_year,
             class_xii_school       = payload.schooling.class_xii_school,
             class_xii_board        = payload.schooling.class_xii_board,
             class_xii_score_type   = payload.schooling.class_xii_score_type.value if hasattr(payload.schooling.class_xii_score_type, 'value') else payload.schooling.class_xii_score_type,
             class_xii_score_value  = payload.schooling.class_xii_score_value,
+            class_xii_year         = payload.schooling.class_xii_year,
         ))
 
         # 5. Higher Education (1:N)
@@ -1381,7 +1399,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
         # 2. Build Headers and Rows based on report type
         if req.report_type == 'standardized':
             headers = [
-                "Full Name", "Class X Score", "Class XII Score", 
+                "Full Name", "LinkedIn", "Class X Score", "Class X Year", "Class XII Score", "Class XII Year", 
                 "Bachelors (UG)", "Bachelors Score", "Bachelors Year",
                 "Masters (PG)", "Masters Score", "Masters Year",
                 "Doctorate (PhD)", "Doctorate Score", "Doctorate Year",
@@ -1421,8 +1439,11 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 
                 row = [
                     full_c.full_name,
+                    (full_c.links_about.linkedin if full_c.links_about else "") or "",
                     format_schooling_score(full_c.schooling, "x"),
+                    full_c.schooling.class_x_year if (full_c.schooling and full_c.schooling.class_x_year) else "",
                     format_schooling_score(full_c.schooling, "xii"),
+                    full_c.schooling.class_xii_year if (full_c.schooling and full_c.schooling.class_xii_year) else "",
                     ug_text,
                     format_score(ug.score_value, ug.score_type) if ug else "",
                     ug.grad_year if ug else "",
@@ -1445,12 +1466,13 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             headers = [
                 "Full Name", "Email", "Mobile", "DOB", "Gender", "State", "City", "Pincode", 
                 "Extracurriculars", "Total Exp (Yrs)", "Highest Edu", 
-                "Class X School", "Class X Board", "Class X Score",
-                "Class XII School", "Class XII Board", "Class XII Score",
+                "Class X School", "Class X Board", "Class X Score", "Class X Year",
+                "Class XII School", "Class XII Board", "Class XII Score", "Class XII Year",
                 "Graduation Univ", "Graduation Degree", "Graduation Score", "Graduation Year",
                 "Postgrad Univ", "Postgrad Degree", "Postgrad Score", "Postgrad Year",
                 "PhD Univ", "PhD Thesis", "PhD Score", "PhD Year",
-                "Pub Type", "Pub Title", "Pub Source (Book/Journal)", "Scholar Link",
+                "Scholar Link", "LinkedIn Link", 
+                "Books Count", "Papers Count", "Chapters Count", "Reports Count", "Policy Briefs Count",
                 "Work Company", "Work Role", "Work Start", "Work End"
             ]
             
@@ -1467,10 +1489,9 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 undergrads = [e for e in full_c.higher_education if e.level == 'undergrad']
                 postgrads = [e for e in full_c.higher_education if e.level == 'postgrad']
                 phds = [e for e in full_c.higher_education if e.level == 'phd']
-                pubs = full_c.publications
                 works = sorted(full_c.work_experiences, key=lambda x: x.entry_order)
                 
-                max_rows = max(len(undergrads), len(postgrads), len(phds), len(pubs), len(works), 1)
+                max_rows = max(len(undergrads), len(postgrads), len(phds), len(works), 1)
                 
                 candidate_groups.append((current_r, current_r + max_rows - 1))
                 
@@ -1480,12 +1501,12 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 
                 # Setup merge ranges if max_rows > 1
                 if max_rows > 1:
-                    # Merge columns 1 to 17, and column 33 (Scholar Link)
-                    for col in list(range(1, 18)) + [33]:
+                    # Merge columns 1 to 19 and columns 32 to 38
+                    for col in list(range(1, 20)) + list(range(32, 39)):
                         merge_ranges.append((current_r, current_r + max_rows - 1, col))
                 
                 for i in range(max_rows):
-                    row = [""] * 37
+                    row = [""] * 42
                     if i == 0:
                         # Basic details
                         row[0] = full_c.full_name
@@ -1502,44 +1523,46 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[11] = full_c.schooling.class_x_school if full_c.schooling else ""
                         row[12] = full_c.schooling.class_x_board if full_c.schooling else ""
                         row[13] = format_schooling_score(full_c.schooling, "x")
-                        row[14] = full_c.schooling.class_xii_school if full_c.schooling else ""
-                        row[15] = full_c.schooling.class_xii_board if full_c.schooling else ""
-                        row[16] = format_schooling_score(full_c.schooling, "xii")
-                        row[32] = (full_c.links_about.google_scholar if full_c.links_about else "") or ""
+                        row[14] = full_c.schooling.class_x_year if (full_c.schooling and full_c.schooling.class_x_year) else ""
+                        row[15] = full_c.schooling.class_xii_school if full_c.schooling else ""
+                        row[16] = full_c.schooling.class_xii_board if full_c.schooling else ""
+                        row[17] = format_schooling_score(full_c.schooling, "xii")
+                        row[18] = full_c.schooling.class_xii_year if (full_c.schooling and full_c.schooling.class_xii_year) else ""
+                        row[30] = (full_c.links_about.google_scholar if full_c.links_about else "") or ""
+                        row[31] = (full_c.links_about.linkedin if full_c.links_about else "") or ""
+                        row[32] = (full_c.links_about.pub_books if full_c.links_about else 0) or 0
+                        row[33] = (full_c.links_about.pub_papers if full_c.links_about else 0) or 0
+                        row[34] = (full_c.links_about.pub_chapters if full_c.links_about else 0) or 0
+                        row[35] = (full_c.links_about.pub_reports if full_c.links_about else 0) or 0
+                        row[36] = (full_c.links_about.pub_policy_briefs if full_c.links_about else 0) or 0
                     
                     # UG details
                     if i < len(undergrads):
-                        row[17] = undergrads[i].university or ""
-                        row[18] = undergrads[i].degree_name or ""
-                        row[19] = format_score(undergrads[i].score_value, undergrads[i].score_type) if undergrads[i].score_value else ""
-                        row[20] = undergrads[i].grad_year or ""
+                        row[19] = undergrads[i].university or ""
+                        row[20] = undergrads[i].degree_name or ""
+                        row[21] = format_score(undergrads[i].score_value, undergrads[i].score_type) if undergrads[i].score_value else ""
+                        row[22] = undergrads[i].grad_year or ""
                     
                     # PG details
                     if i < len(postgrads):
-                        row[21] = postgrads[i].university or ""
-                        row[22] = postgrads[i].degree_name or ""
-                        row[23] = format_score(postgrads[i].score_value, postgrads[i].score_type) if postgrads[i].score_value else ""
-                        row[24] = postgrads[i].grad_year or ""
+                        row[23] = postgrads[i].university or ""
+                        row[24] = postgrads[i].degree_name or ""
+                        row[25] = format_score(postgrads[i].score_value, postgrads[i].score_type) if postgrads[i].score_value else ""
+                        row[26] = postgrads[i].grad_year or ""
                     
                     # PhD details
                     if i < len(phds):
-                        row[25] = phds[i].university or ""
-                        row[26] = phds[i].degree_name or "" # thesis title is saved as degree_name in models
-                        row[27] = format_score(phds[i].score_value, phds[i].score_type) if phds[i].score_value else ""
-                        row[28] = phds[i].grad_year or ""
-                    
-                    # Publications
-                    if i < len(pubs):
-                        row[29] = pubs[i].pub_type or ""
-                        row[30] = pubs[i].title or ""
-                        row[31] = pubs[i].parent_book or ""
+                        row[27] = phds[i].university or ""
+                        row[28] = phds[i].degree_name or "" # thesis title is saved as degree_name in models
+                        row[29] = format_score(phds[i].score_value, phds[i].score_type) if phds[i].score_value else ""
+                        row[30] = phds[i].grad_year or ""
                     
                     # Work Experience
                     if i < len(works):
-                        row[33] = works[i].company_name or ""
-                        row[34] = works[i].role or ""
-                        row[35] = str(works[i].start_date) if works[i].start_date else ""
-                        row[36] = str(works[i].end_date or "Present") if works[i].start_date else ""
+                        row[38] = works[i].company_name or ""
+                        row[39] = works[i].role or ""
+                        row[40] = str(works[i].start_date) if works[i].start_date else ""
+                        row[41] = str(works[i].end_date or "Present") if works[i].start_date else ""
                     
                     rows_to_write.append(row)
                     current_r += 1
