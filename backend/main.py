@@ -156,6 +156,18 @@ def startup_migration():
         except Exception as e:
             print(f"Error backfilling candidate ages: {e}")
             db.rollback()
+
+        # 3. Auto-seed if the compliant G20 Professor job doesn't exist
+        try:
+            target_job = db.query(models.JobPosting).filter(
+                models.JobPosting.title == "Professor (Trade & Investment Policy)"
+            ).first()
+            if not target_job:
+                print("New G20/Blue Economy jobs not found in database. Triggering automatic database re-seed...")
+                from scratch.seed_final_portal_data import main as run_seeder
+                run_seeder()
+        except Exception as e:
+            print(f"Error checking/running automatic database seeder: {e}")
             
         print("Automatic database migrations completed successfully.")
     except Exception as e:
