@@ -1294,6 +1294,30 @@ export default function ApplicationForm() {
               <li><strong>Contract Duration:</strong> {jobDetail.contract_period || 1} {jobDetail.contract_period === 1 ? 'year' : 'years'}</li>
               <li><strong>Job Mode:</strong> Offline</li>
             </ul>
+
+            <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>General Rules and Regulations</h3>
+            <div style={{ 
+              maxHeight: '180px', 
+              overflowY: 'auto', 
+              padding: '16px', 
+              background: '#ffffff', 
+              border: '1px solid #cbd5e1', 
+              borderRadius: '8px', 
+              fontSize: '13px', 
+              color: '#334155', 
+              lineHeight: '1.6',
+              marginBottom: '24px'
+            }}>
+              <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px', margin: 0 }}>
+                <li>The engagement is purely contractual and does not confer any right to regular appointment to the selected candidate.</li>
+                <li>Selected candidates will have to join duty immediately upon receipt of the offer letter.</li>
+                <li>Fulfilment of conditions of educational qualification and experience shall not necessarily entitle any applicant to be called for further process of recruitment.</li>
+                <li>In case of a large number of applicants, RIS reserves the right to short-list the applications in any manner as may be considered appropriate and no reason for rejection shall be communicated.</li>
+                <li>RIS reserves the right to fill or not to fill the post advertised. No correspondence whatsoever will be entertained from the candidates regarding postal delays, the conduct of the result of the interview and the reason for not being called for an interview.</li>
+                <li>The decision of the committee w.r.t. shortlisting and selection will be final and binding. No query whatsoever will be dealt w.r.t. the same.</li>
+              </ul>
+              <p style={{ marginTop: '12px', marginBottom: 0, fontWeight: '700' }}>Interested candidates having the above qualifications and experience should only apply Online.</p>
+            </div>
             
             {step === 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
@@ -1806,7 +1830,7 @@ export default function ApplicationForm() {
                   <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
                   Upload Resume (PDF)
                 </label>
-                <input required type="file" accept=".pdf" className={`form-input ${(triedSubmit && !resumeFile) ? 'faulty-input' : ''}`} onChange={e => setResumeFile(e.target.files[0])} />
+                <input required type="file" accept="application/pdf" className={`form-input ${(triedSubmit && !resumeFile) ? 'faulty-input' : ''}`} onChange={e => setResumeFile(e.target.files[0])} />
               </div>
 
               <div className="form-group">
@@ -2528,7 +2552,7 @@ export default function ApplicationForm() {
                     <div className="resume-inline-group" style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
                       <label className="resume-inline-label" style={{ fontWeight: '700' }}>Uploaded Resume (PDF)</label>
                       {resumeFile && <div style={{ fontSize: '0.85rem', color: '#16a34a', marginBottom: '0.5rem', fontWeight: '600' }}>✓ Current file: {resumeFile.name}</div>}
-                      <input type="file" accept=".pdf" className="resume-inline-input" onChange={e => setResumeFile(e.target.files[0])} />
+                      <input type="file" accept="application/pdf" className="resume-inline-input" onChange={e => setResumeFile(e.target.files[0])} />
                     </div>
 
                     <div className="resume-inline-group" style={{ marginBottom: '1.5rem' }}>

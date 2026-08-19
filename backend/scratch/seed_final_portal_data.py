@@ -259,25 +259,42 @@ def main():
                 db.add(candidate)
                 db.flush()  # Gen ID
 
-                # Insert Links & About
+                import random
+                # Insert Links & About with randomized publication counts
                 links = models.CandidateLinksAbout(
                     candidate_id=candidate.id,
                     about=f"Policy researcher specializing in {job.division} thematic areas.",
-                    extracurriculars="Active member of policy debate groups and lead author of local community development papers."
+                    extracurriculars="Active member of policy debate groups and lead author of local community development papers.",
+                    linkedin=f"https://linkedin.com/in/{candidate.full_name.lower().replace(' ', '')}",
+                    pub_books=random.randint(0, 3),
+                    pub_papers=random.randint(1, 8),
+                    pub_chapters=random.randint(0, 4),
+                    pub_reports=random.randint(0, 5),
+                    pub_policy_briefs=random.randint(0, 6)
                 )
                 db.add(links)
 
-                # Insert Schooling (standard realistic marks)
+                # Determine passing years logically from Bachelors degree end year
+                ug_year = 2014
+                for deg_data in data['education']:
+                    if "Bachelor" in deg_data['degree']:
+                        ug_year = deg_data['end_year']
+                class_xii_yr = ug_year - 3
+                class_x_yr = class_xii_yr - 2
+
+                # Insert Schooling (standard realistic marks & years)
                 schooling = models.CandidateSchooling(
                     candidate_id=candidate.id,
                     class_x_school="Secondary High School",
                     class_x_board="CBSE",
                     class_x_score_type="Percentage",
                     class_x_score_value=86.5,
+                    class_x_year=class_x_yr,
                     class_xii_school="Senior Secondary School",
                     class_xii_board="CBSE",
                     class_xii_score_type="Percentage",
-                    class_xii_score_value=88.2
+                    class_xii_score_value=88.2,
+                    class_xii_year=class_xii_yr
                 )
                 db.add(schooling)
 
