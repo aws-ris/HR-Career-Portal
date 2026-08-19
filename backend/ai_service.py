@@ -103,7 +103,8 @@ def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, f
     if S3_BUCKET:
         try:
             import boto3
-            s3_client = boto3.client('s3')
+            from botocore.client import Config
+            s3_client = boto3.client('s3', config=Config(signature_version='s3v4'))
             s3_client.put_object(
                 Bucket=S3_BUCKET,
                 Key=s3_key,
@@ -158,7 +159,8 @@ def background_vectorize_resume(candidate_id: str, file_path: str):
             if S3_BUCKET and payload.resume_path:
                 try:
                     import boto3
-                    s3_client = boto3.client('s3')
+                    from botocore.client import Config
+                    s3_client = boto3.client('s3', config=Config(signature_version='s3v4'))
                     response = s3_client.get_object(Bucket=S3_BUCKET, Key=payload.resume_path)
                     pdf_bytes = response['Body'].read()
                 except Exception as e:

@@ -1223,7 +1223,8 @@ def download_resume(candidate_id: str, preview: bool = False, db: Session = Depe
     if S3_BUCKET and payload and payload.resume_path and payload.resume_path.startswith("resumes/"):
         try:
             import boto3
-            s3_client = boto3.client('s3')
+            from botocore.client import Config
+            s3_client = boto3.client('s3', config=Config(signature_version='s3v4'))
             disposition = "inline" if preview else "attachment"
             presigned_url = s3_client.generate_presigned_url(
                 'get_object',
