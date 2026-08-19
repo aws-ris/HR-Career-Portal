@@ -238,98 +238,109 @@ def main():
                     print(f"   Error parsing {rf}")
                     continue
 
-                # Calculate total experience years from experience entries
-                total_exp = 0.0
-                for exp in data['experience']:
-                    duration = exp['end_year'] - exp['start_year']
-                    total_exp += max(1.0, float(duration))
+                # Randomize Demographic Data
+                import random
+                from datetime import timedelta
+                
+                locations = [("New Delhi", "Delhi", "110003"), ("Mumbai", "Maharashtra", "400001"), ("Bangalore", "Karnataka", "560001"), ("Pune", "Maharashtra", "411001"), ("Chennai", "Tamil Nadu", "600001"), ("Hyderabad", "Telangana", "500001"), ("Ahmedabad", "Gujarat", "380001"), ("Jaipur", "Rajasthan", "302001")]
+                loc = random.choice(locations)
+                
+                # Randomize age between 24 and 45
+                age_years = random.randint(24, 45)
+                dob_random = date(2026 - age_years, random.randint(1, 12), random.randint(1, 28))
+                
+                total_exp = round(random.uniform(0.5, 12.0), 1)
 
                 # Insert Candidate Metadata
                 candidate = models.CandidateMetadata(
                     full_name=data['name'],
                     email=data['email'],
-                    mobile_no=data['mobile'],
-                    gender="Female" if "meera" in data['name'].lower() or "ayesha" in data['name'].lower() or "nisha" in data['name'].lower() or "priya" in data['name'].lower() or "riya" in data['name'].lower() or "ishani" in data['name'].lower() else "Male",
-                    dob=date(1992, 5, 15),
+                    mobile_no=data['mobile'] or f"9{random.randint(100000000, 999999999)}",
+                    gender="Female" if any(name in data['name'].lower() for name in ["meera", "ayesha", "nisha", "priya", "riya", "ishani"]) else "Male",
+                    dob=dob_random,
                     years_of_experience=total_exp,
-                    city="New Delhi",
-                    state="Delhi",
-                    pincode="110003"
+                    city=loc[0],
+                    state=loc[1],
+                    pincode=loc[2]
                 )
                 db.add(candidate)
-                db.flush()  # Gen ID
+                db.flush()
 
-                import random
                 # Insert Links & About with randomized publication counts
                 links = models.CandidateLinksAbout(
                     candidate_id=candidate.id,
-                    about=f"Policy researcher specializing in {job.division} thematic areas.",
-                    extracurriculars="Active member of policy debate groups and lead author of local community development papers.",
-                    linkedin=f"https://linkedin.com/in/{candidate.full_name.lower().replace(' ', '')}",
-                    pub_books=random.randint(0, 3),
-                    pub_papers=random.randint(1, 8),
-                    pub_chapters=random.randint(0, 4),
-                    pub_reports=random.randint(0, 5),
-                    pub_policy_briefs=random.randint(0, 6)
+                    about=f"Experienced professional specializing in {job.division} with {int(total_exp)} years of experience in policy analysis and public affairs.",
+                    linkedin=f"https://linkedin.com/in/{candidate.full_name.lower().replace(' ', '')}{random.randint(10, 99)}",
+                    pub_books=random.randint(0, 3) if age_years > 28 else 0,
+                    pub_papers=random.randint(1, 10),
+                    pub_chapters=random.randint(0, 5),
+                    pub_reports=random.randint(0, 7),
+                    pub_policy_briefs=random.randint(0, 8)
                 )
                 db.add(links)
 
-                # Determine passing years logically from Bachelors degree end year
-                ug_year = 2014
-                for deg_data in data['education']:
-                    if "Bachelor" in deg_data['degree']:
-                        ug_year = deg_data['end_year']
-                class_xii_yr = ug_year - 3
-                class_x_yr = class_xii_yr - 2
-
-                # Insert Schooling (standard realistic marks & years)
+                # Determine passing years logically based on DOB
+                class_x_yr = dob_random.year + 16
+                class_xii_yr = class_x_yr + 2
+                
+                # Insert Schooling with random scores
                 schooling = models.CandidateSchooling(
                     candidate_id=candidate.id,
-                    class_x_school="Secondary High School",
-                    class_x_board="CBSE",
+                    class_x_school=random.choice(["DPS", "Kendriya Vidyalaya", "St. Xavier's", "City International", "National Public School"]),
+                    class_x_board=random.choice(["CBSE", "ICSE", "State Board"]),
                     class_x_score_type="Percentage",
-                    class_x_score_value=86.5,
+                    class_x_score_value=round(random.uniform(75.0, 98.5), 1),
                     class_x_year=class_x_yr,
-                    class_xii_school="Senior Secondary School",
-                    class_xii_board="CBSE",
+                    class_xii_school=random.choice(["DPS", "Kendriya Vidyalaya", "St. Xavier's", "Springdales", "Modern School"]),
+                    class_xii_board=random.choice(["CBSE", "ICSE", "State Board"]),
                     class_xii_score_type="Percentage",
-                    class_xii_score_value=88.2,
+                    class_xii_score_value=round(random.uniform(70.0, 99.0), 1),
                     class_xii_year=class_xii_yr
                 )
                 db.add(schooling)
 
-                # Insert Higher Educations
-                for deg_data in data['education']:
-                    deg_level = "undergrad"
-                    if "Ph.D." in deg_data['degree']:
-                        deg_level = "phd"
-                    elif "Master" in deg_data['degree']:
-                        deg_level = "postgrad"
+                # Insert Randomized Higher Educations
+                degrees_to_add = ["undergrad"]
+                if age_years > 25 and random.random() > 0.3:
+                    degrees_to_add.append("postgrad")
+                if age_years > 28 and random.random() > 0.6:
+                    degrees_to_add.append("phd")
+                
+                for idx, deg_level in enumerate(degrees_to_add):
+                    deg_name = ""
+                    if deg_level == "undergrad": deg_name = random.choice(["B.A. Economics", "B.Sc. Environmental Science", "B.Tech", "BBA"])
+                    elif deg_level == "postgrad": deg_name = random.choice(["M.A. Public Policy", "MBA", "M.Sc. Data Science", "M.A. International Relations"])
+                    elif deg_level == "phd": deg_name = random.choice(["Ph.D. in Economics", "Ph.D. in Ocean Governance", "Ph.D. in Policy Studies"])
                     
-                    score_val = 8.5 if deg_level == "phd" else (8.0 if deg_level == "postgrad" else 7.5)
+                    grad_year = class_xii_yr + 3 if deg_level == "undergrad" else (class_xii_yr + 5 if deg_level == "postgrad" else class_xii_yr + 9)
+                    
                     edu = models.CandidateHigherEducation(
                         candidate_id=candidate.id,
                         level=deg_level,
-                        degree_name=deg_data['degree'],
-                        university=deg_data['university'],
-                        score_type="CGPA",
-                        score_value=score_val,
-                        grad_year=deg_data['end_year'],
-                        entry_order=1 if deg_level == "phd" else (2 if deg_level == "postgrad" else 3)
+                        degree_name=deg_name,
+                        university=random.choice(["Jawaharlal Nehru University", "Delhi University", "TISS Mumbai", "LSE", "IIT Delhi", "Madras School of Economics", "Ashoka University"]),
+                        score_type="CGPA" if random.random() > 0.5 else "Percentage",
+                        score_value=round(random.uniform(6.5, 9.8) if random.random() > 0.5 else random.uniform(65.0, 95.0), 1),
+                        grad_year=grad_year,
+                        entry_order=len(degrees_to_add) - idx
                     )
                     db.add(edu)
 
-                # Insert Work Experiences
-                for idx, exp_data in enumerate(data['experience']):
-                    start_date = date(exp_data['start_year'], 1, 1)
-                    end_date = date(exp_data['end_year'], 12, 31) if exp_data['end_year'] <= 2026 else None
+                # Insert Randomized Work Experiences
+                num_jobs = random.randint(1, 3) if total_exp > 0 else 0
+                current_yr = grad_year + 1
+                for idx in range(num_jobs):
+                    is_last = (idx == num_jobs - 1)
+                    start_yr = current_yr + idx*2
+                    end_yr = start_yr + random.randint(1, 3) if not is_last else None
+                    
                     work = models.CandidateWorkExperience(
                         candidate_id=candidate.id,
-                        company_name=exp_data['company'],
-                        role=exp_data['role'],
-                        start_date=start_date,
-                        end_date=end_date,
-                        is_current=(end_date is None),
+                        company_name=random.choice(["NITI Aayog", "Brookings Institution", "World Bank", "Observer Research Foundation", "KPMG", "McKinsey", "Centre for Policy Research"]),
+                        role=random.choice(["Research Assistant", "Policy Consultant", "Senior Analyst", "Fellow", "Associate"]),
+                        start_date=date(start_yr, random.randint(1, 12), 1),
+                        end_date=date(end_yr, random.randint(1, 12), 28) if end_yr else None,
+                        is_current=(end_yr is None),
                         entry_order=idx + 1
                     )
                     db.add(work)

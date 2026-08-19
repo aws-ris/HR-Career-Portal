@@ -207,7 +207,6 @@ class ApplicationTrackingResponse(BaseModel):
 # ─────────────────────────────────────────────
 class LinksAboutCreate(BaseModel):
     about:          Optional[str] = Field(None, max_length=3000)
-    extracurriculars: Optional[str] = Field(None, max_length=3000)
     google_scholar: Optional[str] = None
     linkedin:       Optional[str] = None
     pub_books:      Optional[int] = 0
@@ -221,13 +220,6 @@ class LinksAboutCreate(BaseModel):
     def validate_word_count(cls, v):
         if v and len(v.split()) > 150:
             raise ValueError('About must not exceed 150 words')
-        return v
-
-    @field_validator('extracurriculars')
-    @classmethod
-    def validate_extracurriculars_word_count(cls, v):
-        if v and len(v.split()) > 150:
-            raise ValueError('Extracurriculars must not exceed 150 words')
         return v
 
 class LinksAboutResponse(LinksAboutCreate):
@@ -256,7 +248,6 @@ class CandidateCreate(BaseModel):
 
     # Links & about (goes to candidate_links_about)
     about:          Optional[str] = Field(None, max_length=3000)
-    extracurriculars: Optional[str] = Field(None, max_length=3000)
     google_scholar: Optional[str] = None
     linkedin:       Optional[str] = None
     pub_books:      Optional[int] = 0
@@ -278,12 +269,7 @@ class CandidateCreate(BaseModel):
             raise ValueError('About must not exceed 150 words')
         return v
 
-    @field_validator('extracurriculars')
-    @classmethod
-    def validate_extracurriculars_word_count(cls, v):
-        if v and len(v.split()) > 150:
-            raise ValueError('Extracurriculars must not exceed 150 words')
-        return v
+
 
     @field_validator('admin_department')
     @classmethod

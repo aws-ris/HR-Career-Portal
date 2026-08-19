@@ -1,0 +1,2272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candidate Profile Scoring Sandbox</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-surface: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #0ea5e9;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --border-color: #334155;
+            --radius: 12px;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            padding: 2rem 1rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .sandbox-container {
+            width: 100%;
+            max-width: 900px;
+            background-color: var(--bg-surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e3a8a, #0f172a);
+            padding: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            min-height: 500px;
+        }
+
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .calculator-form {
+            padding: 2rem;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .results-panel {
+            padding: 2rem;
+            background-color: #0b0f19;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-section-title {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        input[type="number"], select, input[type="text"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+        }
+
+        /* Autocomplete search container styles */
+        .autocomplete-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .autocomplete-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            margin-top: 4px;
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            transition: var(--transition);
+            border-bottom: 1px solid #273549;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover, .suggestion-item.highlighted {
+            background-color: #273549;
+            color: var(--accent-blue);
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .badge-ini { background-color: rgba(14, 165, 233, 0.15); color: var(--accent-blue); }
+        .badge-cu { background-color: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+        .badge-nirf { background-color: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+
+        .divider {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 2rem 0;
+        }
+
+        .btn-calc {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--accent-blue), #0284c7);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.3);
+        }
+
+        .btn-calc:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.4);
+        }
+
+        /* Results Display */
+        .score-circle-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-shrink: 0;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 6px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--accent-green);
+            position: relative;
+            background-color: rgba(16, 185, 129, 0.05);
+            border-color: var(--accent-green);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+        }
+
+        .score-label {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-top: 0.75rem;
+        }
+
+        .results-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .detail-item {
+            background-color: #161e2e;
+            border-radius: 8px;
+            padding: 1rem;
+            border-left: 4px solid var(--border-color);
+        }
+
+        .detail-item.active {
+            border-left-color: var(--accent-blue);
+        }
+        .detail-item.completed {
+            border-left-color: var(--accent-green);
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+        }
+
+        .detail-val {
+            color: var(--accent-blue);
+        }
+
+        .detail-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .university-resolution {
+            background-color: #1e293b;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border: 1px solid #475569;
+        }
+    </style>
+</head>
+<body>
+
+<div class="sandbox-container">
+    <header>
+        <h1>Candidate Profile Scorer</h1>
+        <p>Dynamic assessment modeling sandbox for the 85-mark evaluation rubric.</p>
+    </header>
+
+    <div class="main-layout">
+        <form class="calculator-form" id="scoringForm" onsubmit="event.preventDefault(); calculateScore();">
+            <!-- Academics Section -->
+            <div class="form-section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>
+                1. Academic Qualifications
+            </div>
+
+            <div class="input-row">
+                <div class="form-group">
+                    <label>Class X Score</label>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <input type="number" id="classXVal" required min="0" max="100" step="0.01" value="90">
+                        <select id="classXType" style="width: 80px;" onchange="adjustLimits('classXVal', this.value)">
+                            <option value="percentage">%</option>
+                            <option value="cgpa">CGPA</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Class XII Score</label>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <input type="number" id="classXIIVal" required min="0" max="100" step="0.01" value="85">
+                        <select id="classXIIType" style="width: 80px;" onchange="adjustLimits('classXIIVal', this.value)">
+                            <option value="percentage">%</option>
+                            <option value="cgpa">CGPA</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Essential Qualification (EQ) Marks</label>
+                <div style="display: flex; gap: 4px; align-items: center;">
+                    <input type="number" id="eqVal" required min="0" max="100" step="0.01" value="80">
+                    <select id="eqType" style="width: 80px;" onchange="adjustLimits('eqVal', this.value)">
+                        <option value="percentage">%</option>
+                        <option value="cgpa">CGPA</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Desirable Qualification (DQ) Marks</label>
+                <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 0.25rem;">
+                    <input type="number" id="dqVal" min="0" max="100" step="0.01" value="" placeholder="Leave blank if N/A" disabled>
+                    <select id="dqType" style="width: 80px;" onchange="adjustLimits('dqVal', this.value)" disabled>
+                        <option value="percentage">%</option>
+                        <option value="cgpa">CGPA</option>
+                    </select>
+                </div>
+                <label style="display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.8rem; color: var(--text-secondary);">
+                    <input type="checkbox" id="hasDq" onchange="toggleDq(this.checked)" style="accent-color: var(--accent-blue);"> Candidate has a Desirable Qualification
+                </label>
+            </div>
+
+            <!-- University Search -->
+            <div class="form-group">
+                <label>University / Institute (EQ Highest Degree)</label>
+                <div class="autocomplete-container">
+                    <input type="text" id="uniInput" placeholder="Type to search e.g. IIT Delhi, Delhi University..." autocomplete="off">
+                    <div class="autocomplete-suggestions" id="suggestionsBox"></div>
+                </div>
+                <div class="university-resolution" id="resolutionBox" style="display: none;"></div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Experience Section -->
+            <div class="form-section-title">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                2. Professional Experience
+            </div>
+
+            <div class="input-row">
+                <div class="form-group">
+                    <label>Min Experience Required</label>
+                    <input type="number" id="minExp" required min="0" value="2" placeholder="Years">
+                </div>
+                <div class="form-group">
+                    <label>Candidate Total Experience</label>
+                    <input type="number" id="candidateExp" required min="0" step="0.1" value="5" placeholder="Years">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-calc">Recalculate Profile Score</button>
+        </form>
+
+        <!-- Results Display Panel -->
+        <div class="results-panel">
+            <div class="score-circle-container">
+                <div class="score-circle" id="totalScore">0.00</div>
+                <div class="score-label">Final Profile Score (out of 85)</div>
+            </div>
+
+            <div class="results-details">
+                <!-- EQ Detail -->
+                <div class="detail-item active" id="detailEq">
+                    <div class="detail-header">
+                        <span>Essential Qualification</span>
+                        <span class="detail-val" id="valEq">0.00 / 30</span>
+                    </div>
+                    <div class="detail-desc" id="descEq">No marks calculated.</div>
+                </div>
+
+                <!-- DQ Detail -->
+                <div class="detail-item" id="detailDq">
+                    <div class="detail-header">
+                        <span>Desirable Qualification</span>
+                        <span class="detail-val" id="valDq">0.00 / 10</span>
+                    </div>
+                    <div class="detail-desc" id="descDq">No marks calculated.</div>
+                </div>
+
+                <!-- Brand Detail -->
+                <div class="detail-item" id="detailBrand">
+                    <div class="detail-header">
+                        <span>University Brand Tier</span>
+                        <span class="detail-val" id="valBrand">0.00 / 10</span>
+                    </div>
+                    <div class="detail-desc" id="descBrand">No university selected.</div>
+                </div>
+
+                <!-- Schooling Detail -->
+                <div class="detail-item" id="detailSchool">
+                    <div class="detail-header">
+                        <span>Schooling (Class X & XII)</span>
+                        <span class="detail-val" id="valSchool">0.00 / 10</span>
+                    </div>
+                    <div class="detail-desc" id="descSchool">No marks calculated.</div>
+                </div>
+
+                <!-- Experience Detail -->
+                <div class="detail-item" id="detailExp">
+                    <div class="detail-header">
+                        <span>Relevant Experience</span>
+                        <span class="detail-val" id="valExp">0.00 / 25</span>
+                    </div>
+                    <div class="detail-desc" id="descExp">No experience calculated.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 313 Unique Universities dataset
+    const UNIVERSITIES = [
+    {
+        "name": "Academy of Scientific and Innovative Research",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Alagappa University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 73)"
+    },
+    {
+        "name": "Aligarh Muslim University",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences Bhubaneswar",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 100)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences Rishikesh",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 78)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Bathinda",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Bhopal",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Bhubaneswar",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Bibinagar",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Bilaspur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Deoghar",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Gorakhpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Guwahati",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Jodhpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Kalyani",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Madurai",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Mangalagiri",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Nagpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, New Delhi",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Patna",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Raebareli",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Raipur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Rajkot",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Rishikesh",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "All India Institute of Medical Sciences, Vijaypur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Amity University",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 37)"
+    },
+    {
+        "name": "Amrita Vishwa Vidyapeetham",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 17)"
+    },
+    {
+        "name": "Andhra University, Visakhapatnam",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 41)"
+    },
+    {
+        "name": "Anna University",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 29)"
+    },
+    {
+        "name": "Asiatic Society",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Assam University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Atal Bihari Vajpayee Indian Institute of Information Technology and Management, Gwalior",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Babasaheb Bhimrao Ambedkar University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Babasheb Bhimrao Ambedkar University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 69)"
+    },
+    {
+        "name": "Banaras Hindu University",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Bharath Institute of Higher Education and Research",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 90)"
+    },
+    {
+        "name": "Bharathiar University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 76)"
+    },
+    {
+        "name": "Bharathidasan University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 61)"
+    },
+    {
+        "name": "Birla Institute of Technology of Science and Technology, Pilani",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 16)"
+    },
+    {
+        "name": "Calcutta University",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 47)"
+    },
+    {
+        "name": "Central Agricultural University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central Sanskrit University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central Tribal University of Andhra Pradesh",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central University of Andhra Pradesh",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central University of Gujarat",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central University of Haryana",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central University of Himachal Pradesh",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central University of Jammu",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central University of Jharkhand",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central University of Karnataka",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central University of Kashmir",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central University of Kerala",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central University of Odisha",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central University of Punjab",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central University of Rajasthan",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central University of South Bihar",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Central University of Tamil Nadu",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Chandigarh University",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 32)"
+    },
+    {
+        "name": "Christ University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 96)"
+    },
+    {
+        "name": "Cochin University of Science and Technology",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 50)"
+    },
+    {
+        "name": "Dakshina Bharat Hindi Prachar Sabha",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Datta Meghe Institute of Higher Education and Research",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 84)"
+    },
+    {
+        "name": "Delhi Technological University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 62)"
+    },
+    {
+        "name": "Dr. B. R. Ambedkar National Institute of Technology, Jalandhar",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Dr. D. Y. Patil Vidyapeeth",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 71)"
+    },
+    {
+        "name": "Dr. Hari Singh Gour University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Dr. Rajendra Prasad Central Agriculture University",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "English and Foreign Languages University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Footwear Design and Development Institute",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Gati Shakti Vishwavidyalaya",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Gauhati University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 52)"
+    },
+    {
+        "name": "Graphic Era University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 72)"
+    },
+    {
+        "name": "Guru Ghasidas Vishwavidyalaya",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Hemwati Nandan Bahuguna Garhwal University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Homi Bhabha National Institute",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 20)"
+    },
+    {
+        "name": "India International Arbitration Centre",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Agricultural Research Institute",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 24)"
+    },
+    {
+        "name": "Indian Institute of Engineering Science and Technology, Shibpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Agartala",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Allahabad",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Bhagalpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Bhopal",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Design and Manufacturing, Jabalpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Design and Manufacturing, Kancheepuram",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Design and Manufacturing, Kurnool",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Dharwad",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Guwahati",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Kalyani",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Kota",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Kottayam",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Lucknow",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Manipur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Nagpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Pune",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Raichur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Ranchi",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Sonepat",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Sri City",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Surat",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Tiruchirappalli",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Una",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Information Technology, Vadodara",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Ahmedabad",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Amritsar",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Bangalore",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Bodh Gaya",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Calcutta",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Guwahati",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Indore",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Jammu",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Kashipur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Kozhikode",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Lucknow",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Mumbai",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Nagpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Raipur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Ranchi",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Rohtak",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Sambalpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Shilliong",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Sirmaur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Tiruchirappalli",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Udaipur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Management, Visakhapatnam",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Petroleum and Energy",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Science",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 2)"
+    },
+    {
+        "name": "Indian Institute of Science Education and Research Bhopal",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 75)"
+    },
+    {
+        "name": "Indian Institute of Science Education and Research Kolkata",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 67)"
+    },
+    {
+        "name": "Indian Institute of Science Education and Research Pune",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 55)"
+    },
+    {
+        "name": "Indian Institute of Science Education and Research, Berhampur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Science Education and Research, Bhopal",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Science Education and Research, Kolkata",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Science Education and Research, Mohali",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Science Education and Research, Pune",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Science Education and Research, Thiruvananthapuram",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Science Education and Research, Tirupati",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 35)"
+    },
+    {
+        "name": "Indian Institute of Technology Bhubaneswar",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 80)"
+    },
+    {
+        "name": "Indian Institute of Technology Bombay",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 3)"
+    },
+    {
+        "name": "Indian Institute of Technology Delhi",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 4)"
+    },
+    {
+        "name": "Indian Institute of Technology Gandhinagar",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 39)"
+    },
+    {
+        "name": "Indian Institute of Technology Guwahati",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 11)"
+    },
+    {
+        "name": "Indian Institute of Technology Hyderabad",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 12)"
+    },
+    {
+        "name": "Indian Institute of Technology Indore",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 27)"
+    },
+    {
+        "name": "Indian Institute of Technology Jodhpur",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 66)"
+    },
+    {
+        "name": "Indian Institute of Technology Kanpur",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 5)"
+    },
+    {
+        "name": "Indian Institute of Technology Kharagpur",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 6)"
+    },
+    {
+        "name": "Indian Institute of Technology Madras",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 1)"
+    },
+    {
+        "name": "Indian Institute of Technology Mandi",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 58)"
+    },
+    {
+        "name": "Indian Institute of Technology Patna",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 36)"
+    },
+    {
+        "name": "Indian Institute of Technology Roorkee",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 7)"
+    },
+    {
+        "name": "Indian Institute of Technology Ropar",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 56)"
+    },
+    {
+        "name": "Indian Institute of Technology Varanasi",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 31)"
+    },
+    {
+        "name": "Indian Institute of Technology, Bhilai",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Bhubaneswar",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Bombay",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Delhi",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Dhanbad",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Dharwad",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Gandhinagar",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Goa",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Guwahati",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Hyderabad",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Indore",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Jammu",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Jodhpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Kanpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Kharagpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Madras",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Mandi",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Palakkad",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Patna",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Roorkee",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Ropar",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Tirupati",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Institute of Technology, Varanasi",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indian Maritime University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Indian Statistical Institute",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Indira Gandhi National Open University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Indira Gandhi National Tribal University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Institute of Chemical Technology",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 64)"
+    },
+    {
+        "name": "Institute of Teaching and Research in Ayurveda, Jamnagar",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "International Institute of Information Technology Hyderabad",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 89)"
+    },
+    {
+        "name": "JSS Academy of Higher Education and Research",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 38)"
+    },
+    {
+        "name": "Jadavpur University",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 18)"
+    },
+    {
+        "name": "Jamia Hamdard",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 74)"
+    },
+    {
+        "name": "Jamia Millia Islamia",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Jawaharlal Institute of Post Graduate Medical Education and Research",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 43)"
+    },
+    {
+        "name": "Jawaharlal Institute of Postgraduate Medical Education and Research",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Jawaharlal Nehru University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Kalakshetra Foundation",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Kalasalingam Academy of Research and Education",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 48)"
+    },
+    {
+        "name": "Kalinga Institute of Industrial Technology",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 27)"
+    },
+    {
+        "name": "Kerala University",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 42)"
+    },
+    {
+        "name": "King George`s Medical University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 83)"
+    },
+    {
+        "name": "Koneru Lakshmaiah Education Foundation University (K L College of Engineering)",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 46)"
+    },
+    {
+        "name": "Lovely Professional University",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 49)"
+    },
+    {
+        "name": "Madan Mohan Malaviya University of Technology",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 99)"
+    },
+    {
+        "name": "Mahatma Gandhi Antarrashtriya Hindi Vishwavidyalaya",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Mahatma Gandhi Central University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Mahatma Gandhi University, Kottayam",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 79)"
+    },
+    {
+        "name": "Malaviya National Institute of Technology",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 77)"
+    },
+    {
+        "name": "Malaviya National Institute of Technology, Jaipur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Manipal Academy of Higher Education-Manipal",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 14)"
+    },
+    {
+        "name": "Manipal University Jaipur",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 98)"
+    },
+    {
+        "name": "Manipur University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Maulana Azad National Institute of Technology, Bhopal",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Maulana Azad National Urdu University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Mizoram University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Motilal Nehru National Institute of Technology, Allahabad",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Mumbai University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 92)"
+    },
+    {
+        "name": "Nagaland University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Nalanda University",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Forensic Sciences University",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Design, Ahmedabad",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Design, Andhra Pradesh",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Design, Assam",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Design, Haryana",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Design, Madhya Pradesh",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Food Technology Entrepreneurship and Management, Sonepat",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Food Technology, Entrepreneurship and Management, Thanjavur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Mental Health and Neuro Sciences, Bangalore",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 60)"
+    },
+    {
+        "name": "National Institute of Mental Health and Neurosciences",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Pharmaceutical Education and Research, Ahmedabad",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Pharmaceutical Education and Research, Guwahati",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Pharmaceutical Education and Research, Hajipur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Pharmaceutical Education and Research, Hyderabad",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Pharmaceutical Education and Research, Kolkata",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Pharmaceutical Education and Research, Mohali",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Pharmaceutical Education and Research, Raebareli",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology Calicut",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 45)"
+    },
+    {
+        "name": "National Institute of Technology Karnataka, Surathkal",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 54)"
+    },
+    {
+        "name": "National Institute of Technology Rourkela",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 34)"
+    },
+    {
+        "name": "National Institute of Technology Silchar",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 97)"
+    },
+    {
+        "name": "National Institute of Technology Tiruchirappalli",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 30)"
+    },
+    {
+        "name": "National Institute of Technology Warangal",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 63)"
+    },
+    {
+        "name": "National Institute of Technology, Agartala",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Andhra Pradesh",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Arunachal Pradesh",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Calicut",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Delhi",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Durgapur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Goa",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Hamirpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Jamshedpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Karnataka",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Kurukshetra",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Manipur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Meghalaya",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Mizoram",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Nagaland",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Patna",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Puducherry",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Raipur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Rourkela",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Sikkim",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Silchar",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Srinagar",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Tiruchirappalli",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Uttarakhand",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Institute of Technology, Warangal",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "National Sanskrit University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "National Sports University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "North Eastern Hill University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Osmania University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 53)"
+    },
+    {
+        "name": "Panjab University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 57)"
+    },
+    {
+        "name": "Pondicherry University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Post Graduate Institute of Medical Education and Research",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 33)"
+    },
+    {
+        "name": "Postgraduate Institute of Medical Education and Research",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Punjab Agricultural University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 81)"
+    },
+    {
+        "name": "Rajiv Gandhi Institute of Petroleum Technology",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Rajiv Gandhi National Aviation University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Rajiv Gandhi National Institute of Youth Development",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Rajiv Gandhi University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Rani Lakshmi Bai Central Agricultural University",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Rashtriya Raksha University",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Regional Centre for Biotechnology",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "S.R.M. Institute of Science and Technology",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 22)"
+    },
+    {
+        "name": "SVKM`s Narsee Monjee Institute of Management Studies",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 95)"
+    },
+    {
+        "name": "Sammakka Sarakka Central Tribal University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Sardar Vallabhbhai National Institute of Technology, Surat",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Sathyabama Institute of Science and Technology",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 93)"
+    },
+    {
+        "name": "Saveetha Institute of Medical and Technical Sciences",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 23)"
+    },
+    {
+        "name": "Savitribai Phule Pune University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 91)"
+    },
+    {
+        "name": "School of Planning and Architecture, Bhopal",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "School of Planning and Architecture, New Delhi",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "School of Planning and Architecture, Vijayawada",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Shanmugha Arts Science Technology and Research Academy",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 51)"
+    },
+    {
+        "name": "Sher-e-Kashmir University of Agricultural Science and Technology of Kashmir",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 94)"
+    },
+    {
+        "name": "Shiv Nadar University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 85)"
+    },
+    {
+        "name": "Shri Lal Bahadur Shastri National Sanskrit University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Sikkim University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Siksha `O` Anusandhan",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 25)"
+    },
+    {
+        "name": "Sindhu Central University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "South Asian University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Sree Chitra Tirunal Institute for Medical Sciences and Technology",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Sri Sivasubramaniya Nadar College of Engineering",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 82)"
+    },
+    {
+        "name": "Symbiosis International",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 40)"
+    },
+    {
+        "name": "Tamil Nadu Agricultural University",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 88)"
+    },
+    {
+        "name": "Tezpur University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "Thapar Institute of Engineering and Technology (Deemed-to-be-university)",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 44)"
+    },
+    {
+        "name": "Tribhuvan Sahkari University",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Tripura University",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "UPES",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 64)"
+    },
+    {
+        "name": "University of Allahabad",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "University of Delhi",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "University of Hyderabad",
+        "points": 7,
+        "classification": "Central University"
+    },
+    {
+        "name": "University of Jammu",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 87)"
+    },
+    {
+        "name": "University of Kashmir",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 59)"
+    },
+    {
+        "name": "University of Madras",
+        "points": 0,
+        "classification": "Other College (NIRF Rank 68)"
+    },
+    {
+        "name": "Vellore Institute of Technology",
+        "points": 3,
+        "classification": "Other College (NIRF Rank 21)"
+    },
+    {
+        "name": "Visva-Bharati University",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    },
+    {
+        "name": "Visvesvaraya National Institute of Technology, Nagpur",
+        "points": 10,
+        "classification": "Tier-1 (Institute of National Importance)"
+    }
+]
+
+    // Setup input limits
+    function adjustLimits(inputId, type) {
+        const input = document.getElementById(inputId);
+        if (type === 'cgpa') {
+            input.max = "10";
+            if (parseFloat(input.value) > 10) input.value = "10";
+        } else {
+            input.max = "100";
+        }
+    }
+
+    function toggleDq(checked) {
+        const dqVal = document.getElementById('dqVal');
+        const dqType = document.getElementById('dqType');
+        dqVal.disabled = !checked;
+        dqType.disabled = !checked;
+        if (checked) {
+            dqVal.required = true;
+            dqVal.value = "75";
+        } else {
+            dqVal.required = false;
+            dqVal.value = "";
+        }
+    }
+
+    // Convert CGPA to Percent
+    function toPercent(val, type, isSchool) {
+        const v = parseFloat(val) || 0;
+        if (type === 'cgpa') {
+            return isSchool ? (v * 9.5) : (v * 10.0);
+        }
+        return v;
+    }
+
+    // Autocomplete Logic
+    const inputEl = document.getElementById('uniInput');
+    const suggEl = document.getElementById('suggestionsBox');
+    const resEl = document.getElementById('resolutionBox');
+    
+    let selectedUni = null;
+
+    inputEl.addEventListener('input', function() {
+        const val = this.value.trim().toLowerCase();
+        suggEl.innerHTML = '';
+        if (!val) {
+            suggEl.style.display = 'none';
+            selectedUni = null;
+            updateResolution();
+            return;
+        }
+
+        const matches = UNIVERSITIES.filter(u => 
+            u.name.toLowerCase().includes(val)
+        ).slice(0, 10);
+
+        // Add 'Other' suggestion at the top/bottom
+        matches.push({ name: "Other (Write custom college name...)", points: 0, classification: "Other College" });
+
+        matches.forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'suggestion-item';
+            
+            // Format labels for badge
+            let badge = '';
+            if (m.classification.includes('Tier-1')) badge = '<span class="badge badge-ini">Tier 1</span>';
+            else if (m.classification.includes('Central')) badge = '<span class="badge badge-cu">CU</span>';
+            else if (m.classification.includes('NIRF Rank')) badge = '<span class="badge badge-nirf">NIRF</span>';
+
+            div.innerHTML = m.name + badge;
+            div.addEventListener('click', () => selectUniversity(m));
+            suggEl.appendChild(div);
+        });
+
+        suggEl.style.display = 'block';
+    });
+
+    // Close autocomplete when clicking outside
+    document.addEventListener('click', function(e) {
+        if (e.target !== inputEl) {
+            suggEl.style.display = 'none';
+        }
+    });
+
+    function selectUniversity(u) {
+        if (u.name.startsWith("Other")) {
+            inputEl.value = "";
+            inputEl.placeholder = "Enter custom university name here...";
+            selectedUni = { name: "Custom College", points: 0, classification: "Other College", isCustom: true };
+            resEl.style.display = 'block';
+            resEl.innerHTML = `<strong>⚠️ Custom College Mode</strong>
+                               <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">
+                               Typing custom name. Auto-scoring applies fallback rules.
+                               </div>
+                               <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+                                 <span>System Assign:</span>
+                                 <select id="customTierSelect" onchange="overrideCustomTier(this.value)" style="padding:2px 6px; font-size:0.8rem; width:150px;">
+                                   <option value="0">Other (0 pts)</option>
+                                   <option value="3">NIRF &lt; 50 (3 pts)</option>
+                                   <option value="7">CU (7 pts)</option>
+                                   <option value="10">Tier-1 / INI (10 pts)</option>
+                                 </select>
+                               </div>`;
+            inputEl.focus();
+        } else {
+            inputEl.value = u.name;
+            selectedUni = u;
+            updateResolution();
+        }
+        suggEl.style.display = 'none';
+        calculateScore();
+    }
+
+    function overrideCustomTier(val) {
+        if (selectedUni && selectedUni.isCustom) {
+            selectedUni.points = parseInt(val) || 0;
+            const tiers = { "0": "Other College", "3": "Other College (NIRF < 50)", "7": "Central University", "10": "Tier-1 (INI Override)" };
+            selectedUni.classification = tiers[val];
+            calculateScore();
+        }
+    }
+
+    function updateResolution() {
+        if (!selectedUni) {
+            resEl.style.display = 'none';
+            return;
+        }
+        resEl.style.display = 'block';
+        resEl.innerHTML = `<strong>Institution Verified:</strong> ${selectedUni.name}
+                           <div style="margin-top: 4px;">Classification: <strong>${selectedUni.classification}</strong></div>
+                           <div>Auto-Award: <strong style="color:var(--accent-blue)">${selectedUni.points} Points</strong></div>`;
+    }
+
+    // Master Score Calculation Logic
+    function calculateScore() {
+        // X and XII
+        const xVal = parseFloat(document.getElementById('classXVal').value) || 0;
+        const xType = document.getElementById('classXType').value;
+        const xiiVal = parseFloat(document.getElementById('classXIIVal').value) || 0;
+        const xiiType = document.getElementById('classXIIType').value;
+
+        const xPct = toPercent(xVal, xType, true);
+        const xiiPct = toPercent(xiiVal, xiiType, true);
+
+        const scoreX = Math.min(5, xPct * 0.05);
+        const scoreXII = Math.min(5, xiiPct * 0.05);
+        const schoolingScore = scoreX + scoreXII;
+
+        document.getElementById('valSchool').innerText = schoolingScore.toFixed(2) + " / 10";
+        document.getElementById('descSchool').innerText = `Class X: ${scoreX.toFixed(2)} pts (from ${xPct.toFixed(1)}%) | Class XII: ${scoreXII.toFixed(2)} pts (from ${xiiPct.toFixed(1)}%)`;
+        if (schoolingScore > 0) document.getElementById('detailSchool').className = "detail-item completed";
+
+        // EQ Score
+        const eqVal = parseFloat(document.getElementById('eqVal').value) || 0;
+        const eqType = document.getElementById('eqType').value;
+        const eqPct = toPercent(eqVal, eqType, false);
+        const eqScore = Math.min(30, eqPct * 0.3);
+
+        document.getElementById('valEq').innerText = eqScore.toFixed(2) + " / 30";
+        document.getElementById('descEq').innerText = `Awarded 0.3 marks per percent in EQ (${eqPct.toFixed(1)}% mapped).`;
+        if (eqScore > 0) document.getElementById('detailEq').className = "detail-item completed";
+
+        // DQ Score
+        let dqScore = 0;
+        const hasDq = document.getElementById('hasDq').checked;
+        if (hasDq) {
+            const dqVal = parseFloat(document.getElementById('dqVal').value) || 0;
+            const dqType = document.getElementById('dqType').value;
+            const dqPct = toPercent(dqVal, dqType, false);
+            dqScore = Math.min(10, dqPct * 0.1);
+            document.getElementById('valDq').innerText = dqScore.toFixed(2) + " / 10";
+            document.getElementById('descDq').innerText = `Awarded 0.1 marks per percent in DQ (${dqPct.toFixed(1)}% mapped).`;
+            document.getElementById('detailDq').className = "detail-item completed";
+        } else {
+            document.getElementById('valDq').innerText = "0.00 / 10";
+            document.getElementById('descDq').innerText = "Desirable Qualification not declared.";
+            document.getElementById('detailDq').className = "detail-item";
+        }
+
+        // Brand Score
+        let brandScore = 0;
+        if (selectedUni) {
+            brandScore = selectedUni.points;
+            
+            // Check fallback regex if custom textbox has content but was not resolved from database
+            const valInput = inputEl.value.trim().toLowerCase();
+            if (selectedUni.isCustom && valInput) {
+                // Auto-detect check
+                if (valInput.includes("iit") || valInput.includes("nit") || valInput.includes("iim") || valInput.includes("national importance") || valInput.includes("technology act")) {
+                    brandScore = 10;
+                    selectedUni.classification = "Tier-1 (Auto-Detected INI)";
+                    document.getElementById('customTierSelect').value = "10";
+                } else if (valInput.includes("central") || valInput.includes("central university")) {
+                    brandScore = 7;
+                    selectedUni.classification = "Central University (Auto-Detected CU)";
+                    document.getElementById('customTierSelect').value = "7";
+                }
+            }
+
+            document.getElementById('valBrand').innerText = brandScore.toFixed(2) + " / 10";
+            document.getElementById('descBrand').innerText = `Verified as: ${selectedUni.classification}.`;
+            document.getElementById('detailBrand').className = brandScore > 0 ? "detail-item completed" : "detail-item active";
+        } else {
+            document.getElementById('valBrand').innerText = "0.00 / 10";
+            document.getElementById('descBrand').innerText = "No university selected. Mapped as Other (0 pts).";
+            document.getElementById('detailBrand').className = "detail-item";
+        }
+
+        // Experience Score
+        const minExp = parseFloat(document.getElementById('minExp').value) || 0;
+        const candidateExp = parseFloat(document.getElementById('candidateExp').value) || 0;
+
+        let expScore = 0;
+        let expDesc = "";
+        
+        if (candidateExp >= minExp) {
+            const essentialExpScore = 15;
+            const extraYears = Math.max(0, candidateExp - minExp);
+            // 2 marks for each year above requirement, capped at 10 marks
+            const additionalExpScore = Math.min(10, Math.floor(extraYears) * 2);
+            expScore = essentialExpScore + additionalExpScore;
+            expDesc = `Met requirement of ${minExp} yrs (+15). Plus ${Math.floor(extraYears)} extra yrs × 2 = +${additionalExpScore} additional.`;
+            document.getElementById('detailExp').className = "detail-item completed";
+        } else {
+            expScore = 0;
+            expDesc = `Does not meet minimum required experience of ${minExp} years.`;
+            document.getElementById('detailExp').className = "detail-item active";
+        }
+
+        document.getElementById('valExp').innerText = expScore.toFixed(2) + " / 25";
+        document.getElementById('descExp').innerText = expDesc;
+
+        // Total
+        const total = schoolingScore + eqScore + dqScore + brandScore + expScore;
+        document.getElementById('totalScore').innerText = total.toFixed(2);
+    }
+
+    // Trigger initial calculation
+    calculateScore();
+</script>
+
+</body>
+</html>

@@ -1212,7 +1212,6 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
         "profile_score": score_res["total_score"],
         "profile_score_breakdown": score_res["breakdown"],
         "about": candidate.links_about.about if candidate.links_about else None,
-        "extracurriculars": candidate.links_about.extracurriculars if candidate.links_about else None,
         "google_scholar": candidate.links_about.google_scholar if candidate.links_about else None,
         "linkedin": candidate.links_about.linkedin if candidate.links_about else None,
         "pub_books": candidate.links_about.pub_books if candidate.links_about else 0,
@@ -1474,7 +1473,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             # Detailed Report (Grouped Roster)
             headers = [
                 "Full Name", "Email", "Mobile", "DOB", "Gender", "State", "City", "Pincode", 
-                "Extracurriculars", "Total Exp (Yrs)", "Highest Edu", 
+                "City/State", "Total Exp (Yrs)", "Highest Edu", 
                 "Class X School", "Class X Board", "Class X Score", "Class X Year",
                 "Class XII School", "Class XII Board", "Class XII Score", "Class XII Year",
                 "Graduation Univ", "Graduation Degree", "Graduation Score", "Graduation Year",
@@ -1526,7 +1525,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[5] = full_c.state
                         row[6] = full_c.city
                         row[7] = full_c.pincode
-                        row[8] = (full_c.links_about.extracurriculars if full_c.links_about else "") or ""
+                        row[8] = f"{full_c.city or 'N/A'} / {full_c.state or 'N/A'}"
                         row[9] = full_c.years_of_experience
                         row[10] = c['highest_education']
                         row[11] = full_c.schooling.class_x_school if full_c.schooling else ""
@@ -1688,7 +1687,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 header_name = headers[col_idx - 1]
                 
                 # Check header categories for wider column adjustments
-                if "Details" in header_name or "Univ" in header_name or "Degree" in header_name or "Title" in header_name or "Company" in header_name or "Extracurriculars" in header_name:
+                if "Details" in header_name or "Univ" in header_name or "Degree" in header_name or "Title" in header_name or "Company" in header_name or "City/State" in header_name:
                     ws.column_dimensions[col_letter].width = 30
                 elif "Bachelors" in header_name or "Masters" in header_name or "Doctorate" in header_name or "Name" in header_name or "Email" in header_name or "Thesis" in header_name or "Source" in header_name or "Employment" in header_name:
                     ws.column_dimensions[col_letter].width = 24

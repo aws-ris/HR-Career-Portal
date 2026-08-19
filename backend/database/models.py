@@ -229,7 +229,6 @@ class CandidateLinksAbout(Base):
 
     candidate_id   = Column(String(36), ForeignKey('candidate_metadata.id', ondelete='CASCADE'), primary_key=True)
     about          = Column(Text,        nullable=True)
-    extracurriculars = Column(Text,      nullable=True)
     google_scholar = Column(String(500), nullable=True)
     linkedin       = Column(String(500), nullable=True)
     pub_books      = Column(Integer,     nullable=True, default=0)

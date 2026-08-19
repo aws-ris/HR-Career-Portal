@@ -336,7 +336,6 @@ export default function ApplicationForm() {
   const [candidateState, setCandidateState] = useState(() => savedDraft.candidateState || '');
   const [city, setCity] = useState(() => savedDraft.city || '');
   const [pincode, setPincode] = useState(() => savedDraft.pincode || '');
-  const [extracurriculars, setExtracurriculars] = useState(() => savedDraft.extracurriculars || '');
   const [dobError, setDobError] = useState('');
 
   // Step 2
@@ -436,7 +435,6 @@ export default function ApplicationForm() {
       candidateState,
       city,
       pincode,
-      extracurriculars,
       classXSchool,
       classXBoard,
       classXBoardState,
@@ -470,7 +468,7 @@ export default function ApplicationForm() {
     localStorage.setItem('hr_application_draft', JSON.stringify(draft));
   }, [
     position_applied, admin_department, full_name, email, mobile_number, dob, gender,
-    candidateState, city, pincode, extracurriculars, grads, postGrads, doctorates, 
+    candidateState, city, pincode, grads, postGrads, doctorates, 
     scholarLink, expYears, expMonths, hasWork, workExps, step, jobId,
     classXSchool, classXBoard, classXBoardState, classXBoardOther, classXScoreType, classXScoreValue, classXYear,
     classXIISchool, classXIIBoard, classXIIBoardState, classXIIBoardOther, classXIIScoreType, classXIIScoreValue, classXIIYear,
@@ -622,9 +620,7 @@ export default function ApplicationForm() {
         errors.push("City must be at least 2 characters and contain only letters.");
       }
       if (!pincode || !/^\d{6}$/.test(pincode)) errors.push("Pincode must be exactly 6 digits.");
-      if (extracurriculars && countWords(extracurriculars) > 100) {
-        errors.push("Extracurriculars must not exceed 100 words.");
-      }
+
 
       if (errors.length > 0) {
         alert(errors.join("\n"));
@@ -829,9 +825,7 @@ export default function ApplicationForm() {
       errors.push("City must be at least 2 characters and contain only letters.");
     }
     if (!pincode || !/^\d{6}$/.test(pincode)) errors.push("Pincode must be exactly 6 digits.");
-    if (extracurriculars && countWords(extracurriculars) > 100) {
-      errors.push("Extracurriculars must not exceed 100 words.");
-    }
+
 
     // Education (Step 2)
     const valClassX = parseFloat(classXScoreValue);
@@ -975,7 +969,7 @@ export default function ApplicationForm() {
     e.preventDefault();
     setTriedSubmit(true);
     
-    // Check required fields for Step 1 (extracurriculars is optional)
+    // Check required fields for Step 1
     if (step === 1) {
       if (!full_name || !email || !mobile_number || !dob || !gender || !candidateState || !city || !pincode) {
          return; // Let CSS handle the red borders
@@ -1024,9 +1018,7 @@ export default function ApplicationForm() {
         return alert("City must be at least 2 characters and contain only letters.");
       }
 
-      if (extracurriculars && countWords(extracurriculars) > 100) {
-        return alert("Extracurriculars must not exceed 100 words.");
-      }
+
     }
 
     // Check required fields for Step 3 (Work Experience Details)
@@ -1102,7 +1094,6 @@ export default function ApplicationForm() {
       email, 
       mobile_no: mobile_number, 
       about: null,
-      extracurriculars: extracurriculars.trim() || null,
       google_scholar: scholarLink.trim() || null,
       linkedin: linkedin.trim() || null,
       pub_books: pubBooks,
