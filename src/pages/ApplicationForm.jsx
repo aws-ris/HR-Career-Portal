@@ -1830,7 +1830,58 @@ export default function ApplicationForm() {
                   <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
                   Upload Resume (PDF)
                 </label>
-                <input required type="file" accept="application/pdf" className={`form-input ${(triedSubmit && !resumeFile) ? 'faulty-input' : ''}`} onChange={e => setResumeFile(e.target.files[0])} />
+                <div 
+                  onDragOver={e => e.preventDefault()} 
+                  onDrop={e => {
+                    e.preventDefault();
+                    if(e.dataTransfer.files && e.dataTransfer.files[0]) {
+                      const file = e.dataTransfer.files[0];
+                      if(file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf')) {
+                        setResumeFile(file);
+                      } else {
+                        alert("Please drop a valid PDF file.");
+                      }
+                    }
+                  }}
+                  style={{
+                    border: '2px dashed',
+                    borderRadius: '8px',
+                    padding: '32px',
+                    textAlign: 'center',
+                    background: (triedSubmit && !resumeFile) ? '#fef2f2' : '#ffffff',
+                    borderColor: (triedSubmit && !resumeFile) ? '#ef4444' : '#cbd5e1',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onClick={() => document.getElementById('resume-upload-input').click()}
+                >
+                  <input 
+                    id="resume-upload-input"
+                    type="file" 
+                    accept="application/pdf" 
+                    style={{ display: 'none' }} 
+                    onChange={e => {
+                      if(e.target.files && e.target.files[0]) setResumeFile(e.target.files[0]);
+                    }} 
+                  />
+                  {resumeFile ? (
+                    <div style={{ color: '#16a34a', fontWeight: '700' }}>
+                      <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ margin: '0 auto 8px auto', display: 'block' }}>
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>
+                      </svg>
+                      {resumeFile.name} (Selected)
+                      <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px', fontWeight: '500' }}>Click or drag a new file to replace.</p>
+                    </div>
+                  ) : (
+                    <div style={{ color: '#64748b' }}>
+                      <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ margin: '0 auto 8px auto', display: 'block', color: '#94a3b8' }}>
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line>
+                      </svg>
+                      <strong style={{ display: 'block', color: '#1e293b', marginBottom: '4px' }}>Click to Browse or Drag & Drop PDF here</strong>
+                      <span style={{ fontSize: '12px' }}>This bypasses Windows Explorer freezing issues. Max size: 10MB.</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="form-group">
@@ -2551,8 +2602,54 @@ export default function ApplicationForm() {
 
                     <div className="resume-inline-group" style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
                       <label className="resume-inline-label" style={{ fontWeight: '700' }}>Uploaded Resume (PDF)</label>
-                      {resumeFile && <div style={{ fontSize: '0.85rem', color: '#16a34a', marginBottom: '0.5rem', fontWeight: '600' }}>✓ Current file: {resumeFile.name}</div>}
-                      <input type="file" accept="application/pdf" className="resume-inline-input" onChange={e => setResumeFile(e.target.files[0])} />
+                      <div 
+                        onDragOver={e => e.preventDefault()} 
+                        onDrop={e => {
+                          e.preventDefault();
+                          if(e.dataTransfer.files && e.dataTransfer.files[0]) {
+                            const file = e.dataTransfer.files[0];
+                            if(file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf')) {
+                              setResumeFile(file);
+                            } else {
+                              alert("Please drop a valid PDF file.");
+                            }
+                          }
+                        }}
+                        style={{
+                          border: '2px dashed #cbd5e1',
+                          borderRadius: '8px',
+                          padding: '24px',
+                          textAlign: 'center',
+                          background: '#ffffff',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          marginTop: '8px'
+                        }}
+                        onClick={() => document.getElementById('resume-upload-input-review').click()}
+                      >
+                        <input 
+                          id="resume-upload-input-review"
+                          type="file" 
+                          accept="application/pdf" 
+                          style={{ display: 'none' }} 
+                          onChange={e => {
+                            if(e.target.files && e.target.files[0]) setResumeFile(e.target.files[0]);
+                          }} 
+                        />
+                        {resumeFile ? (
+                          <div style={{ color: '#16a34a', fontWeight: '700' }}>
+                            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ margin: '0 auto 4px auto', display: 'block' }}>
+                              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            {resumeFile.name} (Selected)
+                            <p style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', fontWeight: '500' }}>Click or drag to replace.</p>
+                          </div>
+                        ) : (
+                          <div style={{ color: '#64748b' }}>
+                            <strong style={{ display: 'block', color: '#1e293b', marginBottom: '2px' }}>Click or Drag PDF here</strong>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="resume-inline-group" style={{ marginBottom: '1.5rem' }}>
