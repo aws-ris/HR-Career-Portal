@@ -1082,14 +1082,6 @@ export default function ApplicationForm() {
     postGrads.forEach(g => { if(g.university) educations.push({...g, level: 'Masters', entry_order: eduOrder++}) });
     doctorates.forEach(g => { if(g.university) educations.push({...g, level: 'Doctorate', entry_order: eduOrder++}) });
 
-    let publications = [];
-    let pubOrder = 1;
-    if (!pubTypes.none) {
-      if(pubTypes.books) books.forEach(b => { if(b.title) publications.push({ type: 'Book', title: b.title, entry_order: pubOrder++ }) });
-      if(pubTypes.chapters) chapters.forEach(c => { if(c.title) publications.push({ type: 'Chapter', title: c.title, parent_title: c.parent_title, entry_order: pubOrder++ }) });
-      if(pubTypes.papers) papers.forEach(p => { if(p.title) publications.push({ type: 'Paper', title: p.title, entry_order: pubOrder++ }) });
-    }
-
     let works = [];
     let workOrder = 1;
     if (hasWork) {
@@ -1189,7 +1181,9 @@ export default function ApplicationForm() {
         }
         setSubmitError("Database Rejection: " + errMessage);
       }
-    } catch {
+    } catch (err) {
+      console.error("Submission crash:", err);
+      alert("A critical error occurred while submitting: " + err.message);
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         setSubmitError("Could not connect to Backend. Ensure uvicorn is running on port 8000.");
       } else {
