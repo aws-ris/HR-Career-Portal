@@ -140,17 +140,19 @@ def startup_migration():
         for query in migrations:
             try:
                 db.execute(text(query))
+                db.commit()
             except Exception as e:
+                db.rollback()
                 # Fallback for SQLite vs PostgreSQL differences
                 if "BYTEA" in query and "sqlite" in str(db.bind.url):
                     try:
                         db.execute(text("ALTER TABLE candidate_resume_payload ADD COLUMN IF NOT EXISTS pdf_blob BLOB;"))
+                        db.commit()
                     except Exception as sq_err:
                         print(f"SQLite pdf_blob fallback error: {sq_err}")
+                        db.rollback()
                 else:
                     print(f"Skipped schema migration query '{query}': {e}")
-                    
-        db.commit()
         
         # 2. Automatically backfill candidate ages
         try:
