@@ -153,26 +153,6 @@ export default function GlobalAnalytics() {
           </div>
         </AnalyticsCard>
 
-        {/* 4. Hiring Funnel Summary */}
-        <AnalyticsCard title="Pipeline Velocity" icon={TrendingUp}>
-          <div className="hr-funnel-container">
-            <div className="hr-funnel-row">
-              <div className="hr-funnel-label">Total Talent</div>
-              <div className="hr-funnel-bar-bg"><div className="hr-funnel-bar" style={{ width: '100%', background: '#002147' }}></div></div>
-              <div className="hr-funnel-value">{data.gender.reduce((a, b) => a + b.value, 0)}</div>
-            </div>
-            <div className="hr-funnel-row">
-              <div className="hr-funnel-label">Shortlisted</div>
-              <div className="hr-funnel-bar-bg"><div className="hr-funnel-bar" style={{ width: '12%', background: '#f59e0b' }}></div></div>
-              <div className="hr-funnel-value">0</div>
-            </div>
-            <div className="hr-funnel-row">
-              <div className="hr-funnel-label">Selected</div>
-              <div className="hr-funnel-bar-bg"><div className="hr-funnel-bar" style={{ width: '4%', background: '#10b981' }}></div></div>
-              <div className="hr-funnel-value">0</div>
-            </div>
-          </div>
-        </AnalyticsCard>
       </div>
     </div>
   );
