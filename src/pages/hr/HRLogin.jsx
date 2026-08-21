@@ -163,7 +163,7 @@ export default function HRLogin() {
                   outline: 'none',
                   transition: 'border-color 0.2s'
                 }}
-                onFocus={(e) => e.target.style.borderColor = '#38bdf8'}
+                onFocus={(e) => e.target.style.borderColor = '#2563eb'}
                 onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
               />
             </div>
@@ -193,7 +193,7 @@ export default function HRLogin() {
                   outline: 'none',
                   transition: 'border-color 0.2s'
                 }}
-                onFocus={(e) => e.target.style.borderColor = '#38bdf8'}
+                onFocus={(e) => e.target.style.borderColor = '#2563eb'}
                 onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
               />
               <button 
@@ -225,7 +225,7 @@ export default function HRLogin() {
             style={{
               width: '100%',
               padding: '14px',
-              background: 'linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)',
+              background: '#2563eb',
               color: 'white',
               border: 'none',
               borderRadius: '12px',
@@ -236,7 +236,7 @@ export default function HRLogin() {
               justifyContent: 'center',
               gap: '8px',
               cursor: loading ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 12px rgba(56, 189, 248, 0.2)',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)',
               marginTop: '10px',
               opacity: loading ? 0.7 : 1,
               transition: 'opacity 0.2s'
