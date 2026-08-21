@@ -7,16 +7,16 @@ import { API_BASE as API } from '../../api';
 // Vibrant Multi-color Executive Palette
 const COLORS = {
   edu: {
-    'PhD': '#5D2A42',      // Deep Plum
+    'PhD': '#C8102E',      // Crimson Red
     'Masters': '#002147',  // Oxford Navy
-    'Bachelors': '#2C5545' // Forest Green
+    'Bachelors': '#0072B2' // Sapphire Blue
   },
   gender: {
     'Male': '#002147',
-    'Female': '#5D2A42',
-    'Other': '#475569'
+    'Female': '#C8102E',
+    'Other': '#E69F00'
   },
-  states: ['#C5A059', '#2C5545', '#002147', '#5D2A42', '#475569']
+  states: ['#E69F00', '#009E73', '#002147', '#C8102E', '#0072B2']
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
