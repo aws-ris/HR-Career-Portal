@@ -614,7 +614,7 @@ textarea.form-input {
 
 .hr-table tbody tr:last-child td { border-bottom: none; }
 
-.hr-table tbody tr:hover { background: #f8fafc; }
+.hr-table tbody tr:hover { background: #eff6ff; }
 
 .hr-table-center { text-align: center; }
 
@@ -633,13 +633,15 @@ textarea.form-input {
   font-size: inherit;
   font-family: inherit;
   text-align: left;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  text-underline-offset: 2px;
-  transition: color 0.15s;
+  text-decoration: none;
+  transition: all 0.15s;
 }
 
-.hr-table-title-link:hover { color: #1e40af; }
+.hr-table-title-link:hover { 
+  color: #1e40af; 
+  text-decoration: underline;
+  text-decoration-style: solid;
+}
 
 .hr-position-chip {
   display: inline-block;
