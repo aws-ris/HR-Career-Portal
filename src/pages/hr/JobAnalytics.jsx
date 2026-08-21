@@ -8,9 +8,9 @@ import FilterCenter from '../../components/hr/FilterCenter';
 
 import { API_BASE as API } from '../../api';
 const COLORS = {
-  edu: { 'PhD': '#7c3aed', 'Masters': '#002147', 'Bachelors': '#059669' },
-  gender: { 'Male': '#002147', 'Female': '#db2777', 'Other': '#64748b' },
-  states: ['#f59e0b', '#10b981', '#002147', '#8b5cf6', '#ec4899']
+  edu: { 'PhD': '#5D2A42', 'Masters': '#002147', 'Bachelors': '#2C5545' },
+  gender: { 'Male': '#002147', 'Female': '#5D2A42', 'Other': '#475569' },
+  states: ['#C5A059', '#2C5545', '#002147', '#5D2A42', '#475569']
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
