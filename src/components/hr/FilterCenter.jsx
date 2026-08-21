@@ -77,9 +77,9 @@ export default function FilterCenter({ job_id, onFilterChange }) {
   const categories = [
     { id: 'bio', label: 'Biographical', icon: User, color: '#f59e0b' },
     { id: 'schooling', label: 'Early Academics', icon: GraduationCap, color: '#10b981' },
-    { id: 'higher_edu', label: 'Higher Education', icon: GraduationCap, color: '#1e3a8a' },
+    { id: 'higher_edu', label: 'Higher Education', icon: GraduationCap, color: '#002147' },
     { id: 'professional', label: 'Work History', icon: Briefcase, color: '#f43f5e' },
-    { id: 'scholarly', label: 'Research & Pubs', icon: BookOpen, color: '#1e3a8a' },
+    { id: 'scholarly', label: 'Research & Pubs', icon: BookOpen, color: '#002147' },
   ];
 
   const updateFilter = (key, value) => {
@@ -246,10 +246,10 @@ export default function FilterCenter({ job_id, onFilterChange }) {
                 <input type="number" placeholder={`Min Score (${filters.x_score_type === 'CGPA' ? '≤10' : '≤100'})`} value={filters.min_x_score || ''} onChange={(e) => updateFilter('min_x_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
               </div>
               <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '10px', fontWeight: '900', color: '#1e3a8a', marginBottom: '10px', textTransform: 'uppercase' }}>Class XII Details</div>
+                <div style={{ fontSize: '10px', fontWeight: '900', color: '#002147', marginBottom: '10px', textTransform: 'uppercase' }}>Class XII Details</div>
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
                   {['Percentage', 'CGPA'].map(t => (
-                    <button key={t} onClick={() => updateFilter('xii_score_type', filters.xii_score_type === t ? null : t)} style={{ flex: 1, padding: '4px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.xii_score_type === t ? '#1e3a8a' : '#e2e8f0', background: filters.xii_score_type === t ? '#eff6ff' : 'white', color: filters.xii_score_type === t ? '#1e3a8a' : '#94a3b8', cursor: 'pointer' }}>{t}</button>
+                    <button key={t} onClick={() => updateFilter('xii_score_type', filters.xii_score_type === t ? null : t)} style={{ flex: 1, padding: '4px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.xii_score_type === t ? '#002147' : '#e2e8f0', background: filters.xii_score_type === t ? '#eff6ff' : 'white', color: filters.xii_score_type === t ? '#002147' : '#94a3b8', cursor: 'pointer' }}>{t}</button>
                   ))}
                 </div>
                 <input type="number" placeholder={`Min Score (${filters.xii_score_type === 'CGPA' ? '≤10' : '≤100'})`} value={filters.min_xii_score || ''} onChange={(e) => updateFilter('min_xii_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
@@ -275,10 +275,10 @@ export default function FilterCenter({ job_id, onFilterChange }) {
                 <input type="number" placeholder={`Min Score (${filters.ug_score_type === 'CGPA' ? '≤10' : '≤100'})`} value={filters.min_ug_score || ''} onChange={(e) => updateFilter('min_ug_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
               </div>
               <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '10px', fontWeight: '900', color: '#1e3a8a', marginBottom: '10px', textTransform: 'uppercase' }}>Masters</div>
+                <div style={{ fontSize: '10px', fontWeight: '900', color: '#002147', marginBottom: '10px', textTransform: 'uppercase' }}>Masters</div>
                 <input type="text" placeholder="University..." value={filters.pg_uni} onChange={(e) => { updateFilter('pg_uni', e.target.value); fetchSuggestions('university', e.target.value); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', marginBottom: '10px', fontSize: '12px' }} />
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-                  {['Percentage', 'CGPA'].map(t => <button key={t} onClick={() => updateFilter('pg_score_type', t)} style={{ flex: 1, padding: '4px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.pg_score_type === t ? '#1e3a8a' : '#e2e8f0', background: filters.pg_score_type === t ? '#eff6ff' : 'white', color: filters.pg_score_type === t ? '#1e3a8a' : '#94a3b8', cursor: 'pointer' }}>{t}</button>)}
+                  {['Percentage', 'CGPA'].map(t => <button key={t} onClick={() => updateFilter('pg_score_type', t)} style={{ flex: 1, padding: '4px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.pg_score_type === t ? '#002147' : '#e2e8f0', background: filters.pg_score_type === t ? '#eff6ff' : 'white', color: filters.pg_score_type === t ? '#002147' : '#94a3b8', cursor: 'pointer' }}>{t}</button>)}
                 </div>
                 <input type="number" placeholder={`Min Score (${filters.pg_score_type === 'CGPA' ? '≤10' : '≤100'})`} value={filters.pg_min_score || ''} onChange={(e) => updateFilter('pg_min_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
               </div>
@@ -379,7 +379,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {filters.states.map(s => <span key={s} style={{ padding: '4px 10px', background: '#fff7ed', color: '#c2410c', borderRadius: '6px', fontSize: '10px', fontWeight: '700' }}>{s}</span>)}
             {filters.ug_uni && <span style={{ padding: '4px 10px', background: '#ecfdf5', color: '#047857', borderRadius: '6px', fontSize: '10px', fontWeight: '700' }}>UG: {filters.ug_uni}</span>}
-            {filters.pg_uni && <span style={{ padding: '4px 10px', background: '#eff6ff', color: '#1e3a8a', borderRadius: '6px', fontSize: '10px', fontWeight: '700' }}>PG: {filters.pg_uni}</span>}
+            {filters.pg_uni && <span style={{ padding: '4px 10px', background: '#eff6ff', color: '#002147', borderRadius: '6px', fontSize: '10px', fontWeight: '700' }}>PG: {filters.pg_uni}</span>}
             {filters.phd_uni && <span style={{ padding: '4px 10px', background: '#f5f3ff', color: '#6d28d9', borderRadius: '6px', fontSize: '10px', fontWeight: '700' }}>PhD: {filters.phd_uni}</span>}
             {filters.min_experience_years > 0 && <span style={{ padding: '4px 10px', background: '#fff1f2', color: '#be123c', borderRadius: '6px', fontSize: '10px', fontWeight: '700' }}>{filters.min_experience_years}+ Yrs Exp</span>}
           </div>

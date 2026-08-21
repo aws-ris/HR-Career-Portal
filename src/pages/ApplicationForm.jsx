@@ -1225,7 +1225,7 @@ export default function ApplicationForm() {
         <h1 className="header-title">Apply to the RIS</h1>
         {jobDetail ? (
           <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '10px', borderRadius: '8px', marginTop: '10px' }}>
-             <p style={{ margin: 0, fontWeight: 700, color: '#1e3a8a' }}>Applying for: {jobDetail.title}</p>
+             <p style={{ margin: 0, fontWeight: 700, color: '#002147' }}>Applying for: {jobDetail.title}</p>
              <p style={{ margin: 0, fontSize: '0.875rem', color: '#0c4a6e' }}>Division: {jobDetail.division}</p>
           </div>
         ) : (
@@ -1331,7 +1331,7 @@ export default function ApplicationForm() {
           {step === 1 && (
             <>
               <div className="form-group">
-                <label className="form-label">Position Applied For {jobId && <span style={{fontSize: '10px', color: '#1e3a8a'}}>(Locked for this Job Link)</span>}</label>
+                <label className="form-label">Position Applied For {jobId && <span style={{fontSize: '10px', color: '#002147'}}>(Locked for this Job Link)</span>}</label>
                 <select 
                   className="form-input" 
                   value={position_applied} 
@@ -1516,7 +1516,7 @@ export default function ApplicationForm() {
                     <label className="form-label">Scoring System & Value</label>
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                       {['Percentage', 'CGPA'].map(t => (
-                        <button type="button" key={t} onClick={() => setClassXScoreType(t)} style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700', border: '1px solid', borderColor: classXScoreType === t ? 'var(--accent-primary, #1e3a8a)' : '#cbd5e1', background: classXScoreType === t ? '#eff6ff' : '#ffffff', color: classXScoreType === t ? 'var(--accent-primary, #1e3a8a)' : '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}>{t}</button>
+                        <button type="button" key={t} onClick={() => setClassXScoreType(t)} style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700', border: '1px solid', borderColor: classXScoreType === t ? 'var(--accent-primary, #002147)' : '#cbd5e1', background: classXScoreType === t ? '#eff6ff' : '#ffffff', color: classXScoreType === t ? 'var(--accent-primary, #002147)' : '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}>{t}</button>
                       ))}
                     </div>
                     <input required type="number" step="0.01" max={classXScoreType === 'CGPA' ? '10' : '100'} className="form-input" placeholder={classXScoreType === 'CGPA' ? 'e.g. 9.5' : 'e.g. 95.00'} value={classXScoreValue} onChange={e => setClassXScoreValue(e.target.value)} />
@@ -1577,7 +1577,7 @@ export default function ApplicationForm() {
                     <label className="form-label">Scoring System & Value</label>
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                       {['Percentage', 'CGPA'].map(t => (
-                        <button type="button" key={t} onClick={() => setClassXIIScoreType(t)} style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700', border: '1px solid', borderColor: classXIIScoreType === t ? 'var(--accent-primary, #1e3a8a)' : '#cbd5e1', background: classXIIScoreType === t ? '#eff6ff' : '#ffffff', color: classXIIScoreType === t ? 'var(--accent-primary, #1e3a8a)' : '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}>{t}</button>
+                        <button type="button" key={t} onClick={() => setClassXIIScoreType(t)} style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700', border: '1px solid', borderColor: classXIIScoreType === t ? 'var(--accent-primary, #002147)' : '#cbd5e1', background: classXIIScoreType === t ? '#eff6ff' : '#ffffff', color: classXIIScoreType === t ? 'var(--accent-primary, #002147)' : '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}>{t}</button>
                       ))}
                     </div>
                     <input required type="number" step="0.01" max={classXIIScoreType === 'CGPA' ? '10' : '100'} className="form-input" placeholder={classXIIScoreType === 'CGPA' ? 'e.g. 9.5' : 'e.g. 95.00'} value={classXIIScoreValue} onChange={e => setClassXIIScoreValue(e.target.value)} />

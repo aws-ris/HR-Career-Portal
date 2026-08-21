@@ -118,7 +118,7 @@ export default function JobPostings() {
       </div>
 
       <div className="hr-kpi-row">
-        <KPICard icon={Briefcase}   label="Open Positions"           value={stats.open_positions}        accent="#1e3a8a" />
+        <KPICard icon={Briefcase}   label="Open Positions"           value={stats.open_positions}        accent="#002147" />
         <KPICard icon={TrendingUp}  label="Total Applicants This Year" value={stats.total_applicants_year} accent="#22c55e" />
         <KPICard icon={AlertCircle} label="Closing Soon"              value={stats.closing_soon}          accent="#f97316" sub="within 7 days" />
       </div>

@@ -8,15 +8,15 @@ import { API_BASE as API } from '../../api';
 const COLORS = {
   edu: {
     'PhD': '#7c3aed',      // Deep Violet
-    'Masters': '#1e3a8a',  // Royal Blue
+    'Masters': '#002147',  // Royal Blue
     'Bachelors': '#059669' // Emerald Green
   },
   gender: {
-    'Male': '#1e3a8a',
+    'Male': '#002147',
     'Female': '#db2777',
     'Other': '#64748b'
   },
-  states: ['#f59e0b', '#10b981', '#1e3a8a', '#8b5cf6', '#ec4899']
+  states: ['#f59e0b', '#10b981', '#002147', '#8b5cf6', '#ec4899']
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -158,7 +158,7 @@ export default function GlobalAnalytics() {
           <div className="hr-funnel-container">
             <div className="hr-funnel-row">
               <div className="hr-funnel-label">Total Talent</div>
-              <div className="hr-funnel-bar-bg"><div className="hr-funnel-bar" style={{ width: '100%', background: '#1e3a8a' }}></div></div>
+              <div className="hr-funnel-bar-bg"><div className="hr-funnel-bar" style={{ width: '100%', background: '#002147' }}></div></div>
               <div className="hr-funnel-value">{data.gender.reduce((a, b) => a + b.value, 0)}</div>
             </div>
             <div className="hr-funnel-row">

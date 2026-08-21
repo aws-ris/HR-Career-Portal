@@ -8,9 +8,9 @@ import FilterCenter from '../../components/hr/FilterCenter';
 
 import { API_BASE as API } from '../../api';
 const COLORS = {
-  edu: { 'PhD': '#7c3aed', 'Masters': '#1e3a8a', 'Bachelors': '#059669' },
-  gender: { 'Male': '#1e3a8a', 'Female': '#db2777', 'Other': '#64748b' },
-  states: ['#f59e0b', '#10b981', '#1e3a8a', '#8b5cf6', '#ec4899']
+  edu: { 'PhD': '#7c3aed', 'Masters': '#002147', 'Bachelors': '#059669' },
+  gender: { 'Male': '#002147', 'Female': '#db2777', 'Other': '#64748b' },
+  states: ['#f59e0b', '#10b981', '#002147', '#8b5cf6', '#ec4899']
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -309,7 +309,7 @@ export default function JobAnalytics() {
               onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
               className="hr-btn-refresh" 
               title="Download applicants data"
-              style={{ fontSize: '12px', fontWeight: '700', padding: '0.6rem 1rem', gap: '6px', display: 'flex', alignItems: 'center', color: '#1e3a8a', borderColor: '#1e3a8a22' }}
+              style={{ fontSize: '12px', fontWeight: '700', padding: '0.6rem 1rem', gap: '6px', display: 'flex', alignItems: 'center', color: '#002147', borderColor: '#00214722' }}
             >
               📥 Export Candidates
             </button>
@@ -380,7 +380,7 @@ export default function JobAnalytics() {
                 <tr>
                   <td colSpan="100%" style={{ textAlign: 'center', padding: '40px' }}>
                     <div className="hr-loader" style={{ margin: '0 auto 10px' }}></div>
-                    <div style={{ fontWeight: '700', color: '#1e3a8a' }}>Refining Results...</div>
+                    <div style={{ fontWeight: '700', color: '#002147' }}>Refining Results...</div>
                   </td>
                 </tr>
               )}
