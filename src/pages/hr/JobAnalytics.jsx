@@ -57,7 +57,7 @@ export default function JobAnalytics() {
   // Core columns are always visible. 
   // Specialized ones appear if they have any filter applied or are "active" in the filter center logic.
   const activeCols = useMemo(() => {
-    const cols = ['contact', 'status', 'highest_edu'];
+    const cols = ['contact', 'highest_edu'];
     if (currentFilters.ug_uni || currentFilters.min_ug_score) cols.push('grad');
     if (currentFilters.pg_uni) cols.push('pg');
     if (currentFilters.phd_uni || currentFilters.phd_thesis) cols.push('phd');

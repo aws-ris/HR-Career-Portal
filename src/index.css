@@ -1211,17 +1211,18 @@ textarea.form-input {
 .hr-date-label { font-size: 0.8rem; color: #64748b; font-weight: 500; }
 
 .hr-btn-view-profile {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: #002147;
+  border: 1px solid #002147;
   padding: 0.4rem 0.8rem;
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #002147;
+  color: #ffffff;
   transition: all 0.2s;
+  cursor: pointer;
 }
 
-.hr-btn-view-profile:hover { background: #eff6ff; border-color: #002147; }
+.hr-btn-view-profile:hover { background: #1e3a8a; border-color: #1e3a8a; color: #ffffff; }
 
 .hr-loading-container {
   display: flex;
