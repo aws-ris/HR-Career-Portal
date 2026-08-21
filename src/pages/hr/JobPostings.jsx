@@ -154,7 +154,6 @@ export default function JobPostings() {
             <thead>
               <tr>
                 <th>Title</th>
-                <th>Position</th>
                 <th>Division</th>
                 <th>Applications</th>
                 <th>Posted</th>
@@ -180,7 +179,6 @@ export default function JobPostings() {
                         </Link>
                       )}
                     </td>
-                    <td><span className="hr-position-chip">{job.position || '—'}</span></td>
                     <td>{job.division}</td>
                     <td className="hr-table-center">{job.application_count}</td>
                     <td>{fmt(job.created_at)}</td>
