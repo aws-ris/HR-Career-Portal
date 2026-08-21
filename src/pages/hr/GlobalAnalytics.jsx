@@ -14,9 +14,9 @@ const COLORS = {
   gender: {
     'Male': '#002147',
     'Female': '#C8102E',
-    'Other': '#E69F00'
+    'Other': '#5E35B1'
   },
-  states: ['#E69F00', '#009E73', '#002147', '#C8102E', '#0072B2']
+  states: ['#5E35B1', '#009E73', '#002147', '#C8102E', '#0072B2']
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
