@@ -62,8 +62,8 @@ export default function JobAnalytics() {
     if (currentFilters.pg_uni) cols.push('pg');
     if (currentFilters.phd_uni || currentFilters.phd_thesis) cols.push('phd');
     if (currentFilters.min_experience_years > 0) cols.push('work');
-    if (currentFilters.min_papers > 0 || currentFilters.min_books > 0 || currentFilters.min_chapters > 0) {
-      cols.push('books', 'papers', 'chapters');
+    if (currentFilters.min_papers > 0 || currentFilters.min_books > 0 || currentFilters.min_chapters > 0 || currentFilters.min_reports > 0 || currentFilters.min_policy_briefs > 0) {
+      cols.push('books', 'papers', 'chapters', 'reports', 'policy_briefs');
     }
     // Also check if they are manually toggled? (User asked to remove manual toggles, so we stick to dynamic)
     return cols;
@@ -191,9 +191,6 @@ export default function JobAnalytics() {
       if (activeCols.includes('pg')) maxSubRows = Math.max(maxSubRows, c.postgraduate?.length || 1);
       if (activeCols.includes('phd')) maxSubRows = Math.max(maxSubRows, c.doctorate?.length || 1);
       if (activeCols.includes('work')) maxSubRows = Math.max(maxSubRows, c.work_experiences?.length || 1);
-      if (activeCols.includes('books')) maxSubRows = Math.max(maxSubRows, c.books?.length || 1);
-      if (activeCols.includes('papers')) maxSubRows = Math.max(maxSubRows, c.papers?.length || 1);
-      if (activeCols.includes('chapters')) maxSubRows = Math.max(maxSubRows, c.chapters?.length || 1);
 
       for (let i = 0; i < maxSubRows; i++) {
         rows.push({
@@ -373,6 +370,8 @@ export default function JobAnalytics() {
                 {activeCols.includes('books') && <th>Books</th>}
                 {activeCols.includes('papers') && <th>Papers</th>}
                 {activeCols.includes('chapters') && <th>Chapters</th>}
+                {activeCols.includes('reports') && <th>Reports</th>}
+                {activeCols.includes('policy_briefs') && <th>Policy Briefs</th>}
                 <th>Actions</th>
               </tr>
             </thead>
@@ -419,9 +418,11 @@ export default function JobAnalytics() {
                     {activeCols.includes('pg') && <td>{c.postgraduate?.[subIdx] ? `${c.postgraduate[subIdx].degree_name} (${c.postgraduate[subIdx].score})` : ''}</td>}
                     {activeCols.includes('phd') && <td className="hr-phd-cell">{c.doctorate?.[subIdx] ? c.doctorate[subIdx].university : ''}</td>}
                     {activeCols.includes('work') && <td>{c.work_experiences?.[subIdx] ? `${c.work_experiences[subIdx].role} @ ${c.work_experiences[subIdx].company_name}` : ''}</td>}
-                    {activeCols.includes('books') && <td>{c.books?.[subIdx]?.title || ''}</td>}
-                    {activeCols.includes('papers') && <td>{c.papers?.[subIdx]?.title || ''}</td>}
-                    {activeCols.includes('chapters') && <td>{c.chapters?.[subIdx]?.title || ''}</td>}
+                    {activeCols.includes('books') && <td>{isFirst ? (c.links_about?.pub_books || 0) : null}</td>}
+                    {activeCols.includes('papers') && <td>{isFirst ? (c.links_about?.pub_papers || 0) : null}</td>}
+                    {activeCols.includes('chapters') && <td>{isFirst ? (c.links_about?.pub_chapters || 0) : null}</td>}
+                    {activeCols.includes('reports') && <td>{isFirst ? (c.links_about?.pub_reports || 0) : null}</td>}
+                    {activeCols.includes('policy_briefs') && <td>{isFirst ? (c.links_about?.pub_policy_briefs || 0) : null}</td>}
                     <td>
                       {isFirst && (
                         <button className="hr-btn-view-profile" onClick={() => setSelectedCandidate(c.id)}>Dossier</button>

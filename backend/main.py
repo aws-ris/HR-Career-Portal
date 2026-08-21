@@ -1317,13 +1317,14 @@ class CandidateFilter(BaseModel):
     min_papers: Optional[int] = None
     min_books: Optional[int] = None
     min_chapters: Optional[int] = None
+    min_reports: Optional[int] = None
+    min_policy_briefs: Optional[int] = None
     min_age: Optional[int] = None
     max_age: Optional[int] = None
     min_x_score: Optional[float] = None
     min_xii_score: Optional[float] = None
     role_keyword: Optional[str] = None
     company_keyword: Optional[str] = None
-    publication_keyword: Optional[str] = None
     # Score type awareness for education and schooling filters
     ug_score_type: Optional[str] = None    # 'Percentage' or 'CGPA'
     pg_score_type: Optional[str] = None
@@ -1850,18 +1851,21 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
             sub = db.query(models.CandidateWorkExperience.candidate_id).filter(models.CandidateWorkExperience.company_name.ilike(f"%{filters.company_keyword}%")).subquery()
             id_query = id_query.filter(models.CandidateMetadata.id.in_(sub))
 
-        # Publication Filters
-        if filters.min_papers and filters.min_papers > 0:
-            sub = db.query(models.CandidatePublication.candidate_id).filter(
-                models.CandidatePublication.pub_type == 'paper'
-            ).group_by(models.CandidatePublication.candidate_id).having(func.count(models.CandidatePublication.id) >= filters.min_papers).subquery()
-            id_query = id_query.filter(models.CandidateMetadata.id.in_(sub))
-
-        if filters.publication_keyword:
-            sub = db.query(models.CandidatePublication.candidate_id).filter(
-                models.CandidatePublication.title.ilike(f"%{filters.publication_keyword}%")
-            ).distinct().subquery()
-            id_query = id_query.filter(models.CandidateMetadata.id.in_(sub))
+        # Publication Filters (now tracked in CandidateLinksAbout)
+        if any(v is not None and v > 0 for v in [filters.min_papers, filters.min_books, filters.min_chapters, filters.min_reports, filters.min_policy_briefs]):
+            sub = db.query(models.CandidateLinksAbout.candidate_id)
+            if filters.min_papers and filters.min_papers > 0:
+                sub = sub.filter(models.CandidateLinksAbout.pub_papers >= filters.min_papers)
+            if filters.min_books and filters.min_books > 0:
+                sub = sub.filter(models.CandidateLinksAbout.pub_books >= filters.min_books)
+            if filters.min_chapters and filters.min_chapters > 0:
+                sub = sub.filter(models.CandidateLinksAbout.pub_chapters >= filters.min_chapters)
+            if filters.min_reports and filters.min_reports > 0:
+                sub = sub.filter(models.CandidateLinksAbout.pub_reports >= filters.min_reports)
+            if filters.min_policy_briefs and filters.min_policy_briefs > 0:
+                sub = sub.filter(models.CandidateLinksAbout.pub_policy_briefs >= filters.min_policy_briefs)
+            
+            id_query = id_query.filter(models.CandidateMetadata.id.in_(sub.subquery()))
 
         # 2. Get the final list of matching IDs
         matching_ids = [r[0] for r in id_query.all()]

@@ -42,8 +42,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
     min_xii_score: null,
     xii_score_type: 'Percentage',
     role_keyword: '',
-    company_keyword: '',
-    publication_keyword: ''
+    company_keyword: ''
   });
   // API is now managed via centralization
 
@@ -70,7 +69,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
       case 'schooling': return (filters.min_x_score ? 1 : 0) + (filters.min_xii_score ? 1 : 0);
       case 'higher_edu': return (filters.ug_uni ? 1 : 0) + (filters.min_ug_score ? 1 : 0) + (filters.pg_uni ? 1 : 0) + (filters.pg_min_score ? 1 : 0) + (filters.phd_uni ? 1 : 0) + (filters.phd_min_score ? 1 : 0);
       case 'professional': return (filters.min_experience_years > 0 ? 1 : 0) + (filters.role_keyword ? 1 : 0) + (filters.company_keyword ? 1 : 0);
-      case 'scholarly': return (filters.min_papers > 0 ? 1 : 0) + (filters.min_books > 0 ? 1 : 0) + (filters.publication_keyword ? 1 : 0);
+      case 'scholarly': return (filters.min_papers > 0 ? 1 : 0) + (filters.min_books > 0 ? 1 : 0) + (filters.min_chapters > 0 ? 1 : 0) + (filters.min_reports > 0 ? 1 : 0) + (filters.min_policy_briefs > 0 ? 1 : 0);
       default: return 0;
     }
   };
@@ -116,7 +115,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button onClick={() => {
-             const reset = { states: [], genders: [], min_profile_score: null, ug_uni: '', min_ug_score: null, pg_uni: '', pg_min_score: null, phd_uni: '', phd_thesis: '', phd_min_score: null, min_experience_years: 0, min_papers: 0, min_books: 0, min_chapters: 0, min_age: 18, max_age: 65, min_x_score: null, x_score_type: 'Percentage', min_xii_score: null, xii_score_type: 'Percentage', role_keyword: '', company_keyword: '', publication_keyword: '' };
+             const reset = { states: [], genders: [], min_profile_score: null, ug_uni: '', min_ug_score: null, pg_uni: '', pg_min_score: null, phd_uni: '', phd_thesis: '', phd_min_score: null, min_experience_years: 0, min_papers: 0, min_books: 0, min_chapters: 0, min_reports: 0, min_policy_briefs: 0, min_age: 18, max_age: 65, min_x_score: null, x_score_type: 'Percentage', min_xii_score: null, xii_score_type: 'Percentage', role_keyword: '', company_keyword: '' };
              setFilters(reset);
              onFilterChange(reset);
           }} style={{ fontSize: '12px', color: '#94a3b8', background: 'none', border: 'none', fontWeight: '700', cursor: 'pointer' }}>
@@ -326,29 +325,46 @@ export default function FilterCenter({ job_id, onFilterChange }) {
           )}
 
           {activeCategory === 'scholarly' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '20px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Publication Title Keyword</label>
-                <input type="text" placeholder="Search 'AI', 'Quantum', 'Policy' in titles..." value={filters.publication_keyword} onChange={(e) => updateFilter('publication_keyword', e.target.value)}
-                  style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', outline: 'none' }} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                 <span style={{ fontSize: '13px', fontWeight: '700' }}>Min Papers</span>
+                 <div style={{ display: 'flex', gap: '8px' }}>
+                   <button onClick={() => updateFilter('min_papers', Math.max(0, (filters.min_papers || 0) - 1))} style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>-</button>
+                   <span style={{ width: '24px', textAlign: 'center', fontWeight: '800', lineHeight: '28px' }}>{filters.min_papers || 0}</span>
+                   <button onClick={() => updateFilter('min_papers', (filters.min_papers || 0) + 1)} style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid #0f172a', background: '#0f172a', color: 'white', cursor: 'pointer' }}>+</button>
+                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
-                   <span style={{ fontSize: '12px', fontWeight: '700' }}>Min Papers</span>
-                   <div style={{ display: 'flex', gap: '8px' }}>
-                     <button onClick={() => updateFilter('min_papers', Math.max(0, filters.min_papers - 1))} style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>-</button>
-                     <span style={{ width: '20px', textAlign: 'center', fontWeight: '800' }}>{filters.min_papers}</span>
-                     <button onClick={() => updateFilter('min_papers', filters.min_papers + 1)} style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #0f172a', background: '#0f172a', color: 'white' }}>+</button>
-                   </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
-                   <span style={{ fontSize: '12px', fontWeight: '700' }}>Min Books</span>
-                   <div style={{ display: 'flex', gap: '8px' }}>
-                     <button onClick={() => updateFilter('min_books', Math.max(0, filters.min_books - 1))} style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>-</button>
-                     <span style={{ width: '20px', textAlign: 'center', fontWeight: '800' }}>{filters.min_books}</span>
-                     <button onClick={() => updateFilter('min_books', filters.min_books + 1)} style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #0f172a', background: '#0f172a', color: 'white' }}>+</button>
-                   </div>
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                 <span style={{ fontSize: '13px', fontWeight: '700' }}>Min Books</span>
+                 <div style={{ display: 'flex', gap: '8px' }}>
+                   <button onClick={() => updateFilter('min_books', Math.max(0, (filters.min_books || 0) - 1))} style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>-</button>
+                   <span style={{ width: '24px', textAlign: 'center', fontWeight: '800', lineHeight: '28px' }}>{filters.min_books || 0}</span>
+                   <button onClick={() => updateFilter('min_books', (filters.min_books || 0) + 1)} style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid #0f172a', background: '#0f172a', color: 'white', cursor: 'pointer' }}>+</button>
+                 </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                 <span style={{ fontSize: '13px', fontWeight: '700' }}>Min Chapters</span>
+                 <div style={{ display: 'flex', gap: '8px' }}>
+                   <button onClick={() => updateFilter('min_chapters', Math.max(0, (filters.min_chapters || 0) - 1))} style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>-</button>
+                   <span style={{ width: '24px', textAlign: 'center', fontWeight: '800', lineHeight: '28px' }}>{filters.min_chapters || 0}</span>
+                   <button onClick={() => updateFilter('min_chapters', (filters.min_chapters || 0) + 1)} style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid #0f172a', background: '#0f172a', color: 'white', cursor: 'pointer' }}>+</button>
+                 </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                 <span style={{ fontSize: '13px', fontWeight: '700' }}>Min Reports</span>
+                 <div style={{ display: 'flex', gap: '8px' }}>
+                   <button onClick={() => updateFilter('min_reports', Math.max(0, (filters.min_reports || 0) - 1))} style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>-</button>
+                   <span style={{ width: '24px', textAlign: 'center', fontWeight: '800', lineHeight: '28px' }}>{filters.min_reports || 0}</span>
+                   <button onClick={() => updateFilter('min_reports', (filters.min_reports || 0) + 1)} style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid #0f172a', background: '#0f172a', color: 'white', cursor: 'pointer' }}>+</button>
+                 </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                 <span style={{ fontSize: '13px', fontWeight: '700' }}>Min Policy Briefs</span>
+                 <div style={{ display: 'flex', gap: '8px' }}>
+                   <button onClick={() => updateFilter('min_policy_briefs', Math.max(0, (filters.min_policy_briefs || 0) - 1))} style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid #e2e8f0', cursor: 'pointer' }}>-</button>
+                   <span style={{ width: '24px', textAlign: 'center', fontWeight: '800', lineHeight: '28px' }}>{filters.min_policy_briefs || 0}</span>
+                   <button onClick={() => updateFilter('min_policy_briefs', (filters.min_policy_briefs || 0) + 1)} style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid #0f172a', background: '#0f172a', color: 'white', cursor: 'pointer' }}>+</button>
+                 </div>
               </div>
             </div>
           )}
