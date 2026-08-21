@@ -1225,7 +1225,7 @@ export default function ApplicationForm() {
         <h1 className="header-title">Apply to the RIS</h1>
         {jobDetail ? (
           <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '10px', borderRadius: '8px', marginTop: '10px' }}>
-             <p style={{ margin: 0, fontWeight: 700, color: '#0369a1' }}>Applying for: {jobDetail.title}</p>
+             <p style={{ margin: 0, fontWeight: 700, color: '#1e3a8a' }}>Applying for: {jobDetail.title}</p>
              <p style={{ margin: 0, fontSize: '0.875rem', color: '#0c4a6e' }}>Division: {jobDetail.division}</p>
           </div>
         ) : (
@@ -1331,7 +1331,7 @@ export default function ApplicationForm() {
           {step === 1 && (
             <>
               <div className="form-group">
-                <label className="form-label">Position Applied For {jobId && <span style={{fontSize: '10px', color: '#6366f1'}}>(Locked for this Job Link)</span>}</label>
+                <label className="form-label">Position Applied For {jobId && <span style={{fontSize: '10px', color: '#1e3a8a'}}>(Locked for this Job Link)</span>}</label>
                 <select 
                   className="form-input" 
                   value={position_applied} 

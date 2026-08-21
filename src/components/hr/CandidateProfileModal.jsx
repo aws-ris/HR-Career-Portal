@@ -131,7 +131,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
     const status = latestApplication?.current_status?.toLowerCase() || 'received';
     if (status === 'shortlisted') return { bg: '#dcfce7', color: '#15803d', label: 'Shortlisted' };
     if (status === 'rejected') return { bg: '#fee2e2', color: '#b91c1c', label: 'Rejected' };
-    return { bg: '#eff6ff', color: '#1d4ed8', label: 'Applied' };
+    return { bg: '#eff6ff', color: '#1e3a8a', label: 'Applied' };
   })();
 
   const formatWorkDate = (dateStr) => {
@@ -180,7 +180,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ 
               width: '48px', height: '48px', 
-              background: 'linear-gradient(135deg, #6366f1, #a855f7)', 
+              background: 'linear-gradient(135deg, #1e3a8a, #a855f7)', 
               borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'white', fontWeight: '800', fontSize: '20px'
             }}>
@@ -258,7 +258,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                 {/* Panel 1: Experience */}
                 <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '16px 20px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <div style={{ fontSize: '10px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Briefcase size={12} style={{ color: '#4f46e5' }} /> Total Experience
+                    <Briefcase size={12} style={{ color: '#1e3a8a' }} /> Total Experience
                   </div>
                   <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>{formattedExperience}</div>
                 </div>
@@ -297,7 +297,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                   onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.05)'; }}
                 >
-                  <div style={{ fontSize: '10px', fontWeight: '800', color: '#0369a1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: '800', color: '#1e3a8a', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <FileText size={12} /> Review Documents
                   </div>
                   <div style={{ fontSize: '14px', fontWeight: '800', color: '#0c4a6e', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -309,7 +309,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
               {/* Stacked Contact Grid */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px', borderBottom: '1px solid #f1f5f9', paddingBottom: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px' }}>
-                  <Mail size={16} style={{ color: '#6366f1' }} /> <strong>Email:</strong> {data.email}
+                  <Mail size={16} style={{ color: '#1e3a8a' }} /> <strong>Email:</strong> {data.email}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px' }}>
                   <Phone size={16} style={{ color: '#10b981' }} /> <strong>Mobile:</strong> {data.mobile_no}
@@ -344,15 +344,15 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
 
                     {/* Postgraduate */}
                     {data.postgraduate?.map((p, i) => (
-                      <div key={`pg-${i}`} style={{ padding: '20px', background: '#eff6ff', borderLeft: '4px solid #2563eb', borderRadius: '8px' }}>
+                      <div key={`pg-${i}`} style={{ padding: '20px', background: '#eff6ff', borderLeft: '4px solid #1e3a8a', borderRadius: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <span style={{ fontWeight: '800', color: '#2563eb', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Postgraduate</span>
-                          {p.grad_year && <span style={{ fontSize: '12px', fontWeight: '600', color: '#2563eb', background: '#dbeafe', padding: '2px 8px', borderRadius: '4px' }}>Graduated {p.grad_year}</span>}
+                          <span style={{ fontWeight: '800', color: '#1e3a8a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Postgraduate</span>
+                          {p.grad_year && <span style={{ fontSize: '12px', fontWeight: '600', color: '#1e3a8a', background: '#dbeafe', padding: '2px 8px', borderRadius: '4px' }}>Graduated {p.grad_year}</span>}
                         </div>
                         <div style={{ fontWeight: '800', color: '#1e293b', fontSize: '16px', margin: '6px 0' }}>{p.degree_name}</div>
                         <div style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}>{p.university}</div>
                         {p.score_value && (
-                          <div style={{ display: 'inline-block', fontSize: '12px', fontWeight: '700', color: '#2563eb', background: '#eff6ff', padding: '4px 8px', borderRadius: '4px', border: '1px solid #bfdbfe' }}>
+                          <div style={{ display: 'inline-block', fontSize: '12px', fontWeight: '700', color: '#1e3a8a', background: '#eff6ff', padding: '4px 8px', borderRadius: '4px', border: '1px solid #bfdbfe' }}>
                             Score: {p.score_value} {p.score_type === 'Percentage' ? '%' : p.score_type}
                           </div>
                         )}
@@ -425,7 +425,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
                           {data.work_experiences.map((w, i) => (
                             <div key={`work-${i}`} style={{ position: 'relative', paddingLeft: '16px', borderLeft: '2px solid #cbd5e1' }}>
-                              <div style={{ position: 'absolute', left: '-5px', top: '5px', width: '8px', height: '8px', borderRadius: '50%', background: w.is_current ? '#2563eb' : '#94a3b8' }}></div>
+                              <div style={{ position: 'absolute', left: '-5px', top: '5px', width: '8px', height: '8px', borderRadius: '50%', background: w.is_current ? '#1e3a8a' : '#94a3b8' }}></div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <span style={{ fontWeight: '800', color: '#1e293b', fontSize: '14px' }}>{w.role}</span>
                                 <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
@@ -454,7 +454,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                               borderRadius: '8px', 
                               border: '1px solid #cbd5e1', 
                               fontSize: '13px', 
-                              color: '#4f46e5', 
+                              color: '#1e3a8a', 
                               fontWeight: '700', 
                               display: 'flex', 
                               alignItems: 'center', 

@@ -102,7 +102,7 @@ export default function JobBoard() {
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369a1', background: '#f0f9ff', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1e3a8a', background: '#f0f9ff', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
                     {job.division}
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600 }}>
@@ -126,7 +126,7 @@ export default function JobBoard() {
                   </p>
                   <button 
                     onClick={() => setSelectedJob(job)}
-                    style={{ background: 'none', border: 'none', color: '#0369a1', fontSize: '0.875rem', fontWeight: 600, padding: 0, cursor: 'pointer', marginBottom: '24px' }}
+                    style={{ background: 'none', border: 'none', color: '#1e3a8a', fontSize: '0.875rem', fontWeight: 600, padding: 0, cursor: 'pointer', marginBottom: '24px' }}
                   >
                     Read Full Description
                   </button>
@@ -158,7 +158,7 @@ export default function JobBoard() {
             </button>
             
             <div style={{ marginBottom: '24px' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369a1', background: '#f0f9ff', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1e3a8a', background: '#f0f9ff', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
                 {selectedJob.division}
               </span>
             </div>
