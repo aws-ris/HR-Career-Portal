@@ -8,6 +8,7 @@ export default function JobBoard() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedJob, setSelectedJob] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -120,9 +121,15 @@ export default function JobBoard() {
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: '0.875rem', color: '#475569', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginBottom: '24px', lineHeight: 1.6 }}>
+                  <p style={{ fontSize: '0.875rem', color: '#475569', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginBottom: '8px', lineHeight: 1.6 }}>
                     {job.description}
                   </p>
+                  <button 
+                    onClick={() => setSelectedJob(job)}
+                    style={{ background: 'none', border: 'none', color: '#0369a1', fontSize: '0.875rem', fontWeight: 600, padding: 0, cursor: 'pointer', marginBottom: '24px' }}
+                  >
+                    Read Full Description
+                  </button>
                 </div>
 
                 <button 
@@ -138,6 +145,71 @@ export default function JobBoard() {
           </div>
         )}
       </main>
+
+      {/* Job Description Modal */}
+      {selectedJob && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }} onClick={() => setSelectedJob(null)}>
+          <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto', padding: '32px', position: 'relative' }} onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setSelectedJob(null)}
+              style={{ position: 'absolute', top: '24px', right: '24px', background: '#f1f5f9', border: 'none', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b', fontSize: '1.2rem' }}
+            >
+              ×
+            </button>
+            
+            <div style={{ marginBottom: '24px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369a1', background: '#f0f9ff', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
+                {selectedJob.division}
+              </span>
+            </div>
+            
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>{selectedJob.title}</h2>
+            
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontSize: '0.875rem' }}>
+                <Briefcase size={16} /> <span>{selectedJob.position}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontSize: '0.875rem' }}>
+                <MapPin size={16} /> <span>{selectedJob.location || 'New Delhi, India'}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontSize: '0.875rem', fontWeight: 600 }}>
+                <Calendar size={16} /> <span>Due: {selectedJob.deadline ? new Date(selectedJob.deadline).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'N/A'}</span>
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b', marginBottom: '12px' }}>Job Description</h3>
+              <p style={{ fontSize: '0.95rem', color: '#475569', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{selectedJob.description}</p>
+            </div>
+            
+            {selectedJob.requirements && (
+              <div style={{ marginBottom: '40px' }}>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b', marginBottom: '12px' }}>Requirements</h3>
+                <p style={{ fontSize: '0.95rem', color: '#475569', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{selectedJob.requirements}</p>
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <button 
+                onClick={() => navigate(`/apply/${selectedJob.id}`)}
+                style={{ flex: 1, padding: '14px', background: '#0f172a', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'background 0.2s' }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#1e293b'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#0f172a'}
+              >
+                Apply Now <ArrowRight size={18} />
+              </button>
+              <button 
+                onClick={() => setSelectedJob(null)}
+                style={{ padding: '14px 24px', background: 'white', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '10px', fontWeight: 600, cursor: 'pointer' }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer style={{ background: 'white', borderTop: '1px solid #e2e8f0', padding: '60px 5%', marginTop: '80px' }}>
