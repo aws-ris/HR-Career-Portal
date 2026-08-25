@@ -146,7 +146,8 @@ const UniversityAutocomplete = ({ required, value, onChange, placeholder, classN
     }
 
     if (!val.trim()) {
-      setSuggestions([]);
+      setSuggestions(universitiesList.concat(["Other (Type custom university name...)"]));
+      setShowSuggestions(true);
       return;
     }
 
@@ -155,6 +156,7 @@ const UniversityAutocomplete = ({ required, value, onChange, placeholder, classN
     );
 
     setSuggestions([...filtered, "Other (Type custom university name...)"]);
+    setShowSuggestions(true);
   };
 
   const handleSelect = (univ) => {
@@ -1683,9 +1685,9 @@ export default function ApplicationForm() {
                       }} 
                     />
                   </div>
+                  <div className="form-group"><label className="form-label">Year of Passing</label><input required={i === 0 || !!g.university || !!g.degree_name || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setGrads, grads, i, 'grad_year', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setGrads, grads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
                   <div className="form-group"><label className="form-label">Score (&lt;= {g.score_type==='Percentage' ? '100' : '10'})</label><input required type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setGrads, grads, i, 'score_value', e.target.value)} /></div>
-                  <div className="form-group"><label className="form-label">Year of Passing (1950 - 2030)</label><input required={i === 0 || !!g.university || !!g.degree_name || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setGrads, grads, i, 'grad_year', e.target.value)} /></div>
                 </div>
               ))}
               <button type="button" className="btn-secondary" disabled={grads.length>=3} onClick={() => addEntry(setGrads, grads, 3, { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Graduation Detail</button>
@@ -1777,9 +1779,9 @@ export default function ApplicationForm() {
                       }} 
                     />
                   </div>
+                  <div className="form-group"><label className="form-label">Year of Passing</label><input required={!!g.university || !!g.degree_name || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setPostGrads, postGrads, i, 'grad_year', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
                   <div className="form-group"><label className="form-label">Score</label><input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_value', e.target.value)} /></div>
-                  <div className="form-group"><label className="form-label">Year of Passing (1950 - 2030)</label><input required={!!g.university || !!g.degree_name || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setPostGrads, postGrads, i, 'grad_year', e.target.value)} /></div>
                 </div>
               ))}
               <button type="button" className="btn-secondary" disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Post Graduation</button>
@@ -1792,9 +1794,9 @@ export default function ApplicationForm() {
                 <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
                   <div className="form-group"><label className="form-label">University</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setDoctorates, doctorates, i, 'university', val)} placeholder="Search university..." /></div>
                   <div className="form-group"><label className="form-label">Thesis Title</label><input className="form-input" value={g.thesis_title} onChange={e => updateEntry(setDoctorates, doctorates, i, 'thesis_title', e.target.value)} /></div>
+                  <div className="form-group"><label className="form-label">Year of Passing</label><input required={!!g.university || !!g.thesis_title || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setDoctorates, doctorates, i, 'grad_year', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
                   <div className="form-group"><label className="form-label">Score</label><input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_value', e.target.value)} /></div>
-                  <div className="form-group"><label className="form-label">Year of Passing (1950 - 2030)</label><input required={!!g.university || !!g.thesis_title || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setDoctorates, doctorates, i, 'grad_year', e.target.value)} /></div>
                 </div>
               ))}
               <button type="button" className="btn-secondary" disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3, { university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Doctorate</button>

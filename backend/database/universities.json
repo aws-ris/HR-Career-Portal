@@ -1563,5 +1563,10 @@
         "points": 7,
         "classification": "Central University",
         "rank": null
+    },
+    "Bennett University": {
+        "points": 4,
+        "classification": "Private University",
+        "rank": null
     }
 }
