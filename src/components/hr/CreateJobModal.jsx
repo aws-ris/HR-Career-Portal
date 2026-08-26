@@ -184,7 +184,7 @@ export default function CreateJobModal({ job, onClose, onSave }) {
               />
             </div>
             <div className="hr-form-group">
-              <label className="hr-form-label">Total Openings</label>
+              <label className="hr-form-label">Vacancies</label>
               <input
                 type="number"
                 min="1"

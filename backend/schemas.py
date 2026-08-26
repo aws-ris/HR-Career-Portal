@@ -58,6 +58,7 @@ class EducationLevel(str, Enum):
     undergrad = 'undergrad'
     postgrad  = 'postgrad'
     phd       = 'phd'
+    diploma   = 'diploma'
 
 class PublicationType(str, Enum):
     book    = 'book'
@@ -113,16 +114,19 @@ class SchoolingResponse(SchoolingCreate):
 
 
 # ─────────────────────────────────────────────
-# Higher Education (replaces Graduation/PG/Doctorate)
+# Higher Education (replaces Graduation/PG/Doctorate/Diploma)
 # ─────────────────────────────────────────────
 class HigherEducationCreate(BaseModel):
-    level:       EducationLevel
-    university:  Optional[str]       = None
-    degree_name: Optional[str]       = None
-    score_type:  Optional[ScoreType] = None
-    score_value: Optional[float]     = Field(None, ge=0)
-    grad_year:   Optional[int]       = Field(None, ge=1950, le=2030)
-    entry_order: int                 = Field(..., ge=1, le=10)
+    level:          EducationLevel
+    university:     Optional[str]       = None
+    degree_name:    Optional[str]       = None
+    score_type:     Optional[ScoreType] = None
+    score_value:    Optional[float]     = Field(None, ge=0)
+    grad_year:      Optional[int]       = Field(None, ge=1950, le=2035)
+    is_pursuing:    Optional[bool]      = False
+    duration_value: Optional[int]       = Field(None, ge=1, le=60)
+    duration_unit:  Optional[str]       = None
+    entry_order:    int                 = Field(..., ge=1, le=10)
 
     @field_validator('score_value')
     @classmethod
@@ -253,6 +257,8 @@ class CandidateCreate(BaseModel):
     state:               Optional[str]        = None
     pincode:             Optional[str]        = Field(None, pattern=r'^\d{6}$')
     years_of_experience: Optional[float]      = Field(None, ge=0)
+    last_salary:         Optional[float]      = Field(None, ge=0)
+    category:            Optional[str]        = None
 
     # Links & about (goes to candidate_links_about)
     about:          Optional[str] = Field(None, max_length=3000)

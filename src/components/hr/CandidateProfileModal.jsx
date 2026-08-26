@@ -306,8 +306,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                 </div>
               </div>
 
-              {/* Stacked Contact Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px', borderBottom: '1px solid #f1f5f9', paddingBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px', borderBottom: '1px solid #f1f5f9', paddingBottom: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px' }}>
                   <Mail size={16} style={{ color: '#002147' }} /> <strong>Email:</strong> {data.email}
                 </div>
@@ -316,6 +315,9 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px' }}>
                   <MapPin size={16} style={{ color: '#ef4444' }} /> <strong>Location:</strong> {data.city ? `${data.city}, ` : ''}{data.state}{data.pincode ? ` - ${data.pincode}` : ''}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px' }}>
+                  <Award size={16} style={{ color: '#d97706' }} /> <strong>Category:</strong> <span style={{ fontWeight: 700, color: '#002147' }}>{data.category || 'Unspecified'}</span>
                 </div>
               </div>
 

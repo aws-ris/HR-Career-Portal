@@ -2,10 +2,14 @@ import uuid
 from datetime import datetime
 from sqlalchemy import (
     Column, String, Text, Float, Boolean, Integer,
-    Date, DateTime, ForeignKey, CheckConstraint, ARRAY, LargeBinary
+    Date, DateTime, ForeignKey, CheckConstraint, ARRAY, LargeBinary, JSON
 )
 from sqlalchemy.orm import relationship, validates
 from database.database import Base
+
+# Cross-dialect ARRAY support (PostgreSQL native ARRAY, SQLite JSON fallback)
+ArrayText = JSON().with_variant(ARRAY(Text), 'postgresql')
+ArrayFloat = JSON().with_variant(ARRAY(Float), 'postgresql')
 
 
 def generate_uuid():
@@ -24,7 +28,7 @@ class JobPosting(Base):
     division       = Column(String(50),  nullable=False)
     description    = Column(Text,        nullable=False)
     requirements   = Column(Text,        nullable=True)
-    keywords       = Column(ARRAY(Text), nullable=True)
+    keywords       = Column(ArrayText,   nullable=True)
     status         = Column(String(20),  nullable=False, default='draft')
     total_openings = Column(Integer,     nullable=False, default=1)
     location       = Column(String(100), nullable=True)
@@ -68,6 +72,8 @@ class CandidateMetadata(Base):
     state                = Column(String(100), nullable=True)
     pincode              = Column(String(20),  nullable=True)
     years_of_experience  = Column(Float,       nullable=True)
+    last_salary          = Column(Float,       nullable=True)
+    category             = Column(String(50),  nullable=True)
 
     @validates('dob')
     def update_age(self, key, dob_value):
@@ -169,14 +175,17 @@ class CandidateHigherEducation(Base):
     university   = Column(String(200), nullable=True)
     degree_name  = Column(String(200), nullable=True)
     score_type   = Column(String(20),  nullable=True)    # 'Percentage', 'CGPA'
-    score_value  = Column(Float,       nullable=True)
-    grad_year    = Column(Integer,     nullable=True)
-    entry_order  = Column(Integer,     nullable=False, default=1)
+    score_value    = Column(Float,       nullable=True)
+    grad_year      = Column(Integer,     nullable=True)
+    is_pursuing    = Column(Boolean,     nullable=False, default=False)
+    duration_value = Column(Integer,     nullable=True)
+    duration_unit  = Column(String(10),  nullable=True)
+    entry_order    = Column(Integer,     nullable=False, default=1)
 
     candidate = relationship("CandidateMetadata", back_populates="higher_education")
 
     __table_args__ = (
-        CheckConstraint("level IN ('undergrad','postgrad','phd')", name='chk_edu_level'),
+        CheckConstraint("level IN ('undergrad','postgrad','phd','diploma')", name='chk_edu_level'),
         CheckConstraint("score_type IN ('Percentage','CGPA (Out of 10)', 'CGPA (Out of 4)')", name='chk_edu_score_type'),
     )
 
@@ -249,6 +258,8 @@ class CandidateResumePayload(Base):
     candidate_id     = Column(String(36),   ForeignKey('candidate_metadata.id', ondelete='CASCADE'), primary_key=True)
     resume_path      = Column(String(500),  nullable=True)
     pdf_blob         = Column(LargeBinary,  nullable=True)
+    raw_resume_text  = Column(Text,         nullable=True)
+    resume_embedding = Column(ArrayFloat,   nullable=True)
 
     candidate = relationship("CandidateMetadata", back_populates="resume_payload")
 

@@ -1,13 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, MapPin, Calendar, ArrowRight, Search, Globe, Shield } from 'lucide-react';
+import { Briefcase, MapPin, Calendar, ArrowRight, Search, Shield, ExternalLink, Filter, CheckCircle, Clock } from 'lucide-react';
 import { API_BASE as API } from '../api';
 
 export default function JobBoard() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDivision, setSelectedDivision] = useState('ALL');
   const [selectedJob, setSelectedJob] = useState(null);
   const navigate = useNavigate();
 
@@ -25,229 +25,249 @@ export default function JobBoard() {
       });
   }, []);
 
-  const filteredJobs = jobs.filter(job => 
-    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.division.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Extract unique division categories from jobs list
+  const divisions = ['ALL', ...Array.from(new Set(jobs.map(j => j.division).filter(Boolean)))];
+
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (job.division && job.division.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                          (job.position && job.position.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesDivision = selectedDivision === 'ALL' || job.division === selectedDivision;
+    return matchesSearch && matchesDivision;
+  });
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
-      {/* Institutional Navbar */}
-      <nav style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '1rem 5%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img src="/logo.jpg" alt="RIS Logo" style={{ height: '45px' }} />
-          <div style={{ borderLeft: '2px solid #e2e8f0', paddingLeft: '12px' }}>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>RIS</h1>
-            <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recruitment Portal</p>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
+      
+      {/* ── Standalone Portal Navigation Header ── */}
+      <nav style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '1rem 5%', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          
+          {/* Logo */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <img 
+              src="/logo.jpg" 
+              alt="RIS Seal Logo" 
+              style={{ height: '75px', maxHeight: '80px', objectFit: 'contain' }}
+              onError={(e) => { e.target.style.display = 'none'; }} 
+            />
           </div>
+
+          {/* Action Links */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* Back to main website in a new tab */}
+            <a 
+              href="https://www.ris.org.in" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '0.85rem',
+                color: '#002147',
+                background: '#f1f5f9',
+                border: '1px solid #cbd5e1',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                fontWeight: 600,
+                transition: 'all 0.2s'
+              }}
+            >
+              ← Back to Main Website (ris.org.in) <ExternalLink size={14} />
+            </a>
+
+            {/* HR Login Button */}
+            <button 
+              onClick={() => navigate('/hr')}
+              style={{
+                fontSize: '0.85rem',
+                color: 'white',
+                background: '#002147',
+                border: 'none',
+                padding: '8px 18px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                boxShadow: '0 2px 4px rgba(0,33,71,0.15)'
+              }}
+            >
+              HR Login
+            </button>
+          </div>
+
         </div>
-        <button 
-          onClick={() => navigate('/hr')}
-          style={{ fontSize: '0.875rem', color: '#64748b', background: 'none', border: '1px solid #e2e8f0', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}
-        >
-          HR Login
-        </button>
       </nav>
 
-      {/* Hero Section */}
-      <header style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', padding: '80px 5%', textAlign: 'center', color: 'white' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '3rem', fontWeight: 800, marginBottom: '20px', lineHeight: 1.1 }}>Shape Global Policy with RIS.</h2>
-          <p style={{ fontSize: '1.25rem', color: '#94a3b8', marginBottom: '40px' }}>
-            Join a premier institution dedicated to research, intelligence, and strategic policy development.
+      {/* ── Cohesive Hero Banner ── */}
+      <header style={{ background: 'linear-gradient(135deg, #002147 0%, #001630 100%)', padding: '56px 5% 48px 5%', textAlign: 'center', color: 'white', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ maxWidth: '960px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
+          
+          {/* Social Media Handles */}
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Follow RIS:</span>
+            <a href="https://x.com/RIS_NewDelhi" target="_blank" rel="noopener noreferrer" title="Follow on X" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>𝕏</a>
+            <a href="https://www.facebook.com/RISNewDelhi" target="_blank" rel="noopener noreferrer" title="Follow on Facebook" style={{ background: '#1877f2', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>f</a>
+            <a href="https://www.linkedin.com/company/research-and-information-system-for-developing-countries" target="_blank" rel="noopener noreferrer" title="Follow on LinkedIn" style={{ background: '#0a66c2', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>in</a>
+            <a href="https://www.youtube.com/user/RISNewDelhi" target="_blank" rel="noopener noreferrer" title="Subscribe on YouTube" style={{ background: '#ff0000', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>▶</a>
+            <a href="https://www.instagram.com/ris_newdelhi" target="_blank" rel="noopener noreferrer" title="Follow on Instagram" style={{ background: '#e4405f', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>📷</a>
+          </div>
+
+          <h2 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '16px', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
+            RIS Careers
+          </h2>
+          
+          <p style={{ fontSize: '0.95rem', color: '#cbd5e1', marginBottom: '32px', lineHeight: 1.7, maxWidth: '900px', margin: '0 auto 32px auto', textAlign: 'justify' }}>
+            RIS is a premier policy research institution providing analytical support and policy advice to developing countries and institutional networking in the field of international economic issues. It has built up considerable expertise in policy analysis from a development perspective on global economic and trade governance, regional economic integration in Asia, South-South cooperation, new technologies and development, and strategic policy responses to globalization, among other issues. It also conducts capacity building programmes in these areas for officials and researchers from developing countries. Set up in 1984 in New Delhi, it is an autonomous institution funded by the Government of India. More information on the work of RIS may be obtained from its website.
           </p>
           
-          <div style={{ position: 'relative', maxWidth: '600px', margin: '0 auto' }}>
-            <Search style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} size={20} />
+          {/* Search Bar Container */}
+          <div style={{ position: 'relative', maxWidth: '640px', margin: '0 auto' }}>
+            <Search style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} size={20} />
             <input 
               type="text" 
-              placeholder="Search by title or department..." 
+              placeholder="Search positions by title, role, or division..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ width: '100%', padding: '18px 20px 18px 55px', borderRadius: '12px', border: 'none', fontSize: '1rem', color: '#0f172a', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)' }}
+              style={{
+                width: '100%',
+                padding: '16px 20px 16px 54px',
+                borderRadius: '12px',
+                border: 'none',
+                fontSize: '0.98rem',
+                color: '#0f172a',
+                outline: 'none',
+                boxShadow: '0 12px 30px -5px rgba(0,0,0,0.35)'
+              }}
             />
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main style={{ padding: '60px 5%', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
+      {/* ── Main Content Area ── */}
+      <main style={{ padding: '40px 5% 80px 5%', maxWidth: '1240px', margin: '0 auto' }}>
+        
+        {/* Status Bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '32px' }}>
           <div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>Open Positions</h3>
-            <p style={{ color: '#64748b' }}>Explore current research and administrative opportunities.</p>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#002147', margin: 0 }}>
+              Current Vacancies & Openings
+            </h3>
+            <p style={{ color: '#64748b', fontSize: '0.9rem', margin: '4px 0 0 0' }}>
+              Select an open vacancy below to read requirements and submit your application online.
+            </p>
           </div>
-          <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#1e293b', background: '#e2e8f0', padding: '6px 12px', borderRadius: '20px' }}>
-            {filteredJobs.length} Results
+          
+          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#002147', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '6px 14px', borderRadius: '20px' }}>
+            {filteredJobs.length} Positions Available
           </div>
         </div>
 
+        {/* ── Job Cards List Grid ── */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '100px 0' }}>
-            <div className="loader" style={{ border: '4px solid #f3f3f3', borderTop: '4px solid #0f172a', borderRadius: '50%', width: '40px', height: '40px', animation: 'spin 1s linear infinite', margin: '0 auto' }}></div>
-            <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+          <div style={{ textAlign: 'center', padding: '80px 0', color: '#64748b' }}>
+            <div style={{ fontSize: '1rem', fontWeight: 600 }}>Loading open vacancies...</div>
           </div>
         ) : filteredJobs.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '100px 0', background: 'white', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+          <div style={{ textAlign: 'center', padding: '80px 20px', background: 'white', borderRadius: '14px', border: '1px dashed #cbd5e1' }}>
             <Briefcase size={48} style={{ color: '#cbd5e1', marginBottom: '16px' }} />
-            <h4 style={{ fontSize: '1.125rem', color: '#475569' }}>No positions found match your search.</h4>
+            <h4 style={{ fontSize: '1.15rem', color: '#334155', margin: '0 0 8px 0' }}>No active positions match your query</h4>
+            <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>Try clearing your search term.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>
             {filteredJobs.map(job => (
               <div 
-                key={job.id} 
-                style={{ background: 'white', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default' }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 20px -5px rgba(0,0,0,0.05)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+                key={job.id}
+                style={{
+                  background: 'white',
+                  borderRadius: '14px',
+                  padding: '24px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.2s',
+                  position: 'relative'
+                }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#002147', background: '#f0f9ff', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
-                    {job.division}
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600 }}>
-                    <Calendar size={14} />
-                    Due: {job.deadline ? new Date(job.deadline).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'N/A'}
+                
+                {/* Card Top Meta (Last date only) */}
+                {job.deadline && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#c62828', fontSize: '0.75rem', fontWeight: 700, background: '#fef2f2', border: '1px solid #fecaca', padding: '4px 10px', borderRadius: '6px' }}>
+                      <Calendar size={13} />
+                      Last date: {new Date(job.deadline).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <h4 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', marginBottom: '8px', lineHeight: 1.3 }}>{job.title}</h4>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.875rem', marginBottom: '20px' }}>
-                  <Briefcase size={16} />
-                  <span>{job.position}</span>
+                {/* Job Title & Position */}
+                <h4 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a', marginBottom: '10px', lineHeight: 1.3 }}>
+                  {job.title}
+                </h4>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b', fontSize: '0.85rem', marginBottom: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#334155', fontWeight: 600 }}>
+                    <Briefcase size={15} /> {job.position || 'Open Role'}
+                  </span>
                   <span style={{ color: '#cbd5e1' }}>•</span>
-                  <MapPin size={16} />
-                  <span>{job.location || 'New Delhi, India'}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#002147', fontWeight: 700 }}>
+                    Vacancies: {job.total_openings || 1}
+                  </span>
+                  <span style={{ color: '#cbd5e1' }}>•</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <MapPin size={15} /> {job.location || 'New Delhi, India'}
+                  </span>
                 </div>
 
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: '0.875rem', color: '#475569', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginBottom: '8px', lineHeight: 1.6 }}>
+                <div style={{ fontSize: '0.78rem', color: '#64748b', fontStyle: 'italic', marginBottom: '16px' }}>
+                  * Number of vacancies may vary.
+                </div>
+
+                {/* Description Preview */}
+                <div style={{ flex: 1, marginBottom: '20px' }}>
+                  <p style={{ fontSize: '0.88rem', color: '#475569', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.6, margin: 0 }}>
                     {job.description}
                   </p>
+                </div>
+
+                {/* Action Button: Apply Now only */}
+                <div style={{ paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
                   <button 
-                    onClick={() => setSelectedJob(job)}
-                    style={{ background: 'none', border: 'none', color: '#002147', fontSize: '0.875rem', fontWeight: 600, padding: 0, cursor: 'pointer', marginBottom: '24px' }}
+                    onClick={() => navigate(`/apply/${job.id}`)}
+                    style={{ width: '100%', padding: '12px', background: '#c62828', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 2px 4px rgba(198,40,40,0.2)' }}
                   >
-                    Read Full Description
+                    Apply Now <ArrowRight size={16} />
                   </button>
                 </div>
 
-                <button 
-                  onClick={() => navigate(`/apply/${job.id}`)}
-                  style={{ width: '100%', padding: '14px', background: '#0f172a', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'background 0.2s' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#1e293b'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = '#0f172a'}
-                >
-                  Apply Now <ArrowRight size={18} />
-                </button>
               </div>
             ))}
           </div>
         )}
+
       </main>
 
-      {/* Job Description Modal */}
-      {selectedJob && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }} onClick={() => setSelectedJob(null)}>
-          <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto', padding: '32px', position: 'relative' }} onClick={e => e.stopPropagation()}>
-            <button 
-              onClick={() => setSelectedJob(null)}
-              style={{ position: 'absolute', top: '24px', right: '24px', background: '#f1f5f9', border: 'none', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b', fontSize: '1.2rem' }}
-            >
-              ×
-            </button>
-            
-            <div style={{ marginBottom: '24px' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#002147', background: '#f0f9ff', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
-                {selectedJob.division}
-              </span>
-            </div>
-            
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>{selectedJob.title}</h2>
-            
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontSize: '0.875rem' }}>
-                <Briefcase size={16} /> <span>{selectedJob.position}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontSize: '0.875rem' }}>
-                <MapPin size={16} /> <span>{selectedJob.location || 'New Delhi, India'}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontSize: '0.875rem', fontWeight: 600 }}>
-                <Calendar size={16} /> <span>Due: {selectedJob.deadline ? new Date(selectedJob.deadline).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'N/A'}</span>
-              </div>
-            </div>
-            
-            <div style={{ marginBottom: '32px' }}>
-              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b', marginBottom: '12px' }}>Job Description</h3>
-              <p style={{ fontSize: '0.95rem', color: '#475569', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{selectedJob.description}</p>
-            </div>
-            
-            {selectedJob.requirements && (
-              <div style={{ marginBottom: '40px' }}>
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e293b', marginBottom: '12px' }}>Requirements</h3>
-                <p style={{ fontSize: '0.95rem', color: '#475569', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{selectedJob.requirements}</p>
-              </div>
-            )}
-            
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <button 
-                onClick={() => navigate(`/apply/${selectedJob.id}`)}
-                style={{ flex: 1, padding: '14px', background: '#0f172a', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'background 0.2s' }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#1e293b'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#0f172a'}
-              >
-                Apply Now <ArrowRight size={18} />
-              </button>
-              <button 
-                onClick={() => setSelectedJob(null)}
-                style={{ padding: '14px 24px', background: 'white', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '10px', fontWeight: 600, cursor: 'pointer' }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Footer */}
-      <footer style={{ background: 'white', borderTop: '1px solid #e2e8f0', padding: '60px 5%', marginTop: '80px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '40px' }}>
+      {/* ── Portal Footer ── */}
+      <footer style={{ background: '#002147', color: 'white', padding: '40px 5%', marginTop: '60px', borderTop: '4px solid #c62828' }}>
+        <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', fontSize: '0.85rem' }}>
           <div>
-            <img src="/logo.jpg" alt="RIS Logo" style={{ height: '40px', marginBottom: '20px' }} />
-            <p style={{ fontSize: '0.875rem', color: '#64748b', lineHeight: 1.6 }}>
-              Research and Information System for Developing Countries (RIS) is a New Delhi-based autonomous policy research institute.
-            </p>
+            <p style={{ margin: 0, fontWeight: 700 }}>© {new Date().getFullYear()} Research and Information System for Developing Countries (RIS)</p>
+            <p style={{ margin: '4px 0 0 0', color: '#cbd5e1', fontSize: '0.8rem' }}>Core IV-B, Fourth Floor, India Habitat Centre, Lodhi Road, New Delhi-110 003, India</p>
           </div>
-          <div>
-            <h5 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '20px' }}>Legal</h5>
-            <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.875rem', color: '#64748b' }}>
-              <li style={{ marginBottom: '10px' }}>Privacy Policy</li>
-              <li style={{ marginBottom: '10px' }}>Terms of Service</li>
-              <li style={{ marginBottom: '10px' }}>Equal Opportunity</li>
-            </ul>
-          </div>
-          <div>
-            <h5 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '20px' }}>Support</h5>
-            <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.875rem', color: '#64748b' }}>
-              <li style={{ marginBottom: '10px' }}>Help Center</li>
-              <li style={{ marginBottom: '10px' }}>Application FAQ</li>
-              <li style={{ marginBottom: '10px' }}>Contact IT</li>
-            </ul>
-          </div>
-          <div>
-            <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0f172a', fontWeight: 600, marginBottom: '8px' }}>
-                <Shield size={18} /> Secure Portal
-              </div>
-              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>
-                Your data is protected by industry-standard encryption and processed solely for recruitment.
-              </p>
-            </div>
+          <div style={{ display: 'flex', gap: '16px', color: '#cbd5e1' }}>
+            <a href="https://www.ris.org.in" target="_blank" rel="noopener noreferrer" style={{ color: '#cbd5e1', textDecoration: 'none' }}>Official Website</a>
+            <span>|</span>
+            <span>Privacy Policy</span>
+            <span>|</span>
+            <span>Technical Support</span>
           </div>
         </div>
       </footer>
+
     </div>
   );
 }

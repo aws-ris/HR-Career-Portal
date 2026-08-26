@@ -12,10 +12,11 @@ node_modules/
 dist/
 .DS_Store
 
-# Database
+# Database & Uploads
 *.db
 *.sqlite
 senior_official_export.xlsx
+backend/uploads/
 
 # Logs
 *.log

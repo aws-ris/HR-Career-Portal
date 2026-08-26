@@ -153,6 +153,31 @@ export default function GlobalAnalytics() {
           </div>
         </AnalyticsCard>
 
+        {/* 4. Category Breakdown */}
+        {data.categories && (
+          <AnalyticsCard title="Category Distribution" icon={TrendingUp}>
+            <div style={{ height: 280 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.categories} margin={{ top: 20, bottom: 20 }}>
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    style={{ fontSize: '11px', fontWeight: 600, fill: '#475569' }} 
+                  />
+                  <YAxis hide />
+                  <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(241, 245, 249, 0.6)'}} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={36}>
+                    {data.categories.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={['#002147', '#0072B2', '#C8102E', '#009E73', '#5E35B1', '#d97706'][index % 6]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </AnalyticsCard>
+        )}
+
       </div>
     </div>
   );

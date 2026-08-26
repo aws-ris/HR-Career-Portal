@@ -28,8 +28,18 @@ if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
         SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
     )
 else:
-    # Set pool_pre_ping to True to handle dropped cloud connections
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
+    try:
+        # Try connecting to configured Postgres database
+        engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
+        # Test connection
+        with engine.connect() as conn:
+            pass
+    except Exception as e:
+        print(f"[DB Warning] Could not connect to PostgreSQL: {e}. Falling back to local SQLite DB.")
+        SQLALCHEMY_DATABASE_URL = "sqlite:///./ris_dev.db"
+        engine = create_engine(
+            SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+        )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

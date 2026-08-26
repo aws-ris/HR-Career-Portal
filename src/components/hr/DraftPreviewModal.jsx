@@ -37,7 +37,7 @@ export default function DraftPreviewModal({ job, onClose, onEdit, onPublish }) {
           <div className="hr-contract-divider" />
           <div className="hr-contract-row">
             <Field label="DEADLINE"        value={fmt(job.deadline)} />
-            <Field label="TOTAL OPENINGS"  value={job.total_openings} />
+            <Field label="VACANCIES" value={job.total_openings} />
           </div>
           <Field label="LOCATION" value="RIS, New Delhi" />
         </div>

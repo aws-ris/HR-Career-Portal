@@ -1,11 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE as API } from '../api';
-import { CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 
-const UG_DEGREES = ['B.A.', 'B.Sc.', 'B.Com', 'B.Tech', 'B.E.', 'B.B.A.', 'B.C.A.', 'LL.B.', 'MBBS', 'B.Arch', 'B.Ed.'];
-const PG_DEGREES = ['M.A.', 'M.Sc.', 'M.Com', 'M.Tech', 'M.E.', 'M.B.A.', 'M.C.A.', 'LL.M.', 'M.Ed.', 'MD', 'MS'];
+const UG_DEGREES = [
+  'B.A.', 'B.Sc.', 'B.Com', 'B.Tech', 'B.E.', 'B.B.A.', 'B.C.A.', 'LL.B.', 'MBBS', 'B.Arch', 'B.Ed.',
+  'Integrated B.S. - M.S.', 'Integrated B.Sc. - M.Sc.', 'BS-MS (Dual Degree)',
+  'B.Tech + M.Tech (Dual Degree)', 'B.Tech + M.B.A. (Dual Degree)', 'B.A. LL.B. (Integrated)', 'B.B.A. LL.B. (Integrated)',
+  'Integrated M.Sc.', 'Integrated M.A.', 'Integrated M.Tech'
+];
+
+const PG_DEGREES = [
+  'M.A.', 'M.Sc.', 'M.Com', 'M.Tech', 'M.E.', 'M.B.A.', 'M.C.A.', 'LL.M.', 'M.Ed.', 'MD', 'MS', 'M.Phil.',
+  'Integrated B.S. - M.S.', 'Integrated B.Sc. - M.Sc.',
+  'P.G. Diploma (PGD)', 'P.G.D.M.', 'Executive PGD', 'Integrated Ph.D.'
+];
+
+const DIPLOMA_TYPES = [
+  'Polytechnic Diploma',
+  'Post Graduate Diploma (PGD)',
+  'PGDM',
+  'Executive Diploma',
+  'Diploma in Public Policy / Economics',
+  'Diploma in Engineering / Tech',
+  'Diploma in Languages / Arts',
+  'Advanced Diploma',
+  'Professional Certificate / Diploma'
+];
+
 const PASSING_YEARS = Array.from({ length: 61 }, (_, i) => 2030 - i); // 2030 down to 1970
+
+const CATEGORIES = [
+  'General (UR)',
+  'OBC (Non-Creamy Layer)',
+  'SC (Scheduled Caste)',
+  'ST (Scheduled Tribe)',
+  'EWS (Economically Weaker Section)',
+  'PwD (Persons with Benchmark Disabilities)'
+];
+
+const PUBLICATION_CATEGORIES = [
+  'Peer-Reviewed Journal Papers',
+  'Books Published',
+  'Book Chapters',
+  'Research Reports',
+  'Policy Briefs'
+];
 
 const COMMON_SPECIALIZATIONS = [
   // Humanities & Arts
@@ -332,6 +372,7 @@ export default function ApplicationForm() {
   const [mobile_number, setMobile] = useState(() => savedDraft.mobile_number || '');
   const [dob, setDob] = useState(() => savedDraft.dob || '');
   const [gender, setGender] = useState(() => savedDraft.gender || '');
+  const [category, setCategory] = useState(() => savedDraft.category || '');
   const [candidateState, setCandidateState] = useState(() => savedDraft.candidateState || '');
   const [city, setCity] = useState(() => savedDraft.city || '');
   const [pincode, setPincode] = useState(() => savedDraft.pincode || '');
@@ -378,10 +419,12 @@ export default function ApplicationForm() {
     });
   });
 
-  const [doctorates, setDoctorates] = useState(() => savedDraft.doctorates || [{ university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '' }]);
+  const [doctorates, setDoctorates] = useState(() => savedDraft.doctorates || [{ university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '', is_pursuing: false }]);
+  const [diplomas, setDiplomas] = useState(() => savedDraft.diplomas || [{ university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', is_pursuing: false, score_type: 'Percentage', score_value: '', grad_year: '' }]);
 
   const [showPostGrad, setShowPostGrad] = useState(() => savedDraft.postGrads && (savedDraft.postGrads.length > 1 || !!(savedDraft.postGrads[0] && savedDraft.postGrads[0].university)));
   const [showDoctorate, setShowDoctorate] = useState(() => savedDraft.doctorates && (savedDraft.doctorates.length > 1 || !!(savedDraft.doctorates[0] && savedDraft.doctorates[0].university)));
+  const [showDiploma, setShowDiploma] = useState(() => savedDraft.diplomas && (savedDraft.diplomas.length > 1 || !!(savedDraft.diplomas[0] && savedDraft.diplomas[0].university)));
 
   // Step 2 & 3 custom states
   const [classXYear, setClassXYear] = useState(() => savedDraft.classXYear || '');
@@ -395,14 +438,71 @@ export default function ApplicationForm() {
   const [pubReports, setPubReports] = useState(() => savedDraft.pubReports !== undefined ? savedDraft.pubReports : 0);
   const [pubPolicyBriefs, setPubPolicyBriefs] = useState(() => savedDraft.pubPolicyBriefs !== undefined ? savedDraft.pubPolicyBriefs : 0);
 
+  const [pubEntries, setPubEntries] = useState(() => {
+    if (savedDraft.pubEntries && Array.isArray(savedDraft.pubEntries) && savedDraft.pubEntries.length > 0) {
+      return savedDraft.pubEntries;
+    }
+    const list = [];
+    if (savedDraft.pubPapers) list.push({ category: 'Peer-Reviewed Journal Papers', count: savedDraft.pubPapers });
+    if (savedDraft.pubBooks) list.push({ category: 'Books Published', count: savedDraft.pubBooks });
+    if (savedDraft.pubChapters) list.push({ category: 'Book Chapters', count: savedDraft.pubChapters });
+    if (savedDraft.pubReports) list.push({ category: 'Research Reports', count: savedDraft.pubReports });
+    if (savedDraft.pubPolicyBriefs) list.push({ category: 'Policy Briefs', count: savedDraft.pubPolicyBriefs });
+    if (list.length === 0) {
+      list.push({ category: 'Peer-Reviewed Journal Papers', count: 0 });
+    }
+    return list;
+  });
+
+  const syncPubCounts = (entries) => {
+    let books = 0, papers = 0, chapters = 0, reports = 0, briefs = 0;
+    entries.forEach(e => {
+      const c = parseInt(e.count, 10) || 0;
+      if (e.category === 'Books Published') books += c;
+      else if (e.category === 'Peer-Reviewed Journal Papers') papers += c;
+      else if (e.category === 'Book Chapters') chapters += c;
+      else if (e.category === 'Research Reports') reports += c;
+      else if (e.category === 'Policy Briefs') briefs += c;
+    });
+    setPubBooks(books);
+    setPubPapers(papers);
+    setPubChapters(chapters);
+    setPubReports(reports);
+    setPubPolicyBriefs(briefs);
+  };
+
+  const updatePubEntry = (idx, field, value) => {
+    const fresh = [...pubEntries];
+    fresh[idx] = { ...fresh[idx], [field]: value };
+    setPubEntries(fresh);
+    syncPubCounts(fresh);
+  };
+
+  const addPubEntry = () => {
+    if (pubEntries.length < 5) {
+      const usedCategories = pubEntries.map(e => e.category);
+      const available = PUBLICATION_CATEGORIES.find(c => !usedCategories.includes(c)) || PUBLICATION_CATEGORIES[0];
+      const fresh = [...pubEntries, { category: available, count: 1 }];
+      setPubEntries(fresh);
+      syncPubCounts(fresh);
+    }
+  };
+
+  const removePubEntry = (idx) => {
+    const fresh = pubEntries.filter((_, i) => i !== idx);
+    setPubEntries(fresh);
+    syncPubCounts(fresh);
+  };
+
   const [scholarLink, setScholarLink] = useState(() => savedDraft.scholarLink || '');
   const [expYears, setExpYears] = useState(() => savedDraft.expYears || '');
   const [expMonths, setExpMonths] = useState(() => savedDraft.expMonths || '');
+  const [lastSalary, setLastSalary] = useState(() => savedDraft.lastSalary || '');
   const [resumeFile, setResumeFile] = useState(null);
 
   // Step 4
-  const [hasWork, setHasWork] = useState(() => savedDraft.hasWork || false);
-  const [workExps, setWorkExps] = useState(() => savedDraft.workExps || [{ company_name: '', start_date: '', end_date: '', role: '', description: '' }]);
+  const [hasWork, setHasWork] = useState(true);
+  const [workExps, setWorkExps] = useState(() => savedDraft.workExps || [{ company_name: '', start_date: '', end_date: '', role: '' }]);
 
   // Fetch Job details if ID is present
   useEffect(() => {
@@ -1028,7 +1128,39 @@ export default function ApplicationForm() {
         return alert("City must be at least 2 characters and contain only letters.");
       }
 
+      if (!category) {
+        return alert("Please select your category.");
+      }
+    }
 
+    // Step 2 Validation: Schooling is mandatory, and at least ONE post-schooling qualification (UG/PG/PhD/Diploma) must be filled
+    if (step === 2) {
+      if (!classXSchool.trim() || !classXScoreValue || !classXYear) {
+        alert("Please complete mandatory Class X schooling details.");
+        return;
+      }
+      if (!classXIISchool.trim() || !classXIIScoreValue || !classXIIYear) {
+        alert("Please complete mandatory Class XII schooling details.");
+        return;
+      }
+
+      const allEdu = [...grads, ...postGrads, ...doctorates, ...diplomas];
+      const hasPostSchooling = allEdu.some(entry => (entry.university && entry.university.trim() !== '') || (entry.degree_name && entry.degree_name.trim() !== '') || (entry.degree_select && entry.degree_select.trim() !== ''));
+      if (!hasPostSchooling) {
+        alert("Please fill in at least one post-schooling qualification (Graduation, Post-Graduation, Doctorate, or Diploma).");
+        return;
+      }
+
+      const currentYr = new Date().getFullYear();
+      for (let entry of allEdu) {
+        if (entry.is_pursuing && entry.grad_year) {
+          const yr = parseInt(entry.grad_year, 10);
+          if (!isNaN(yr) && yr < currentYr) {
+            alert(`Expected completion year for currently pursuing degree (${entry.degree_select || entry.degree_name || 'Degree'}) cannot be less than current year (${currentYr}).`);
+            return;
+          }
+        }
+      }
     }
 
     // Check required fields for Step 3 (Work Experience Details)
@@ -1038,7 +1170,7 @@ export default function ApplicationForm() {
         return;
       }
       if (expYears === '' && expMonths === '') {
-        alert("Please specify your professional experience in years/months.");
+        alert("Please specify your professional experience in years/months (enter 0 Years 0 Months if fresher).");
         return;
       }
       const yrs = parseInt(expYears) || 0;
@@ -1048,16 +1180,16 @@ export default function ApplicationForm() {
         return;
       }
 
-      if (hasWork) {
+      // Only validate detailed work entries if candidate has prior experience or typed work details
+      const hasTypedWorkDetails = workExps.some(w => w.company_name && w.company_name.trim() !== '');
+      if (yrs > 0 || mths > 0 || hasTypedWorkDetails) {
         for (let i = 0; i < workExps.length; i++) {
           const w = workExps[i];
-          if (!w.company_name || !w.role || !w.start_date) {
-            alert(`Please fill in all required fields (Organization, Designation, Start Date) for Work Entry #${i + 1}.`);
-            return;
-          }
-          if (w.description && countWords(w.description) > 40) {
-            alert(`Description for Work Entry #${i + 1} exceeds 40 words.`);
-            return;
+          if (hasTypedWorkDetails || (i === 0 && (yrs > 0 || mths > 0))) {
+            if (!w.company_name || !w.role || !w.start_date) {
+              alert(`Please fill in required fields (Organization, Designation, Start Date) for Work Entry #${i + 1}.`);
+              return;
+            }
           }
         }
       }
@@ -1080,9 +1212,10 @@ export default function ApplicationForm() {
     
     let educations = [];
     let eduOrder = 1;
-    grads.forEach(g => { if(g.university) educations.push({...g, level: 'Bachelors', entry_order: eduOrder++}) });
-    postGrads.forEach(g => { if(g.university) educations.push({...g, level: 'Masters', entry_order: eduOrder++}) });
-    doctorates.forEach(g => { if(g.university) educations.push({...g, level: 'Doctorate', entry_order: eduOrder++}) });
+    grads.forEach(g => { if(g.university) educations.push({...g, level: 'undergrad', entry_order: eduOrder++}) });
+    postGrads.forEach(g => { if(g.university) educations.push({...g, level: 'postgrad', entry_order: eduOrder++}) });
+    doctorates.forEach(g => { if(g.university) educations.push({...g, level: 'phd', entry_order: eduOrder++}) });
+    diplomas.forEach(g => { if(g.university) educations.push({...g, level: 'diploma', entry_order: eduOrder++}) });
 
     let works = [];
     let workOrder = 1;
@@ -1112,10 +1245,12 @@ export default function ApplicationForm() {
       pub_reports: pubReports,
       pub_policy_briefs: pubPolicyBriefs,
       gender: gender || null,
+      category: category || null,
       state: candidateState || null,
       city: city || null,
       pincode: pincode || null,
       years_of_experience: totalYrs,
+      last_salary: lastSalary ? parseFloat(lastSalary) : null,
       position_applied, 
       admin_department: position_applied === 'Admin' ? admin_department : null,
       schooling: {
@@ -1140,8 +1275,11 @@ export default function ApplicationForm() {
       },
       higher_education: educations.map(e => ({
         ...e,
-        level: e.level === 'Bachelors' ? 'undergrad' : (e.level === 'Masters' ? 'postgrad' : 'phd'),
-        grad_year: e.grad_year ? parseInt(e.grad_year, 10) : null
+        level: e.level === 'Bachelors' ? 'undergrad' : (e.level === 'Masters' ? 'postgrad' : (e.level === 'Doctorate' ? 'phd' : e.level)),
+        grad_year: e.grad_year ? parseInt(e.grad_year, 10) : null,
+        is_pursuing: !!e.is_pursuing,
+        duration_value: e.duration_value ? parseInt(e.duration_value, 10) : null,
+        duration_unit: e.duration_unit || null
       })),
       publications: [],
       work_experiences: works.map(w => ({
@@ -1238,9 +1376,9 @@ export default function ApplicationForm() {
         <img src="/logo.jpg" alt="RIS Logo" className="header-logo" />
         <h1 className="header-title">Apply to the RIS</h1>
         {jobDetail ? (
-          <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '10px', borderRadius: '8px', marginTop: '10px' }}>
-             <p style={{ margin: 0, fontWeight: 700, color: '#002147' }}>Applying for: {jobDetail.title}</p>
-             <p style={{ margin: 0, fontSize: '0.875rem', color: '#0c4a6e' }}>Division: {jobDetail.division}</p>
+          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '10px', borderRadius: '8px', marginTop: '10px' }}>
+             <p style={{ margin: 0, fontWeight: 700, color: '#1e3a8a' }}>Applying for: {jobDetail.title}</p>
+             <p style={{ margin: 0, fontSize: '0.875rem', color: '#1d4ed8' }}>Division: {jobDetail.division}</p>
           </div>
         ) : (
           <p className="header-subtitle">Thank you for showing interest in joining our institution.</p>
@@ -1249,6 +1387,9 @@ export default function ApplicationForm() {
 
       <main className="main-container">
         <div className="stepper-container" style={{ display: step === 0 ? 'none' : 'block' }}>
+          <div style={{ textAlign: 'center', marginBottom: '1.25rem', color: '#002147', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+            Step {step} of 5 — {step === 1 ? 'Personal Information' : (step === 2 ? 'Education & Qualifications' : (step === 3 ? 'Work Experience' : (step === 4 ? 'Publications & Research' : 'Review & Submit')))} ({Math.round(((step - 1) / 4) * 100)}% Completed)
+          </div>
           <div className="stepper-wrapper">
             <div className="stepper-track">
               <div 
@@ -1281,20 +1422,45 @@ export default function ApplicationForm() {
 
         {submitError && <div style={{background: '#fef2f2', color: '#ef4444', padding: '1rem', borderRadius: '8px', marginBottom: '1rem'}}>{submitError}</div>}
 
-        {jobDetail && (step === 0 || step === 1) && (
+        {jobDetail && step === 0 && (
           <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '24px', marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '16px' }}>Terms & Conditions of Employment</h2>
-            <p style={{ fontSize: '14px', color: '#475569', marginBottom: '16px' }}>
-              Please review the specific constraints and offerings for the <strong>{jobDetail.title}</strong> position:
-            </p>
-            <ul style={{ fontSize: '14px', color: '#0f172a', fontWeight: '600', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-              <li><strong>Remuneration (Pay Band):</strong> ₹{(jobDetail.min_pay || 20000).toLocaleString()} to ₹{(jobDetail.max_pay || 40000).toLocaleString()} per month.</li>
-              <li><strong>Required Experience:</strong> {jobDetail.min_experience || 0} to {jobDetail.max_experience || 2} years of experience.</li>
-              <li><strong>Contract Duration:</strong> {jobDetail.contract_period || 1} {jobDetail.contract_period === 1 ? 'year' : 'years'}</li>
-              <li><strong>Job Mode:</strong> Offline</li>
-            </ul>
+            
+            {/* Appended Job Details & Full Description */}
+            <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '20px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#002147', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '3px 10px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                  {jobDetail.division || 'Research Division'}
+                </span>
+                {jobDetail.deadline && (
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#c62828', background: '#fef2f2', border: '1px solid #fecaca', padding: '3px 10px', borderRadius: '4px' }}>
+                    Last date: {new Date(jobDetail.deadline).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </span>
+                )}
+              </div>
 
-            <h3 style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>General Rules and Regulations</h3>
+              <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0f172a', margin: '0 0 8px 0', lineHeight: 1.3 }}>{jobDetail.title}</h2>
+              
+              <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginBottom: '4px' }}>
+                Vacancies: <span style={{ color: '#002147', fontWeight: 800 }}>{jobDetail.total_openings || 1}</span>
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#64748b', fontStyle: 'italic', marginBottom: '16px' }}>
+                * Number of vacancies may vary.
+              </div>
+              
+              <div style={{ marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#002147', marginBottom: '6px' }}>Job Scope & Description</h3>
+                <p style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.65, whiteSpace: 'pre-wrap', margin: 0 }}>{jobDetail.description}</p>
+              </div>
+
+              {jobDetail.requirements && (
+                <div>
+                  <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#002147', marginBottom: '6px' }}>Requirements & Qualifications</h3>
+                  <p style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.65, whiteSpace: 'pre-wrap', margin: 0 }}>{jobDetail.requirements}</p>
+                </div>
+              )}
+            </div>
+
+            <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '12px' }}>Terms and Conditions</h2>
             <div style={{ 
               maxHeight: '180px', 
               overflowY: 'auto', 
@@ -1318,25 +1484,19 @@ export default function ApplicationForm() {
               <p style={{ marginTop: '12px', marginBottom: 0, fontWeight: '700' }}>Interested candidates having the above qualifications and experience should only apply Online.</p>
             </div>
             
-            {step === 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#0f172a', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#0f172a' }} />
-                  <strong>I have read and accept these terms and conditions.</strong>
-                </label>
-                <button 
-                  onClick={() => setStep(1)} 
-                  disabled={!termsAccepted}
-                  style={{ background: termsAccepted ? '#0f172a' : '#cbd5e1', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: termsAccepted ? 'pointer' : 'not-allowed', alignSelf: 'flex-start' }}
-                >
-                  Proceed to Application
-                </button>
-              </div>
-            ) : (
-              <div style={{ fontSize: '12px', color: '#10b981', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <CheckCircle2 size={14} /> Terms Accepted
-              </div>
-            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', color: '#0f172a', cursor: 'pointer' }}>
+                <input type="checkbox" checked={termsAccepted} onChange={e => setTermsAccepted(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#0f172a' }} />
+                <strong>I have read and accept these terms and conditions.</strong>
+              </label>
+              <button 
+                onClick={() => setStep(1)} 
+                disabled={!termsAccepted}
+                style={{ background: termsAccepted ? '#0f172a' : '#cbd5e1', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: termsAccepted ? 'pointer' : 'not-allowed', alignSelf: 'flex-start' }}
+              >
+                Proceed to Application
+              </button>
+            </div>
           </div>
         )}
 
@@ -1344,23 +1504,39 @@ export default function ApplicationForm() {
           <form onSubmit={step === 4 ? handleProceedToPreview : handleNext} style={{ display: step === 0 ? 'none' : 'block' }}>
           {step === 1 && (
             <>
-              <div className="form-group">
-                <label className="form-label">Position Applied For {jobId && <span style={{fontSize: '10px', color: '#002147'}}>(Locked for this Job Link)</span>}</label>
-                <select 
-                  className="form-input" 
-                  value={position_applied} 
-                  onChange={e => setPosition(e.target.value)}
-                  disabled={!!jobId}
-                  style={jobId ? { backgroundColor: '#f8fafc', cursor: 'not-allowed' } : {}}
-                >
-                  <option>Professor</option>
-                  <option>Associate Professor</option>
-                  <option>Assistant Professor</option>
-                  <option>Consultant</option>
-                  <option>Research Assistant</option>
-                  <option>Admin</option>
-                </select>
-              </div>
+              {jobDetail ? (
+                <div className="form-group">
+                  <label className="form-label">Position Applied For</label>
+                  <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                      {jobDetail.title}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '2px' }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Post / Role:</span>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#c62828', background: '#fef2f2', border: '1px solid #fecaca', padding: '4px 12px', borderRadius: '6px' }}>
+                        {jobDetail.position || position_applied}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="form-group">
+                  <label className="form-label">Position Applied For</label>
+                  <select 
+                    className="form-input" 
+                    value={position_applied} 
+                    onChange={e => setPosition(e.target.value)}
+                  >
+                    <option>Professor</option>
+                    <option>Associate Professor</option>
+                    <option>Assistant Professor</option>
+                    <option>Consultant</option>
+                    <option>Research Assistant</option>
+                    <option>Admin</option>
+                  </select>
+                </div>
+              )}
 
               {position_applied === 'Admin' && (
                 <div className="form-group" style={{marginTop: '-0.5rem'}}>
@@ -1383,7 +1559,7 @@ export default function ApplicationForm() {
               <hr style={dividerStyle} />
 
               <div className="form-grid">
-                <div className="form-group">
+                <div className="form-group col-6">
                   <label className="form-label">Full Name</label>
                   <input 
                     required 
@@ -1392,7 +1568,7 @@ export default function ApplicationForm() {
                     onChange={e => setFullName(e.target.value)} 
                   />
                 </div>
-                <div className="form-group">
+                <div className="form-group col-6">
                   <label className="form-label">Email ID</label>
                   <input 
                     required 
@@ -1402,7 +1578,7 @@ export default function ApplicationForm() {
                     onChange={e => setEmail(e.target.value)} 
                   />
                 </div>
-                <div className="form-group">
+                <div className="form-group col-4">
                   <label className="form-label">Mobile Number (10 Digits)</label>
                   <input 
                     required 
@@ -1412,7 +1588,7 @@ export default function ApplicationForm() {
                     onChange={e => setMobile(e.target.value)} 
                   />
                 </div>
-                <div className="form-group">
+                <div className="form-group col-4">
                   <label className="form-label">Date of Birth (DD/MM/YYYY)</label>
                   <input 
                     required 
@@ -1423,10 +1599,7 @@ export default function ApplicationForm() {
                   />
                   {dobError && <div className="error-text">{dobError}</div>}
                 </div>
-              </div>
- 
-              <div className="form-grid">
-                <div className="form-group">
+                <div className="form-group col-4">
                   <label className="form-label">Gender</label>
                   <select 
                     required 
@@ -1441,7 +1614,19 @@ export default function ApplicationForm() {
                     <option>Prefer not to say</option>
                   </select>
                 </div>
-                <div className="form-group">
+                <div className="form-group col-4">
+                  <label className="form-label">Category</label>
+                  <select 
+                    required 
+                    className={`form-input ${(triedSubmit && !category) ? 'faulty-input' : ''}`} 
+                    value={category} 
+                    onChange={e => setCategory(e.target.value)}
+                  >
+                    <option value="">Select Category</option>
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="form-group col-4">
                   <label className="form-label">State / Union Territory</label>
                   <select 
                     required 
@@ -1455,7 +1640,7 @@ export default function ApplicationForm() {
                     ))}
                   </select>
                 </div>
-                <div className="form-group">
+                <div className="form-group col-4">
                   <label className="form-label">City</label>
                   <input 
                     required 
@@ -1465,18 +1650,17 @@ export default function ApplicationForm() {
                     placeholder="e.g. New Delhi"
                   />
                 </div>
-                <div className="form-group">
+                <div className="form-group col-4">
                   <label className="form-label">Pincode (6 Digits)</label>
                   <input 
                     required 
                     className={`form-input ${(triedSubmit && !pincode) ? 'faulty-input' : ''}`} 
                     value={pincode} 
-                    onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))} 
+                    onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     placeholder="e.g. 110001"
                   />
                 </div>
               </div>
- 
 
               <button type="submit" className="btn-primary" style={{width: '100%'}}>Proceed to Education Options</button>
             </>
@@ -1601,16 +1785,48 @@ export default function ApplicationForm() {
 
               <hr style={dividerStyle} />
 
-              <h3 style={{marginBottom: '1rem'}}>Graduation Details <span style={{color: '#dc2626'}}>*</span></h3>
+              <h3 style={{marginBottom: '1rem'}}>Graduation Details</h3>
               {grads.map((g, i) => (
-                <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
-                  <div className="form-group"><label className="form-label">University</label><UniversityAutocomplete required className="form-input" value={g.university} onChange={val => updateEntry(setGrads, grads, i, 'university', val)} placeholder="Search university..." /></div>
-                  <div className="form-group">
+                <div className="form-grid" key={i} style={{marginBottom: '1rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0', position: 'relative'}}>
+                  <div className="col-12" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#002147' }}>
+                      Graduation Qualification #{i + 1}
+                    </span>
+                    {(grads.length > 1 || g.university || g.degree_name) && (
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          if (grads.length === 1) {
+                            setGrads([{ university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', score_type: 'Percentage', score_value: '', grad_year: '', is_pursuing: false }]);
+                          } else {
+                            removeEntry(setGrads, grads, i);
+                          }
+                        }}
+                        style={{ 
+                          color: '#ef4444', 
+                          background: '#fef2f2', 
+                          border: '1px solid #fecaca', 
+                          padding: '4px 10px', 
+                          borderRadius: '6px', 
+                          fontSize: '0.78rem', 
+                          fontWeight: 700, 
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        title="Delete this graduation entry"
+                      >
+                        <Trash2 size={13} /> Delete Entry
+                      </button>
+                    )}
+                  </div>
+                  <div className="form-group col-5"><label className="form-label">University</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setGrads, grads, i, 'university', val)} placeholder="Search university..." /></div>
+                  <div className="form-group col-4">
                     <label className="form-label">Degree</label>
                     {g.degree_select === 'Other' ? (
                       <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
                         <input 
-                          required 
                           className="form-input" 
                           placeholder="e.g. B.Sc. Hons" 
                           value={g.degree_custom || ''} 
@@ -1647,7 +1863,6 @@ export default function ApplicationForm() {
                       </div>
                     ) : (
                       <select 
-                        required 
                         className="form-input" 
                         value={g.degree_select || ''} 
                         onChange={e => {
@@ -1667,11 +1882,16 @@ export default function ApplicationForm() {
                         <option value="Other">Other (please specify)</option>
                       </select>
                     )}
+                    {(g.degree_select?.includes('Integrated') || g.degree_select?.includes('Dual') || g.degree_select?.includes('BS-MS')) && (
+                      <div style={{ marginTop: '6px', background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e3a8a', padding: '6px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
+                        💡 Integrated / Dual Degree: This qualification awards both Bachelor's and Master's degrees.
+                      </div>
+                    )}
                   </div>
-                  <div className="form-group">
+                  <div className="form-group col-3">
                     <label className="form-label">Specialization / Discipline</label>
                     <SpecializationInput 
-                      required={true}
+                      required={false}
                       className="form-input" 
                       placeholder="e.g. Economics, Mathematics" 
                       value={g.degree_spec || ''} 
@@ -1687,12 +1907,25 @@ export default function ApplicationForm() {
                       }} 
                     />
                   </div>
-                  <div className="form-group"><label className="form-label">Year of Passing</label><input required={i === 0 || !!g.university || !!g.degree_name || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setGrads, grads, i, 'grad_year', e.target.value)} /></div>
-                  <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setGrads, grads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA (Out of 10)</option><option>CGPA (Out of 4)</option></select></div>
-                  <div className="form-group"><label className="form-label">Score (&lt;= {g.score_type==='Percentage' ? '100' : g.score_type==='CGPA (Out of 4)' ? '4' : '10'})</label><input required type="number" step="0.01" max={g.score_type === 'CGPA (Out of 10)' ? '10' : g.score_type === 'CGPA (Out of 4)' ? '4' : '100'} className="form-input" value={g.score_value} onChange={e => updateEntry(setGrads, grads, i, 'score_value', e.target.value)} /></div>
+                  <div className="form-group col-3" style={{ display: 'flex', alignItems: 'center', paddingTop: '1.25rem' }}>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', fontWeight: 700, color: '#002147', cursor: 'pointer', margin: 0 }}>
+                      <input 
+                        type="checkbox" 
+                        checked={g.is_pursuing || false} 
+                        onChange={e => updateEntry(setGrads, grads, i, 'is_pursuing', e.target.checked)} 
+                        style={{ width: '16px', height: '16px', accentColor: '#002147' }}
+                      />
+                      Currently Pursuing
+                    </label>
+                  </div>
+                  <div className="form-group col-3"><label className="form-label">{g.is_pursuing ? 'Expected Completion Year' : 'Year of Passing'}</label><input required={!g.is_pursuing && (!!g.university || !!g.degree_name || !!g.score_value)} type="number" min={g.is_pursuing ? new Date().getFullYear() : 1950} max="2035" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setGrads, grads, i, 'grad_year', e.target.value)} /></div>
+                  <div className="form-group col-3"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setGrads, grads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA (Out of 10)</option><option>CGPA (Out of 4)</option></select></div>
+                  <div className="form-group col-3"><label className="form-label">{g.is_pursuing ? 'Current Score (Optional)' : `Score (<= ${g.score_type==='Percentage' ? '100' : g.score_type==='CGPA (Out of 4)' ? '4' : '10'})`}</label><input required={!g.is_pursuing && (!!g.university || !!g.degree_name)} type="number" step="0.01" max={g.score_type === 'CGPA (Out of 10)' ? '10' : g.score_type === 'CGPA (Out of 4)' ? '4' : '100'} className="form-input" value={g.score_value} onChange={e => updateEntry(setGrads, grads, i, 'score_value', e.target.value)} /></div>
                 </div>
               ))}
-              <button type="button" className="btn-secondary" disabled={grads.length>=3} onClick={() => addEntry(setGrads, grads, 3, { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Graduation Detail</button>
+              <button type="button" className="btn-secondary" disabled={grads.length>=3} onClick={() => addEntry(setGrads, grads, 3, { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>
+                {grads.length > 0 ? '+ Add Another Graduation Degree' : '+ Add Graduation Degree'}
+              </button>
 
 
               <hr style={dividerStyle} />
@@ -1708,9 +1941,34 @@ export default function ApplicationForm() {
               {showPostGrad && (
                 <>
                   {postGrads.map((g, i) => (
-                    <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
-                  <div className="form-group"><label className="form-label">University</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setPostGrads, postGrads, i, 'university', val)} placeholder="Search university..." /></div>
-                  <div className="form-group">
+                    <div className="form-grid" key={i} style={{marginBottom: '1rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0', position: 'relative'}}>
+                      <div className="col-12" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#002147' }}>
+                          Post Graduation Qualification #{i + 1}
+                        </span>
+                        <button 
+                          type="button" 
+                          onClick={() => removeEntry(setPostGrads, postGrads, i)}
+                          style={{ 
+                            color: '#ef4444', 
+                            background: '#fef2f2', 
+                            border: '1px solid #fecaca', 
+                            padding: '4px 10px', 
+                            borderRadius: '6px', 
+                            fontSize: '0.78rem', 
+                            fontWeight: 700, 
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                          title="Delete this post graduation entry"
+                        >
+                          <Trash2 size={13} /> Delete Entry
+                        </button>
+                      </div>
+                      <div className="form-group col-5"><label className="form-label">University</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setPostGrads, postGrads, i, 'university', val)} placeholder="Search university..." /></div>
+                      <div className="form-group col-4">
                     <label className="form-label">Degree</label>
                     {g.degree_select === 'Other' ? (
                       <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
@@ -1771,7 +2029,7 @@ export default function ApplicationForm() {
                       </select>
                     )}
                   </div>
-                  <div className="form-group">
+                  <div className="form-group col-3">
                     <label className="form-label">Specialization / Discipline</label>
                     <SpecializationInput 
                       required={false}
@@ -1790,12 +2048,25 @@ export default function ApplicationForm() {
                       }} 
                     />
                   </div>
-                  <div className="form-group"><label className="form-label">Year of Passing</label><input required={!!g.university || !!g.degree_name || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setPostGrads, postGrads, i, 'grad_year', e.target.value)} /></div>
-                  <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA (Out of 10)</option><option>CGPA (Out of 4)</option></select></div>
-                  <div className="form-group"><label className="form-label">Score (&lt;= {g.score_type==='Percentage' ? '100' : g.score_type==='CGPA (Out of 4)' ? '4' : '10'})</label><input type="number" step="0.01" max={g.score_type === 'CGPA (Out of 10)' ? '10' : g.score_type === 'CGPA (Out of 4)' ? '4' : '100'} className="form-input" value={g.score_value} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_value', e.target.value)} /></div>
+                  <div className="form-group col-3" style={{ display: 'flex', alignItems: 'center', paddingTop: '1.25rem' }}>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', fontWeight: 700, color: '#002147', cursor: 'pointer', margin: 0 }}>
+                      <input 
+                        type="checkbox" 
+                        checked={g.is_pursuing || false} 
+                        onChange={e => updateEntry(setPostGrads, postGrads, i, 'is_pursuing', e.target.checked)} 
+                        style={{ width: '16px', height: '16px', accentColor: '#002147' }}
+                      />
+                      Currently Pursuing
+                    </label>
+                  </div>
+                  <div className="form-group col-3"><label className="form-label">{g.is_pursuing ? 'Expected Completion Year' : 'Year of Passing'}</label><input required={!g.is_pursuing && (!!g.university || !!g.degree_name || !!g.score_value)} type="number" min={g.is_pursuing ? new Date().getFullYear() : 1950} max="2035" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setPostGrads, postGrads, i, 'grad_year', e.target.value)} /></div>
+                  <div className="form-group col-3"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA (Out of 10)</option><option>CGPA (Out of 4)</option></select></div>
+                  <div className="form-group col-3"><label className="form-label">{g.is_pursuing ? 'Current Score (Optional)' : `Score (<= ${g.score_type==='Percentage' ? '100' : g.score_type==='CGPA (Out of 4)' ? '4' : '10'})`}</label><input type="number" step="0.01" max={g.score_type === 'CGPA (Out of 10)' ? '10' : g.score_type === 'CGPA (Out of 4)' ? '4' : '100'} className="form-input" value={g.score_value} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_value', e.target.value)} /></div>
                 </div>
                   ))}
-                  <button type="button" className="btn-secondary" disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Post Graduation</button>
+                  <button type="button" className="btn-secondary" disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', is_pursuing: false, score_type: 'Percentage', score_value: '', grad_year: '' })}>
+                    {postGrads.length > 0 ? '+ Add Another Post Graduation Degree' : '+ Add Post Graduation Degree'}
+                  </button>
                 </>
               )}
 
@@ -1812,15 +2083,176 @@ export default function ApplicationForm() {
               {showDoctorate && (
                 <>
                   {doctorates.map((g, i) => (
-                    <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
-                  <div className="form-group"><label className="form-label">University</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setDoctorates, doctorates, i, 'university', val)} placeholder="Search university..." /></div>
-                  <div className="form-group"><label className="form-label">Thesis Title</label><input className="form-input" value={g.thesis_title} onChange={e => updateEntry(setDoctorates, doctorates, i, 'thesis_title', e.target.value)} /></div>
-                  <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA (Out of 10)</option><option>CGPA (Out of 4)</option></select></div>
-                  <div className="form-group"><label className="form-label">Score (&lt;= {g.score_type==='Percentage' ? '100' : g.score_type==='CGPA (Out of 4)' ? '4' : '10'})</label><input type="number" step="0.01" max={g.score_type === 'CGPA (Out of 10)' ? '10' : g.score_type === 'CGPA (Out of 4)' ? '4' : '100'} className="form-input" value={g.score_value} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_value', e.target.value)} /></div>
-                  <div className="form-group"><label className="form-label">Year of Passing</label><input required={!!g.university || !!g.thesis_title || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setDoctorates, doctorates, i, 'grad_year', e.target.value)} /></div>
-                </div>
+                    <div className="form-grid" key={i} style={{marginBottom: '1rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0', position: 'relative'}}>
+                      <div className="col-12" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#002147' }}>
+                          Doctorate / Ph.D. Entry #{i + 1}
+                        </span>
+                        <button 
+                          type="button" 
+                          onClick={() => removeEntry(setDoctorates, doctorates, i)}
+                          style={{ 
+                            color: '#ef4444', 
+                            background: '#fef2f2', 
+                            border: '1px solid #fecaca', 
+                            padding: '4px 10px', 
+                            borderRadius: '6px', 
+                            fontSize: '0.78rem', 
+                            fontWeight: 700, 
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                          title="Delete this doctorate entry"
+                        >
+                          <Trash2 size={13} /> Delete Entry
+                        </button>
+                      </div>
+                      <div className="form-group col-6"><label className="form-label">University</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setDoctorates, doctorates, i, 'university', val)} placeholder="Search university..." /></div>
+                      <div className="form-group col-6"><label className="form-label">Thesis Title</label><input className="form-input" value={g.thesis_title} onChange={e => updateEntry(setDoctorates, doctorates, i, 'thesis_title', e.target.value)} /></div>
+                      <div className="form-group col-3" style={{ display: 'flex', alignItems: 'center', paddingTop: '1.25rem' }}>
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', fontWeight: 700, color: '#002147', cursor: 'pointer', margin: 0 }}>
+                          <input 
+                            type="checkbox" 
+                            checked={g.is_pursuing || false} 
+                            onChange={e => updateEntry(setDoctorates, doctorates, i, 'is_pursuing', e.target.checked)} 
+                            style={{ width: '16px', height: '16px', accentColor: '#002147' }}
+                          />
+                          Currently Pursuing
+                        </label>
+                      </div>
+                      <div className="form-group col-3"><label className="form-label">{g.is_pursuing ? 'Expected Completion Year' : 'Year of Passing'}</label><input required={!g.is_pursuing && (!!g.university || !!g.thesis_title || !!g.score_value)} type="number" min={g.is_pursuing ? new Date().getFullYear() : 1950} max="2035" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setDoctorates, doctorates, i, 'grad_year', e.target.value)} /></div>
+                      <div className="form-group col-3"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA (Out of 10)</option><option>CGPA (Out of 4)</option></select></div>
+                      <div className="form-group col-3"><label className="form-label">{g.is_pursuing ? 'Current Score (Optional)' : `Score (<= ${g.score_type==='Percentage' ? '100' : g.score_type==='CGPA (Out of 4)' ? '4' : '10'})`}</label><input type="number" step="0.01" max={g.score_type === 'CGPA (Out of 10)' ? '10' : g.score_type === 'CGPA (Out of 4)' ? '4' : '100'} className="form-input" value={g.score_value} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_value', e.target.value)} /></div>
+                    </div>
                   ))}
-                  <button type="button" className="btn-secondary" disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3, { university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Doctorate</button>
+                  <button type="button" className="btn-secondary" disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3, { university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '', is_pursuing: false })}>
+                    {doctorates.length > 0 ? '+ Add Another Doctorate / Ph.D.' : '+ Add Doctorate / Ph.D.'}
+                  </button>
+                </>
+              )}
+
+              <hr style={dividerStyle} />
+
+              <div 
+                onClick={() => setShowDiploma(!showDiploma)} 
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', cursor: 'pointer', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.03)', borderRadius: '8px' }}
+              >
+                <h3 style={{margin: 0}}>Diploma / Certification Details</h3>
+                {showDiploma ? <ChevronUp size={20} color="#64748b" /> : <ChevronDown size={20} color="#64748b" />}
+              </div>
+
+              {showDiploma && (
+                <>
+                  {diplomas.map((g, i) => (
+                    <div className="form-grid" key={i} style={{marginBottom: '1rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0', position: 'relative'}}>
+                      <div className="col-12" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#002147' }}>
+                          Diploma / Certificate Qualification #{i + 1}
+                        </span>
+                        <button 
+                          type="button" 
+                          onClick={() => removeEntry(setDiplomas, diplomas, i)}
+                          style={{ 
+                            color: '#ef4444', 
+                            background: '#fef2f2', 
+                            border: '1px solid #fecaca', 
+                            padding: '4px 10px', 
+                            borderRadius: '6px', 
+                            fontSize: '0.78rem', 
+                            fontWeight: 700, 
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                          title="Delete this diploma entry"
+                        >
+                          <Trash2 size={13} /> Delete Entry
+                        </button>
+                      </div>
+                      <div className="form-group col-4">
+                        <label className="form-label">University / Institute / Board</label>
+                        <UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setDiplomas, diplomas, i, 'university', val)} placeholder="e.g. Polytechnic / Institute / University" />
+                      </div>
+                      <div className="form-group col-4">
+                        <label className="form-label">Diploma / Certificate Type</label>
+                        <select 
+                          className="form-input" 
+                          value={g.degree_select || ''} 
+                          onChange={e => updateEntry(setDiplomas, diplomas, i, 'degree_select', e.target.value)}
+                        >
+                          <option value="">-- Select Diploma Type --</option>
+                          {DIPLOMA_TYPES.map(d => <option key={d} value={d}>{d}</option>)}
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <div className="form-group col-4">
+                        <label className="form-label">Specialization / Subject</label>
+                        <input 
+                          className="form-input" 
+                          placeholder="e.g. Public Policy, Computer Science" 
+                          value={g.degree_spec || ''} 
+                          onChange={e => updateEntry(setDiplomas, diplomas, i, 'degree_spec', e.target.value)} 
+                        />
+                      </div>
+                      <div className="form-group col-3">
+                        <label className="form-label">Diploma Duration</label>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <input 
+                            type="number" 
+                            min="1" 
+                            max="60" 
+                            placeholder="Period" 
+                            className="form-input" 
+                            style={{ flex: 1 }}
+                            value={g.duration_value || ''} 
+                            onChange={e => updateEntry(setDiplomas, diplomas, i, 'duration_value', e.target.value)} 
+                          />
+                          <select 
+                            className="form-input" 
+                            style={{ width: '100px' }}
+                            value={g.duration_unit || 'Years'} 
+                            onChange={e => updateEntry(setDiplomas, diplomas, i, 'duration_unit', e.target.value)}
+                          >
+                            <option value="Years">Years</option>
+                            <option value="Months">Months</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="form-group col-3" style={{ display: 'flex', alignItems: 'center', paddingTop: '1.25rem' }}>
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', fontWeight: 700, color: '#002147', cursor: 'pointer', margin: 0 }}>
+                          <input 
+                            type="checkbox" 
+                            checked={g.is_pursuing || false} 
+                            onChange={e => updateEntry(setDiplomas, diplomas, i, 'is_pursuing', e.target.checked)} 
+                            style={{ width: '16px', height: '16px', accentColor: '#002147' }}
+                          />
+                          Currently Pursuing
+                        </label>
+                      </div>
+                      <div className="form-group col-2">
+                        <label className="form-label">{g.is_pursuing ? 'Expected Year' : 'Year of Passing'}</label>
+                        <input type="number" min={g.is_pursuing ? new Date().getFullYear() : 1950} max="2035" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setDiplomas, diplomas, i, 'grad_year', e.target.value)} />
+                      </div>
+                      <div className="form-group col-2">
+                        <label className="form-label">Score Type</label>
+                        <select className="form-input" value={g.score_type} onChange={e => updateEntry(setDiplomas, diplomas, i, 'score_type', e.target.value)}>
+                          <option>Percentage</option>
+                          <option>CGPA (Out of 10)</option>
+                          <option>CGPA (Out of 4)</option>
+                        </select>
+                      </div>
+                      <div className="form-group col-2">
+                        <label className="form-label">{g.is_pursuing ? 'Current Score' : 'Score'}</label>
+                        <input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setDiplomas, diplomas, i, 'score_value', e.target.value)} />
+                      </div>
+                    </div>
+                  ))}
+                  <button type="button" className="btn-secondary" disabled={diplomas.length>=3} onClick={() => addEntry(setDiplomas, diplomas, 3, { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', is_pursuing: false, score_type: 'Percentage', score_value: '', grad_year: '' })}>
+                    {diplomas.length > 0 ? '+ Add Another Diploma / Certificate' : '+ Add Diploma / Certificate'}
+                  </button>
                 </>
               )}
 
@@ -1888,15 +2320,15 @@ export default function ApplicationForm() {
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line>
                       </svg>
                       <strong style={{ display: 'block', color: '#1e293b', marginBottom: '4px' }}>Click to Browse or Drag & Drop PDF here</strong>
-                      <span style={{ fontSize: '12px' }}>This bypasses Windows Explorer freezing issues. Max size: 10MB.</span>
+                      <span style={{ fontSize: '12px' }}>Max size: 10MB.</span>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ marginBottom: '24px' }}>
                 <label className="form-label">Total Professional Experience</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                   <div className="form-group">
                     <input 
                       required 
@@ -1921,36 +2353,77 @@ export default function ApplicationForm() {
                     />
                   </div>
                 </div>
+
+                <div className="form-group">
+                  <label className="form-label">Last / Current Salary (in ₹ INR Per Annum / LPA)</label>
+                  <input 
+                    type="number" 
+                    step="0.1" 
+                    min="0" 
+                    className="form-input" 
+                    placeholder="e.g. 6.5 (for ₹6.5 Lakhs per annum)" 
+                    value={lastSalary} 
+                    onChange={e => setLastSalary(e.target.value)} 
+                  />
+                </div>
               </div>
 
-              <p style={{marginBottom: '1rem'}}>Do you want to add specific detailed work entries below?</p>
-              <div style={{display: 'flex', gap: '2rem', marginBottom: '2rem'}}>
-                <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="radio" name="has_work" checked={hasWork} onChange={() => setHasWork(true)} /> Yes</label>
-                <label style={{display:'flex', alignItems:'center', gap:'0.5rem'}}><input type="radio" name="has_work" checked={!hasWork} onChange={() => setHasWork(false)} /> No</label>
-              </div>
-
-              {hasWork && (
-                <div style={{marginBottom: '2rem'}}>
-                  {workExps.map((w, i) => (
-                    <div key={i} style={{marginBottom: '1.5rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
-                      <div className="form-grid">
-                        <div className="form-group"><label className="form-label">Organization</label><input required className="form-input" value={w.company_name} onChange={e => updateEntry(setWorkExps, workExps, i, 'company_name', e.target.value)} /></div>
-                        <div className="form-group"><label className="form-label">Designation</label><input required className="form-input" value={w.role} onChange={e => updateEntry(setWorkExps, workExps, i, 'role', e.target.value)} /></div>
-                        <div className="form-group"><label className="form-label">Start Date</label><input required type="date" className="form-input" value={w.start_date} onChange={e => updateEntry(setWorkExps, workExps, i, 'start_date', e.target.value)} /></div>
-                        <div className="form-group"><label className="form-label">End Date (Leave blank if present)</label><input type="date" className="form-input" value={w.end_date} onChange={e => updateEntry(setWorkExps, workExps, i, 'end_date', e.target.value)} /></div>
+              <div style={{marginBottom: '2rem'}}>
+                <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>Work Experience Entries</h4>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '16px' }}>Freshers / candidates without prior work experience may leave this section blank.</p>
+                {workExps.map((w, i) => (
+                  <div key={i} style={{marginBottom: '1.25rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0', position: 'relative'}}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#002147' }}>
+                        Experience Entry #{i + 1}
+                      </span>
+                      <button 
+                        type="button" 
+                        onClick={() => removeEntry(setWorkExps, workExps, i)}
+                        style={{ 
+                          color: '#ef4444', 
+                          background: '#fef2f2', 
+                          border: '1px solid #fecaca', 
+                          padding: '4px 10px', 
+                          borderRadius: '6px', 
+                          fontSize: '0.78rem', 
+                          fontWeight: 700, 
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        title="Delete this work experience entry"
+                      >
+                        <Trash2 size={13} /> Delete Entry
+                      </button>
+                    </div>
+                    <div className="form-grid">
+                      <div className="form-group col-4">
+                        <label className="form-label">Organization / Employer</label>
+                        <input className="form-input" value={w.company_name} onChange={e => updateEntry(setWorkExps, workExps, i, 'company_name', e.target.value)} placeholder="e.g. Research Institute / Company" />
                       </div>
-                      <div className="form-group">
-                        <label className="form-label">Brief about work done there (Max 40 Words)</label>
-                        <textarea required className="form-input" value={w.description} onChange={e => updateEntry(setWorkExps, workExps, i, 'description', e.target.value)} />
-                        <div className="error-text">Current: {countWords(w.description)}/40</div>
+                      <div className="form-group col-4">
+                        <label className="form-label">Designation / Role</label>
+                        <input className="form-input" value={w.role} onChange={e => updateEntry(setWorkExps, workExps, i, 'role', e.target.value)} placeholder="e.g. Research Associate / Analyst" />
+                      </div>
+                      <div className="form-group col-2">
+                        <label className="form-label">Start Date</label>
+                        <input type="date" className="form-input" value={w.start_date} onChange={e => updateEntry(setWorkExps, workExps, i, 'start_date', e.target.value)} />
+                      </div>
+                      <div className="form-group col-2">
+                        <label className="form-label" title="Leave blank if currently working here">End Date <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 'normal' }}>(Optional)</span></label>
+                        <input type="date" className="form-input" value={w.end_date} onChange={e => updateEntry(setWorkExps, workExps, i, 'end_date', e.target.value)} />
                       </div>
                     </div>
-                  ))}
-                  <button type="button" className="btn-secondary" disabled={workExps.length>=3} onClick={() => addEntry(setWorkExps, workExps, 3, { company_name: '', start_date: '', end_date: '', role: '', description: '' })}>+ Add Recent Work Experience</button>
-                </div>
-              )}
+                  </div>
+                ))}
+                <button type="button" className="btn-secondary" disabled={workExps.length>=3} onClick={() => addEntry(setWorkExps, workExps, 3, { company_name: '', start_date: '', end_date: '', role: '', description: '' })}>
+                  {workExps.length > 0 ? '+ Add Another Work Experience' : '+ Add Work Experience'}
+                </button>
+              </div>
 
-              <hr style={dividerStyle} />
               <div style={{display: 'flex'}}>
                 <button type="button" className="btn-secondary" onClick={() => setStep(2)}>Back</button>
                 <button type="submit" className="btn-primary" style={{flex: 1}}>Proceed to Publications</button>
@@ -1962,40 +2435,86 @@ export default function ApplicationForm() {
             <>
               <h3>Publications / Works Authored</h3>
               <p style={{marginBottom: '1.5rem', color: 'var(--text-secondary)'}}>
-                Please enter the count of your publications under each category (enter 0 if none):
+                Select publication categories from the dropdown menu and enter the number of published works under each (leave blank if none):
               </p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                <div className="form-group" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <label className="form-label" style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Books Published</label>
-                  <input type="number" min="0" className="form-input" value={pubBooks} onChange={e => setPubBooks(Math.max(0, parseInt(e.target.value) || 0))} />
-                </div>
-                <div className="form-group" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <label className="form-label" style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Peer-Reviewed Journal Papers</label>
-                  <input type="number" min="0" className="form-input" value={pubPapers} onChange={e => setPubPapers(Math.max(0, parseInt(e.target.value) || 0))} />
-                </div>
-                <div className="form-group" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <label className="form-label" style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Book Chapters</label>
-                  <input type="number" min="0" className="form-input" value={pubChapters} onChange={e => setPubChapters(Math.max(0, parseInt(e.target.value) || 0))} />
-                </div>
-                <div className="form-group" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <label className="form-label" style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Research Reports</label>
-                  <input type="number" min="0" className="form-input" value={pubReports} onChange={e => setPubReports(Math.max(0, parseInt(e.target.value) || 0))} />
-                </div>
-                <div className="form-group" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <label className="form-label" style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Policy Briefs</label>
-                  <input type="number" min="0" className="form-input" value={pubPolicyBriefs} onChange={e => setPubPolicyBriefs(Math.max(0, parseInt(e.target.value) || 0))} />
-                </div>
+              <div style={{ marginBottom: '2rem' }}>
+                {pubEntries.map((pe, idx) => (
+                  <div key={idx} style={{ marginBottom: '1rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <div className="form-grid" style={{ alignItems: 'center' }}>
+                      <div className="form-group col-7" style={{ marginBottom: 0 }}>
+                        <label className="form-label">Publication Category</label>
+                        <select 
+                          className="form-input"
+                          value={pe.category}
+                          onChange={e => updatePubEntry(idx, 'category', e.target.value)}
+                        >
+                          {PUBLICATION_CATEGORIES.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group col-3" style={{ marginBottom: 0 }}>
+                        <label className="form-label">Number of Publications</label>
+                        <input 
+                          type="number" 
+                          min="0"
+                          max="200"
+                          className="form-input" 
+                          value={pe.count}
+                          onChange={e => updatePubEntry(idx, 'count', Math.max(0, parseInt(e.target.value) || 0))}
+                          placeholder="e.g. 3"
+                        />
+                      </div>
+
+                      <div className="form-group col-2" style={{ marginBottom: 0, display: 'flex', alignItems: 'flex-end', paddingTop: '1.5rem' }}>
+                        <button 
+                          type="button" 
+                          onClick={() => removePubEntry(idx)}
+                          style={{ 
+                            color: '#ef4444', 
+                            background: '#fef2f2', 
+                            border: '1px solid #fecaca', 
+                            padding: '0.65rem 0.9rem', 
+                            borderRadius: '8px', 
+                            fontSize: '0.82rem', 
+                            fontWeight: 700, 
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            width: '100%',
+                            justifyContent: 'center'
+                          }}
+                          title="Remove category"
+                        >
+                          <Trash2 size={14} /> Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {pubEntries.length < 5 && (
+                  <button 
+                    type="button" 
+                    className="btn-secondary" 
+                    onClick={addPubEntry}
+                  >
+                    + Add Publication Category
+                  </button>
+                )}
               </div>
 
               <hr style={dividerStyle} />
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
-                <div className="form-group">
+              <div className="form-grid" style={{ marginBottom: '2rem' }}>
+                <div className="form-group col-6">
                   <label className="form-label">Google Scholar Link (Optional)</label>
                   <input type="url" className="form-input" value={scholarLink} onChange={e => setScholarLink(e.target.value)} placeholder="e.g. https://scholar.google.com/citations?user=..." />
                 </div>
-                <div className="form-group">
+                <div className="form-group col-6">
                   <label className="form-label">LinkedIn Profile Link (Optional)</label>
                   <input type="url" className="form-input" value={linkedin} onChange={e => setLinkedin(e.target.value)} placeholder="e.g. https://linkedin.com/in/..." />
                 </div>
@@ -2099,6 +2618,17 @@ export default function ApplicationForm() {
                       </select>
                     </div>
                     <div className="resume-inline-group">
+                      <label className="resume-inline-label">Category</label>
+                      <select 
+                        className="resume-inline-input"
+                        value={category}
+                        onChange={e => setCategory(e.target.value)}
+                      >
+                        <option value="">Select Category</option>
+                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div className="resume-inline-group">
                       <label className="resume-inline-label">State / UT</label>
                       <select 
                         className="resume-inline-input"
@@ -2140,6 +2670,7 @@ export default function ApplicationForm() {
                       <span className="resume-contact-item">📍 {city}, {candidateState} - {pincode}</span>
                       <span className="resume-contact-item">🎂 {dob}</span>
                       <span className="resume-contact-item">👤 {gender}</span>
+                      <span className="resume-contact-item">🏷️ Category: {category}</span>
                     </div>
                   </>
                 )}
@@ -2701,18 +3232,13 @@ export default function ApplicationForm() {
                                 <label className="resume-inline-label">End Date (Leave blank if present)</label>
                                 <input type="date" className="resume-inline-input" value={w.end_date} onChange={e => updateEntry(setWorkExps, workExps, i, 'end_date', e.target.value)} />
                               </div>
-                              <div className="resume-inline-group" style={{ gridColumn: 'span 2' }}>
-                                <label className="resume-inline-label">Description (Max 40 Words)</label>
-                                <textarea className="resume-inline-input resume-inline-textarea" value={w.description} onChange={e => updateEntry(setWorkExps, workExps, i, 'description', e.target.value)} />
-                                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Current word count: {countWords(w.description)}/40</div>
-                              </div>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
                               <button type="button" className="resume-delete-btn" onClick={() => removeEntry(setWorkExps, workExps, i)}>❌ Remove Work Entry</button>
                             </div>
                           </div>
                         ))}
-                        <button type="button" className="btn-secondary" style={{ marginTop: '0' }} disabled={workExps.length>=3} onClick={() => addEntry(setWorkExps, workExps, 3, { company_name: '', start_date: '', end_date: '', role: '', description: '' })}>+ Add Work Experience</button>
+                        <button type="button" className="btn-secondary" style={{ marginTop: '0' }} disabled={workExps.length>=3} onClick={() => addEntry(setWorkExps, workExps, 3, { company_name: '', start_date: '', end_date: '', role: '' })}>+ Add Work Experience</button>
                       </div>
                     )}
                   </div>
@@ -2739,7 +3265,6 @@ export default function ApplicationForm() {
                                 {w.start_date ? new Date(w.start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''} - {w.end_date ? new Date(w.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Present'}
                               </span>
                             </div>
-                            {w.description && <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.5rem', lineHeight: '1.5' }}>{w.description}</p>}
                           </div>
                         ))}
                       </div>
