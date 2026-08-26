@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE as API } from '../api';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 
 const UG_DEGREES = ['B.A.', 'B.Sc.', 'B.Com', 'B.Tech', 'B.E.', 'B.B.A.', 'B.C.A.', 'LL.B.', 'MBBS', 'B.Arch', 'B.Ed.'];
 const PG_DEGREES = ['M.A.', 'M.Sc.', 'M.Com', 'M.Tech', 'M.E.', 'M.B.A.', 'M.C.A.', 'LL.M.', 'M.Ed.', 'MD', 'MS'];
@@ -379,6 +379,9 @@ export default function ApplicationForm() {
   });
 
   const [doctorates, setDoctorates] = useState(() => savedDraft.doctorates || [{ university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '' }]);
+
+  const [showPostGrad, setShowPostGrad] = useState(() => savedDraft.postGrads && (savedDraft.postGrads.length > 1 || !!(savedDraft.postGrads[0] && savedDraft.postGrads[0].university)));
+  const [showDoctorate, setShowDoctorate] = useState(() => savedDraft.doctorates && (savedDraft.doctorates.length > 1 || !!(savedDraft.doctorates[0] && savedDraft.doctorates[0].university)));
 
   // Step 2 & 3 custom states
   const [classXYear, setClassXYear] = useState(() => savedDraft.classXYear || '');
@@ -1692,9 +1695,18 @@ export default function ApplicationForm() {
 
               <hr style={dividerStyle} />
 
-              <h3 style={{marginBottom: '1rem'}}>Post Graduation Details</h3>
-              {postGrads.map((g, i) => (
-                <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
+              <div 
+                onClick={() => setShowPostGrad(!showPostGrad)} 
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', cursor: 'pointer', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.03)', borderRadius: '8px' }}
+              >
+                <h3 style={{margin: 0}}>Post Graduation Details (Optional)</h3>
+                {showPostGrad ? <ChevronUp size={20} color="#64748b" /> : <ChevronDown size={20} color="#64748b" />}
+              </div>
+              
+              {showPostGrad && (
+                <>
+                  {postGrads.map((g, i) => (
+                    <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
                   <div className="form-group"><label className="form-label">University</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setPostGrads, postGrads, i, 'university', val)} placeholder="Search university..." /></div>
                   <div className="form-group">
                     <label className="form-label">Degree Type</label>
@@ -1780,23 +1792,35 @@ export default function ApplicationForm() {
                   <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
                   <div className="form-group"><label className="form-label">Score</label><input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_value', e.target.value)} /></div>
                 </div>
-              ))}
-              <button type="button" className="btn-secondary" disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Post Graduation</button>
-
+                  ))}
+                  <button type="button" className="btn-secondary" disabled={postGrads.length>=3} onClick={() => addEntry(setPostGrads, postGrads, 3, { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Post Graduation</button>
+                </>
+              )}
 
               <hr style={dividerStyle} />
 
-              <h3 style={{marginBottom: '1rem'}}>Doctorate Details</h3>
-              {doctorates.map((g, i) => (
-                <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
+              <div 
+                onClick={() => setShowDoctorate(!showDoctorate)} 
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', cursor: 'pointer', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.03)', borderRadius: '8px' }}
+              >
+                <h3 style={{margin: 0}}>Doctorate Details (Optional)</h3>
+                {showDoctorate ? <ChevronUp size={20} color="#64748b" /> : <ChevronDown size={20} color="#64748b" />}
+              </div>
+
+              {showDoctorate && (
+                <>
+                  {doctorates.map((g, i) => (
+                    <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
                   <div className="form-group"><label className="form-label">University</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setDoctorates, doctorates, i, 'university', val)} placeholder="Search university..." /></div>
                   <div className="form-group"><label className="form-label">Thesis Title</label><input className="form-input" value={g.thesis_title} onChange={e => updateEntry(setDoctorates, doctorates, i, 'thesis_title', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Year of Passing</label><input required={!!g.university || !!g.thesis_title || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setDoctorates, doctorates, i, 'grad_year', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
                   <div className="form-group"><label className="form-label">Score</label><input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_value', e.target.value)} /></div>
                 </div>
-              ))}
-              <button type="button" className="btn-secondary" disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3, { university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Doctorate</button>
+                  ))}
+                  <button type="button" className="btn-secondary" disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3, { university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Doctorate</button>
+                </>
+              )}
 
               <div style={{display: 'flex'}}>
                 <button type="button" className="btn-secondary" onClick={() => setStep(1)}>Back</button>
