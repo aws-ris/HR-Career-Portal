@@ -2200,6 +2200,17 @@ def delete_job(job_id: str, db: Session = Depends(get_db)):
 
 # Schooling Schema Migration Endpoint (Vercel-compatible)
 # ─────────────────────────────────────────────
+@app.post("/api/v1/debug/drop-cgpa-constraint")
+def drop_cgpa_constraint(db: Session = Depends(get_db)):
+    from sqlalchemy import text
+    try:
+        db.execute(text("ALTER TABLE candidate_higher_education DROP CONSTRAINT IF EXISTS chk_edu_score_type;"))
+        db.commit()
+        return {"status": "success", "message": "Constraint dropped successfully!"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/v1/debug/migrate-schooling")
 def migrate_schooling_endpoint():
     try:
