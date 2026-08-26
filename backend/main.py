@@ -1206,13 +1206,63 @@ def download_resume(candidate_id: str, preview: bool = False, db: Session = Depe
     )
 
 
+def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, filename: str):
+    candidate = db.query(models.CandidateMetadata).filter(models.CandidateMetadata.id == candidate_id).first()
+    if not candidate:
+        raise ValueError(f"Candidate {candidate_id} not found")
+
+    S3_BUCKET = os.getenv("S3_BUCKET_NAME")
+    s3_key = f"resumes/{candidate_id}_{filename}"
+    uploaded_to_s3 = False
+
+    if S3_BUCKET:
+        try:
+            import boto3
+            from botocore.client import Config
+            s3_client = boto3.client('s3', region_name='ap-south-1', config=Config(signature_version='s3v4'))
+            s3_client.put_object(
+                Bucket=S3_BUCKET,
+                Key=s3_key,
+                Body=file_bytes,
+                ContentType='application/pdf'
+            )
+            uploaded_to_s3 = True
+            print(f"[S3] Uploaded resume for candidate {candidate_id} to S3 bucket {S3_BUCKET}")
+        except Exception as e:
+            print(f"[S3] Error uploading to S3: {e}. Falling back to database/local file storage.")
+
+    upload_dir = os.path.join(os.path.dirname(__file__), "uploads", "resumes")
+    os.makedirs(upload_dir, exist_ok=True)
+    safe_filename = f"{candidate_id}_{filename}"
+    file_path = os.path.join(upload_dir, safe_filename)
+    try:
+        with open(file_path, "wb") as f:
+            f.write(file_bytes)
+    except:
+        pass
+
+    rel_path = s3_key if uploaded_to_s3 else os.path.join("uploads", "resumes", safe_filename).replace("\\", "/")
+
+    payload = db.query(models.CandidateResumePayload).filter(models.CandidateResumePayload.candidate_id == candidate_id).first()
+    if payload:
+        payload.resume_path = rel_path
+        payload.pdf_blob = None if uploaded_to_s3 else file_bytes
+    else:
+        payload = models.CandidateResumePayload(
+            candidate_id=candidate_id, 
+            resume_path=rel_path, 
+            pdf_blob=None if uploaded_to_s3 else file_bytes
+        )
+        db.add(payload)
+
+    db.commit()
+    return rel_path, file_path
+
 @app.post("/api/v1/applications/{candidate_id}/resume")
-async def upload_resume(candidate_id: str, background_tasks: BackgroundTasks, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    from ai_service import process_and_save_resume, background_vectorize_resume
+async def upload_resume(candidate_id: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
     try:
         content = await file.read()
         saved_path, file_path = process_and_save_resume(db, candidate_id, content, file.filename)
-        background_tasks.add_task(background_vectorize_resume, candidate_id, file_path)
         return {"status": "success", "resume_path": saved_path}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
