@@ -1472,7 +1472,7 @@ export default function ApplicationForm() {
 
           {step === 2 && (
             <>
-              <h3>Basic Schooling</h3>
+              <h3>Secondary Education</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '1.5rem' }}>
                 {/* Class X Details */}
                 <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
@@ -1525,13 +1525,8 @@ export default function ApplicationForm() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Passing Year</label>
-                    <select required className="form-input" value={classXYear} onChange={e => setClassXYear(e.target.value)}>
-                      <option value="">Select Passing Year</option>
-                      {PASSING_YEARS.map(yr => (
-                        <option key={yr} value={yr}>{yr}</option>
-                      ))}
-                    </select>
+                    <label className="form-label">Year of Passing</label>
+                    <input required type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={classXYear} onChange={e => setClassXYear(e.target.value)} />
                   </div>
                 </div>
 
@@ -1586,20 +1581,15 @@ export default function ApplicationForm() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Passing Year</label>
-                    <select required className="form-input" value={classXIIYear} onChange={e => setClassXIIYear(e.target.value)}>
-                      <option value="">Select Passing Year</option>
-                      {PASSING_YEARS.map(yr => (
-                        <option key={yr} value={yr}>{yr}</option>
-                      ))}
-                    </select>
+                    <label className="form-label">Year of Passing</label>
+                    <input required type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={classXIIYear} onChange={e => setClassXIIYear(e.target.value)} />
                   </div>
                 </div>
               </div>
 
               <hr style={dividerStyle} />
 
-              <h3 style={{marginBottom: '1rem'}}>Graduation Details</h3>
+              <h3 style={{marginBottom: '1rem'}}>Graduation Details <span style={{color: '#dc2626'}}>*</span></h3>
               {grads.map((g, i) => (
                 <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
                   <div className="form-group"><label className="form-label">University</label><UniversityAutocomplete required className="form-input" value={g.university} onChange={val => updateEntry(setGrads, grads, i, 'university', val)} placeholder="Search university..." /></div>
@@ -1699,7 +1689,7 @@ export default function ApplicationForm() {
                 onClick={() => setShowPostGrad(!showPostGrad)} 
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', cursor: 'pointer', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.03)', borderRadius: '8px' }}
               >
-                <h3 style={{margin: 0}}>Post Graduation Details (Optional)</h3>
+                <h3 style={{margin: 0}}>Post Graduation Details</h3>
                 {showPostGrad ? <ChevronUp size={20} color="#64748b" /> : <ChevronDown size={20} color="#64748b" />}
               </div>
               
@@ -1803,7 +1793,7 @@ export default function ApplicationForm() {
                 onClick={() => setShowDoctorate(!showDoctorate)} 
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', cursor: 'pointer', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.03)', borderRadius: '8px' }}
               >
-                <h3 style={{margin: 0}}>Doctorate Details (Optional)</h3>
+                <h3 style={{margin: 0}}>Doctorate Details</h3>
                 {showDoctorate ? <ChevronUp size={20} color="#64748b" /> : <ChevronDown size={20} color="#64748b" />}
               </div>
 
@@ -1813,9 +1803,9 @@ export default function ApplicationForm() {
                     <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
                   <div className="form-group"><label className="form-label">University</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setDoctorates, doctorates, i, 'university', val)} placeholder="Search university..." /></div>
                   <div className="form-group"><label className="form-label">Thesis Title</label><input className="form-input" value={g.thesis_title} onChange={e => updateEntry(setDoctorates, doctorates, i, 'thesis_title', e.target.value)} /></div>
-                  <div className="form-group"><label className="form-label">Year of Passing</label><input required={!!g.university || !!g.thesis_title || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setDoctorates, doctorates, i, 'grad_year', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
                   <div className="form-group"><label className="form-label">Score</label><input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_value', e.target.value)} /></div>
+                  <div className="form-group"><label className="form-label">Year of Passing</label><input required={!!g.university || !!g.thesis_title || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setDoctorates, doctorates, i, 'grad_year', e.target.value)} /></div>
                 </div>
                   ))}
                   <button type="button" className="btn-secondary" disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3, { university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '' })}>+ Add Doctorate</button>
@@ -2169,7 +2159,7 @@ export default function ApplicationForm() {
 
                 {editEducation ? (
                   <div>
-                    <h4 style={{ marginBottom: '0.5rem' }}>Basic Schooling</h4>
+                    <h4 style={{ marginBottom: '0.5rem' }}>Secondary Education</h4>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid #e2e8f0' }}>
                       {/* Class X Edit */}
                       <div>
@@ -2213,6 +2203,10 @@ export default function ApplicationForm() {
                             </select>
                             <input type="number" step="0.01" max={classXScoreType === 'CGPA' ? '10' : '100'} className="resume-inline-input" value={classXScoreValue} onChange={e => setClassXScoreValue(e.target.value)} />
                           </div>
+                        </div>
+                        <div className="resume-inline-group" style={{ marginTop: '0.5rem' }}>
+                          <label className="resume-inline-label">Year of Passing</label>
+                          <input type="number" min="1950" max="2030" placeholder="YYYY" className="resume-inline-input" value={classXYear} onChange={e => setClassXYear(e.target.value)} />
                         </div>
                       </div>
 
@@ -2258,6 +2252,10 @@ export default function ApplicationForm() {
                             </select>
                             <input type="number" step="0.01" max={classXIIScoreType === 'CGPA' ? '10' : '100'} className="resume-inline-input" value={classXIIScoreValue} onChange={e => setClassXIIScoreValue(e.target.value)} />
                           </div>
+                        </div>
+                        <div className="resume-inline-group" style={{ marginTop: '0.5rem' }}>
+                          <label className="resume-inline-label">Year of Passing</label>
+                          <input type="number" min="1950" max="2030" placeholder="YYYY" className="resume-inline-input" value={classXIIYear} onChange={e => setClassXIIYear(e.target.value)} />
                         </div>
                       </div>
                     </div>
