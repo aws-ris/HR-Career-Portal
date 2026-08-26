@@ -177,7 +177,7 @@ class CandidateHigherEducation(Base):
 
     __table_args__ = (
         CheckConstraint("level IN ('undergrad','postgrad','phd')", name='chk_edu_level'),
-        CheckConstraint("score_type IN ('Percentage','CGPA')", name='chk_edu_score_type'),
+        CheckConstraint("score_type IN ('Percentage','CGPA (Out of 10)', 'CGPA (Out of 4)')", name='chk_edu_score_type'),
     )
 
 

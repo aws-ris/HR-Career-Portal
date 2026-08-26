@@ -650,8 +650,10 @@ export default function ApplicationForm() {
         errors.push("Class X score must be a valid positive number.");
       } else if (classXScoreType === 'Percentage' && valClassX > 100) {
         errors.push("Class X Percentage cannot exceed 100.");
-      } else if (classXScoreType === 'CGPA' && valClassX > 10) {
+      } else if (classXScoreType === 'CGPA (Out of 10)' && valClassX > 10) {
         errors.push("Class X CGPA cannot exceed 10.");
+      } else if (classXScoreType === 'CGPA (Out of 4)' && valClassX > 4) {
+        errors.push("Class X CGPA cannot exceed 4.");
       }
       if (!classXYear) {
         errors.push("Class X Passing Year is required.");
@@ -671,8 +673,10 @@ export default function ApplicationForm() {
         errors.push("Class XII score must be a valid positive number.");
       } else if (classXIIScoreType === 'Percentage' && valClassXII > 100) {
         errors.push("Class XII Percentage cannot exceed 100.");
-      } else if (classXIIScoreType === 'CGPA' && valClassXII > 10) {
+      } else if (classXIIScoreType === 'CGPA (Out of 10)' && valClassXII > 10) {
         errors.push("Class XII CGPA cannot exceed 10.");
+      } else if (classXIIScoreType === 'CGPA (Out of 4)' && valClassXII > 4) {
+        errors.push("Class XII CGPA cannot exceed 4.");
       }
       if (!classXIIYear) {
         errors.push("Class XII Passing Year is required.");
@@ -835,8 +839,10 @@ export default function ApplicationForm() {
       errors.push("Class X score must be a valid positive number.");
     } else if (classXScoreType === 'Percentage' && valClassX > 100) {
       errors.push("Class X Percentage cannot exceed 100.");
-    } else if (classXScoreType === 'CGPA' && valClassX > 10) {
+    } else if (classXScoreType === 'CGPA (Out of 10)' && valClassX > 10) {
       errors.push("Class X CGPA cannot exceed 10.");
+    } else if (classXScoreType === 'CGPA (Out of 4)' && valClassX > 4) {
+      errors.push("Class X CGPA cannot exceed 4.");
     }
     if (!classXYear) {
       errors.push("Class X Passing Year is required.");
@@ -847,8 +853,10 @@ export default function ApplicationForm() {
       errors.push("Class XII score must be a valid positive number.");
     } else if (classXIIScoreType === 'Percentage' && valClassXII > 100) {
       errors.push("Class XII Percentage cannot exceed 100.");
-    } else if (classXIIScoreType === 'CGPA' && valClassXII > 10) {
+    } else if (classXIIScoreType === 'CGPA (Out of 10)' && valClassXII > 10) {
       errors.push("Class XII CGPA cannot exceed 10.");
+    } else if (classXIIScoreType === 'CGPA (Out of 4)' && valClassXII > 4) {
+      errors.push("Class XII CGPA cannot exceed 4.");
     }
     if (!classXIIYear) {
       errors.push("Class XII Passing Year is required.");
@@ -1516,12 +1524,12 @@ export default function ApplicationForm() {
 
                   <div className="form-group" style={{ marginBottom: '1rem' }}>
                     <label className="form-label">Scoring System & Value</label>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                      {['Percentage', 'CGPA'].map(t => (
-                        <button type="button" key={t} onClick={() => setClassXScoreType(t)} style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700', border: '1px solid', borderColor: classXScoreType === t ? 'var(--accent-primary, #002147)' : '#cbd5e1', background: classXScoreType === t ? '#eff6ff' : '#ffffff', color: classXScoreType === t ? 'var(--accent-primary, #002147)' : '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}>{t}</button>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      {['Percentage', 'CGPA (Out of 10)', 'CGPA (Out of 4)'].map(t => (
+                        <button type="button" key={t} onClick={() => setClassXScoreType(t)} style={{ flex: 1, minWidth: '100px', padding: '0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700', border: '1px solid', borderColor: classXScoreType === t ? 'var(--accent-primary, #002147)' : '#cbd5e1', background: classXScoreType === t ? '#eff6ff' : '#ffffff', color: classXScoreType === t ? 'var(--accent-primary, #002147)' : '#64748b', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>{t}</button>
                       ))}
                     </div>
-                    <input required type="number" step="0.01" max={classXScoreType === 'CGPA' ? '10' : '100'} className="form-input" placeholder={classXScoreType === 'CGPA' ? 'e.g. 9.5' : 'e.g. 95.00'} value={classXScoreValue} onChange={e => setClassXScoreValue(e.target.value)} />
+                    <input required type="number" step="0.01" max={classXScoreType === 'CGPA (Out of 10)' ? '10' : classXScoreType === 'CGPA (Out of 4)' ? '4' : '100'} className="form-input" placeholder={classXScoreType.startsWith('CGPA') ? 'e.g. 3.5' : 'e.g. 95.00'} value={classXScoreValue} onChange={e => setClassXScoreValue(e.target.value)} />
                   </div>
 
                   <div className="form-group">
@@ -1572,12 +1580,12 @@ export default function ApplicationForm() {
 
                   <div className="form-group" style={{ marginBottom: '1rem' }}>
                     <label className="form-label">Scoring System & Value</label>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                      {['Percentage', 'CGPA'].map(t => (
-                        <button type="button" key={t} onClick={() => setClassXIIScoreType(t)} style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700', border: '1px solid', borderColor: classXIIScoreType === t ? 'var(--accent-primary, #002147)' : '#cbd5e1', background: classXIIScoreType === t ? '#eff6ff' : '#ffffff', color: classXIIScoreType === t ? 'var(--accent-primary, #002147)' : '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}>{t}</button>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      {['Percentage', 'CGPA (Out of 10)', 'CGPA (Out of 4)'].map(t => (
+                        <button type="button" key={t} onClick={() => setClassXIIScoreType(t)} style={{ flex: 1, minWidth: '100px', padding: '0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700', border: '1px solid', borderColor: classXIIScoreType === t ? 'var(--accent-primary, #002147)' : '#cbd5e1', background: classXIIScoreType === t ? '#eff6ff' : '#ffffff', color: classXIIScoreType === t ? 'var(--accent-primary, #002147)' : '#64748b', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>{t}</button>
                       ))}
                     </div>
-                    <input required type="number" step="0.01" max={classXIIScoreType === 'CGPA' ? '10' : '100'} className="form-input" placeholder={classXIIScoreType === 'CGPA' ? 'e.g. 9.5' : 'e.g. 95.00'} value={classXIIScoreValue} onChange={e => setClassXIIScoreValue(e.target.value)} />
+                    <input required type="number" step="0.01" max={classXIIScoreType === 'CGPA (Out of 10)' ? '10' : classXIIScoreType === 'CGPA (Out of 4)' ? '4' : '100'} className="form-input" placeholder={classXIIScoreType.startsWith('CGPA') ? 'e.g. 3.5' : 'e.g. 95.00'} value={classXIIScoreValue} onChange={e => setClassXIIScoreValue(e.target.value)} />
                   </div>
 
                   <div className="form-group">
@@ -1676,7 +1684,7 @@ export default function ApplicationForm() {
                     />
                   </div>
                   <div className="form-group"><label className="form-label">Year of Passing</label><input required={i === 0 || !!g.university || !!g.degree_name || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setGrads, grads, i, 'grad_year', e.target.value)} /></div>
-                  <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setGrads, grads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
+                  <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setGrads, grads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA (Out of 10)</option><option>CGPA (Out of 4)</option></select></div>
                   <div className="form-group"><label className="form-label">Score (&lt;= {g.score_type==='Percentage' ? '100' : '10'})</label><input required type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setGrads, grads, i, 'score_value', e.target.value)} /></div>
                 </div>
               ))}
@@ -1779,7 +1787,7 @@ export default function ApplicationForm() {
                     />
                   </div>
                   <div className="form-group"><label className="form-label">Year of Passing</label><input required={!!g.university || !!g.degree_name || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setPostGrads, postGrads, i, 'grad_year', e.target.value)} /></div>
-                  <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
+                  <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA (Out of 10)</option><option>CGPA (Out of 4)</option></select></div>
                   <div className="form-group"><label className="form-label">Score</label><input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setPostGrads, postGrads, i, 'score_value', e.target.value)} /></div>
                 </div>
                   ))}
@@ -1803,7 +1811,7 @@ export default function ApplicationForm() {
                     <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
                   <div className="form-group"><label className="form-label">University</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setDoctorates, doctorates, i, 'university', val)} placeholder="Search university..." /></div>
                   <div className="form-group"><label className="form-label">Thesis Title</label><input className="form-input" value={g.thesis_title} onChange={e => updateEntry(setDoctorates, doctorates, i, 'thesis_title', e.target.value)} /></div>
-                  <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA</option></select></div>
+                  <div className="form-group"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA (Out of 10)</option><option>CGPA (Out of 4)</option></select></div>
                   <div className="form-group"><label className="form-label">Score</label><input type="number" step="0.01" className="form-input" value={g.score_value} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_value', e.target.value)} /></div>
                   <div className="form-group"><label className="form-label">Year of Passing</label><input required={!!g.university || !!g.thesis_title || !!g.score_value} type="number" min="1950" max="2030" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setDoctorates, doctorates, i, 'grad_year', e.target.value)} /></div>
                 </div>
@@ -2199,9 +2207,10 @@ export default function ApplicationForm() {
                           <div style={{ display: 'flex', gap: '4px' }}>
                             <select className="resume-inline-input" style={{ width: '80px', flexShrink: 0 }} value={classXScoreType} onChange={e => setClassXScoreType(e.target.value)}>
                               <option value="Percentage">%</option>
-                              <option value="CGPA">CGPA</option>
+                              <option value="CGPA (Out of 10)">CGPA (10)</option>
+                              <option value="CGPA (Out of 4)">CGPA (4)</option>
                             </select>
-                            <input type="number" step="0.01" max={classXScoreType === 'CGPA' ? '10' : '100'} className="resume-inline-input" value={classXScoreValue} onChange={e => setClassXScoreValue(e.target.value)} />
+                            <input type="number" step="0.01" max={classXScoreType === 'CGPA (Out of 10)' ? '10' : classXScoreType === 'CGPA (Out of 4)' ? '4' : '100'} className="resume-inline-input" value={classXScoreValue} onChange={e => setClassXScoreValue(e.target.value)} />
                           </div>
                         </div>
                         <div className="resume-inline-group" style={{ marginTop: '0.5rem' }}>
@@ -2248,9 +2257,10 @@ export default function ApplicationForm() {
                           <div style={{ display: 'flex', gap: '4px' }}>
                             <select className="resume-inline-input" style={{ width: '80px', flexShrink: 0 }} value={classXIIScoreType} onChange={e => setClassXIIScoreType(e.target.value)}>
                               <option value="Percentage">%</option>
-                              <option value="CGPA">CGPA</option>
+                              <option value="CGPA (Out of 10)">CGPA (10)</option>
+                              <option value="CGPA (Out of 4)">CGPA (4)</option>
                             </select>
-                            <input type="number" step="0.01" max={classXIIScoreType === 'CGPA' ? '10' : '100'} className="resume-inline-input" value={classXIIScoreValue} onChange={e => setClassXIIScoreValue(e.target.value)} />
+                            <input type="number" step="0.01" max={classXIIScoreType === 'CGPA (Out of 10)' ? '10' : classXIIScoreType === 'CGPA (Out of 4)' ? '4' : '100'} className="resume-inline-input" value={classXIIScoreValue} onChange={e => setClassXIIScoreValue(e.target.value)} />
                           </div>
                         </div>
                         <div className="resume-inline-group" style={{ marginTop: '0.5rem' }}>
