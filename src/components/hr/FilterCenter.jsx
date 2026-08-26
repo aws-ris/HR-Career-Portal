@@ -20,7 +20,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
   const [filters, setFilters] = useState({
     states: [],
     genders: [],
-    min_profile_score: null,
+
     ug_uni: '',
     min_ug_score: null,
     ug_score_type: 'Percentage',
@@ -65,7 +65,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
 
   const getActiveCount = (catId) => {
     switch(catId) {
-      case 'bio': return filters.states.length + filters.genders.length + (filters.min_age > 18 || filters.max_age < 65 ? 1 : 0) + (filters.min_profile_score ? 1 : 0);
+      case 'bio': return filters.states.length + filters.genders.length + (filters.min_age > 18 || filters.max_age < 65 ? 1 : 0);
       case 'schooling': return (filters.min_x_score ? 1 : 0) + (filters.min_xii_score ? 1 : 0);
       case 'higher_edu': return (filters.ug_uni ? 1 : 0) + (filters.min_ug_score ? 1 : 0) + (filters.pg_uni ? 1 : 0) + (filters.pg_min_score ? 1 : 0) + (filters.phd_uni ? 1 : 0) + (filters.phd_min_score ? 1 : 0);
       case 'professional': return (filters.min_experience_years > 0 ? 1 : 0) + (filters.role_keyword ? 1 : 0) + (filters.company_keyword ? 1 : 0);
@@ -84,7 +84,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
 
   const updateFilter = (key, value) => {
     let finalValue = value;
-    if (['min_ug_score', 'min_experience_years', 'min_age', 'max_age', 'min_x_score', 'min_xii_score', 'pg_min_score', 'phd_min_score', 'min_profile_score'].includes(key)) {
+    if (['min_ug_score', 'min_experience_years', 'min_age', 'max_age', 'min_x_score', 'min_xii_score', 'pg_min_score', 'phd_min_score'].includes(key)) {
       if (value === '' || value === null) finalValue = null;
       else finalValue = parseFloat(value);
     }
@@ -115,7 +115,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button onClick={() => {
-             const reset = { states: [], genders: [], min_profile_score: null, ug_uni: '', min_ug_score: null, pg_uni: '', pg_min_score: null, phd_uni: '', phd_thesis: '', phd_min_score: null, min_experience_years: 0, min_papers: 0, min_books: 0, min_chapters: 0, min_reports: 0, min_policy_briefs: 0, min_age: 18, max_age: 65, min_x_score: null, x_score_type: 'Percentage', min_xii_score: null, xii_score_type: 'Percentage', role_keyword: '', company_keyword: '' };
+             const reset = { states: [], genders: [], ug_uni: '', min_ug_score: null, pg_uni: '', pg_min_score: null, phd_uni: '', phd_thesis: '', phd_min_score: null, min_experience_years: 0, min_papers: 0, min_books: 0, min_chapters: 0, min_reports: 0, min_policy_briefs: 0, min_age: 18, max_age: 65, min_x_score: null, x_score_type: 'Percentage', min_xii_score: null, xii_score_type: 'Percentage', role_keyword: '', company_keyword: '' };
              setFilters(reset);
              onFilterChange(reset);
           }} style={{ fontSize: '12px', color: '#94a3b8', background: 'none', border: 'none', fontWeight: '700', cursor: 'pointer' }}>

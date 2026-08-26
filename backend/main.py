@@ -72,14 +72,7 @@ from fastapi.responses import FileResponse
 import os
 
 # AI Preloading disabled - using cloud API
-# @app.on_event("startup")
-# def preload_ai_model():
-#     try:
-#         from ai_service import _get_model
-#         # _get_model()
-#         print("AI Semantic Model preloading skipped for fast startup.")
-#     except Exception as e:
-#         print(f"Warning: Could not preload AI model: {e}")
+
 
 
 @app.on_event("startup")
@@ -318,82 +311,20 @@ def backfill_candidate_scores(db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.get("/api/v1/system/resume-health")
 def resume_health(db: Session = Depends(get_db)):
     """
-    Diagnostic tool to verify Resume storage and AI health.
+    Diagnostic tool to verify Resume storage health.
     """
-    from ai_service import HF_TOKEN, client, compute_embedding
-    
     total = db.query(models.CandidateResumePayload).count()
     with_blob = db.query(models.CandidateResumePayload).filter(models.CandidateResumePayload.pdf_blob != None).count()
     with_text = db.query(models.CandidateResumePayload).filter(models.CandidateResumePayload.raw_resume_text != None).count()
-    with_embedding = db.query(models.CandidateResumePayload).filter(models.CandidateResumePayload.resume_embedding != None).count()
-    
-    # Live Ping Test
-    api_ping_status = "Skipped"
-    if client:
-        try:
-            from huggingface_hub.utils import HfHubHTTPError
-            client.feature_extraction("ping", model="sentence-transformers/all-MiniLM-L6-v2")
-            api_ping_status = "Ready (200)"
-        except HfHubHTTPError as e:
-            if hasattr(e, 'response') and e.response.status_code == 503:
-                try:
-                    data = e.response.json()
-                    est = data.get('estimated_time', 'Unknown')
-                except:
-                    est = 'Unknown'
-                api_ping_status = f"Loading (503) - Estimated: {est}s"
-            else:
-                api_ping_status = f"Error ({getattr(e, 'response', None) and e.response.status_code})"
-        except Exception as e:
-            api_ping_status = f"Failed to ping: {str(e)}"
-
     
     return {
         "total_resumes": total,
         "with_binary_blob": with_blob,
         "with_extracted_text": with_text,
-        "with_ai_embedding": with_embedding,
-        "ai_token_status": "Present" if HF_TOKEN else "MISSING (Check Environment Variables)",
-        "ai_api_ping": api_ping_status,
         "health_score": f"{(with_blob/total*100 if total > 0 else 0):.1f}%"
-    }
-
-@app.post("/api/v1/system/process_pending_resumes")
-def process_pending_resumes(db: Session = Depends(get_db)):
-    """
-    Cron-triggerable endpoint to catch up on any resumes that failed to 
-    process in the background due to serverless execution limits.
-    """
-    from ai_service import background_vectorize_resume
-    import threading
-    
-    # Find up to 5 pending resumes
-    pending = db.query(models.CandidateResumePayload).filter(
-        models.CandidateResumePayload.resume_embedding == None,
-        models.CandidateResumePayload.pdf_blob != None
-    ).limit(5).all()
-    
-    if not pending:
-        return {"status": "success", "message": "No pending resumes to process."}
-        
-    processed_ids = []
-    for p in pending:
-        # Run it directly in this thread since Vercel might kill background threads
-        # We process a small batch (5) to avoid hitting the 10s API gateway timeout
-        try:
-            background_vectorize_resume(p.candidate_id, p.resume_path)
-            processed_ids.append(p.candidate_id)
-        except Exception as e:
-            print(f"Failed to process pending resume {p.candidate_id}: {e}")
-            
-    return {
-        "status": "success", 
-        "message": f"Processed {len(processed_ids)} resumes.",
-        "processed_ids": processed_ids
     }
 
 @app.get("/api/v1/seed")
@@ -569,18 +500,6 @@ def seed_candidates(db: Session = Depends(get_db)):
         )
         db.add(payload)
         db.flush()
-
-        # 4. IMMEDIATE AI PROCESSING (Bypass Disk)
-        from ai_service import extract_text_from_pdf, compute_embedding
-        if pdf_data:
-            try:
-                # Extract text directly from the memory stream
-                extracted_text = extract_text_from_pdf(pdf_stream=pdf_data)
-                payload.raw_resume_text = extracted_text
-                # Generate AI embeddings for Semantic Matching
-                payload.resume_embedding = compute_embedding(extracted_text[:2000])
-            except Exception as e:
-                print(f"AI Pre-processing error for {res['name']}: {e}")
 
         if tier == 'phd':
             db.add(models.CandidateHigherEducation(candidate_id=meta.id, level='phd', degree_name='Ph.D. Economics', university='JNU', score_type='CGPA', score_value=9.0, grad_year=2021, entry_order=1))
@@ -1303,7 +1222,6 @@ class CandidateFilter(BaseModel):
 
     states: Optional[List[str]] = None
     genders: Optional[List[str]] = None
-    min_profile_score: Optional[float] = None
     ug_uni: Optional[str] = None
     min_ug_score: Optional[float] = None
     pg_uni: Optional[str] = None
@@ -1899,10 +1817,6 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
             profile_score = score_res["total_score"]
             profile_score_breakdown = score_res["breakdown"]
 
-            if filters.min_profile_score is not None:
-                if profile_score < filters.min_profile_score:
-                    continue
-
             track = tracker_map.get(c.id)
             grad = [e for e in c.higher_education if e.level == 'undergrad']
             postgrad = [e for e in c.higher_education if e.level == 'postgrad']
@@ -2200,6 +2114,18 @@ def delete_job(job_id: str, db: Session = Depends(get_db)):
 
 # Schooling Schema Migration Endpoint (Vercel-compatible)
 # ─────────────────────────────────────────────
+@app.post("/api/v1/debug/drop-ai")
+def drop_ai_columns(db: Session = Depends(get_db)):
+    from sqlalchemy import text
+    try:
+        db.execute(text("ALTER TABLE candidate_resume_payload DROP COLUMN IF EXISTS raw_resume_text;"))
+        db.execute(text("ALTER TABLE candidate_resume_payload DROP COLUMN IF EXISTS resume_embedding;"))
+        db.commit()
+        return {"status": "success", "message": "AI columns dropped successfully!"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/v1/debug/drop-cgpa-constraint")
 def drop_cgpa_constraint(db: Session = Depends(get_db)):
     from sqlalchemy import text

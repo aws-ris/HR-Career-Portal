@@ -249,8 +249,6 @@ class CandidateResumePayload(Base):
     candidate_id     = Column(String(36),   ForeignKey('candidate_metadata.id', ondelete='CASCADE'), primary_key=True)
     resume_path      = Column(String(500),  nullable=True)
     pdf_blob         = Column(LargeBinary,  nullable=True)
-    raw_resume_text  = Column(Text,         nullable=True)
-    resume_embedding = Column(ARRAY(Float), nullable=True)
 
     candidate = relationship("CandidateMetadata", back_populates="resume_payload")
 
