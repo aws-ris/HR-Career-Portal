@@ -119,9 +119,6 @@ const UniversityAutocomplete = ({ required, value, onChange, placeholder, classN
   useEffect(() => {
     if (globalUniversitiesList.length > 0) {
       setUniversitiesList(globalUniversitiesList);
-      if (value && !globalUniversitiesList.includes(value)) {
-        setIsCustomMode(true);
-      }
     } else {
       fetch(`${API}/universities`)
         .then(res => res.json())
@@ -134,7 +131,7 @@ const UniversityAutocomplete = ({ required, value, onChange, placeholder, classN
         })
         .catch(err => console.error("Error fetching universities list:", err));
     }
-  }, [value]);
+  }, []);
 
   const handleInputChange = (e) => {
     const val = e.target.value;
