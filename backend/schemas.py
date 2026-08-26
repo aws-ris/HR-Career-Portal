@@ -24,7 +24,8 @@ class AdminDept(str, Enum):
 
 class ScoreType(str, Enum):
     Percentage = 'Percentage'
-    CGPA       = 'CGPA'
+    CGPA_10    = 'CGPA (Out of 10)'
+    CGPA_4     = 'CGPA (Out of 4)'
 
 class GenderType(str, Enum):
     Male       = 'Male'
@@ -87,8 +88,10 @@ class SchoolingCreate(BaseModel):
         score_type = info.data.get('class_x_score_type')
         if score_type == ScoreType.Percentage and v > 100:
             raise ValueError('Percentage score_value must be <= 100')
-        elif score_type == ScoreType.CGPA and v > 10:
-            raise ValueError('CGPA score_value must be <= 10')
+        elif score_type == ScoreType.CGPA_10 and v > 10:
+            raise ValueError('CGPA (10) score_value must be <= 10')
+        elif score_type == ScoreType.CGPA_4 and v > 4:
+            raise ValueError('CGPA (4) score_value must be <= 4')
         return v
 
     @field_validator('class_xii_score_value')
@@ -97,8 +100,10 @@ class SchoolingCreate(BaseModel):
         score_type = info.data.get('class_xii_score_type')
         if score_type == ScoreType.Percentage and v > 100:
             raise ValueError('Percentage score_value must be <= 100')
-        elif score_type == ScoreType.CGPA and v > 10:
-            raise ValueError('CGPA score_value must be <= 10')
+        elif score_type == ScoreType.CGPA_10 and v > 10:
+            raise ValueError('CGPA (10) score_value must be <= 10')
+        elif score_type == ScoreType.CGPA_4 and v > 4:
+            raise ValueError('CGPA (4) score_value must be <= 4')
         return v
 
 class SchoolingResponse(SchoolingCreate):
@@ -126,8 +131,10 @@ class HigherEducationCreate(BaseModel):
         score_type = info.data.get('score_type')
         if score_type == ScoreType.Percentage and v > 100:
             raise ValueError('Percentage score_value must be <= 100')
-        if score_type == ScoreType.CGPA and v > 10:
-            raise ValueError('CGPA score_value must be <= 10')
+        if score_type == ScoreType.CGPA_10 and v > 10:
+            raise ValueError('CGPA (10) score_value must be <= 10')
+        if score_type == ScoreType.CGPA_4 and v > 4:
+            raise ValueError('CGPA (4) score_value must be <= 4')
         return v
 
 class HigherEducationResponse(HigherEducationCreate):
