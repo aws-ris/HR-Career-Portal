@@ -1176,7 +1176,11 @@ export default function ApplicationForm() {
         let errMessage = "Unknown Error";
         try {
           const err = await res.json();
-          errMessage = err.detail || JSON.stringify(err);
+          if (Array.isArray(err.detail)) {
+            errMessage = err.detail.map(e => `${e.loc ? e.loc.join('.') : 'Field'}: ${e.msg}`).join(' | ');
+          } else {
+            errMessage = err.detail || JSON.stringify(err);
+          }
         } catch {
           errMessage = `Status ${res.status}: ${res.statusText || 'Internal Server Error'}`;
         }
