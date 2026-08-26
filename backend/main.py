@@ -547,7 +547,6 @@ def seed_candidates(db: Session = Depends(get_db)):
         links_about = models.CandidateLinksAbout(
             candidate_id=meta.id,
             about=f"Initial record for {res['name']}",
-            extracurriculars="Volunteered at community center, played varsity badminton.",
             google_scholar="https://scholar.google.com/citations?user=xyz",
             linkedin="https://linkedin.com/in/xyz"
         )
@@ -773,7 +772,6 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
         links_about = models.CandidateLinksAbout(
             candidate_id   = candidate.id,
             about          = payload.about,
-            extracurriculars = payload.extracurriculars,
             google_scholar = payload.google_scholar,
             linkedin       = payload.linkedin,
             pub_books      = payload.pub_books,
@@ -2448,7 +2446,6 @@ def fix_dakshin_candidates(db: Session = Depends(get_db)):
                 links = models.CandidateLinksAbout(candidate_id=c.id)
                 db.add(links)
             links.about = f"Passionate research professional specializing in development finance. Deployed research outputs on green infrastructure, microfinance, and policy analysis."
-            links.extracurriculars = p["extracurriculars"]
             links.google_scholar = f"https://scholar.google.com/citations?user={c.id[:8]}"
             links.linkedin = f"https://linkedin.com/in/{prefix}"
             
