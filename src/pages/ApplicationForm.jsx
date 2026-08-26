@@ -1594,7 +1594,7 @@ export default function ApplicationForm() {
                 <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
                   <div className="form-group"><label className="form-label">University</label><UniversityAutocomplete required className="form-input" value={g.university} onChange={val => updateEntry(setGrads, grads, i, 'university', val)} placeholder="Search university..." /></div>
                   <div className="form-group">
-                    <label className="form-label">Degree Type</label>
+                    <label className="form-label">Degree</label>
                     {g.degree_select === 'Other' ? (
                       <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
                         <input 
@@ -1699,7 +1699,7 @@ export default function ApplicationForm() {
                     <div className="form-grid" key={i} style={{marginBottom: '1rem', background: 'var(--bg-primary)', padding: '1rem', borderRadius: '8px'}}>
                   <div className="form-group"><label className="form-label">University</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setPostGrads, postGrads, i, 'university', val)} placeholder="Search university..." /></div>
                   <div className="form-group">
-                    <label className="form-label">Degree Type</label>
+                    <label className="form-label">Degree</label>
                     {g.degree_select === 'Other' ? (
                       <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
                         <input 
@@ -2268,7 +2268,7 @@ export default function ApplicationForm() {
                           <UniversityAutocomplete className="resume-inline-input" value={g.university} onChange={val => updateEntry(setGrads, grads, i, 'university', val)} placeholder="Search university..." />
                         </div>
                         <div className="resume-inline-group">
-                          <label className="resume-inline-label">Degree Type</label>
+                          <label className="resume-inline-label">Degree</label>
                           {g.degree_select === 'Other' ? (
                             <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
                               <input 
@@ -2379,7 +2379,7 @@ export default function ApplicationForm() {
                           <UniversityAutocomplete className="resume-inline-input" value={g.university} onChange={val => updateEntry(setPostGrads, postGrads, i, 'university', val)} placeholder="Search university..." />
                         </div>
                         <div className="resume-inline-group">
-                          <label className="resume-inline-label">Degree Type</label>
+                          <label className="resume-inline-label">Degree</label>
                           {g.degree_select === 'Other' ? (
                             <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
                               <input 
