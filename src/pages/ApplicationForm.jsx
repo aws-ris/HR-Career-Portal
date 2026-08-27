@@ -36,23 +36,27 @@ const SearchableCountryCodeInput = ({ required, value, onChange, placeholder, cl
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
-    if (!value) {
-      setInputValue('+91 (India)');
-      onChange('+91');
-    } else {
+    if (value) {
       const match = COUNTRY_CODES.find(c => c.startsWith(value + ' ') || c === value);
       setInputValue(match || value);
+    } else {
+      setInputValue('');
     }
   }, [value]);
 
   const handleInputChange = (e) => {
     const val = e.target.value;
     setInputValue(val);
-    const codeMatch = val.match(/^\+\d+/);
-    if (codeMatch) {
-      onChange(codeMatch[0]);
+    if (!val.trim()) {
+      onChange('');
     } else {
-      onChange(val);
+      const codeMatch = val.match(/^\+?\d+/);
+      if (codeMatch) {
+        const rawCode = codeMatch[0];
+        onChange(rawCode.startsWith('+') ? rawCode : '+' + rawCode);
+      } else {
+        onChange(val);
+      }
     }
     setShowSuggestions(true);
   };
@@ -64,9 +68,11 @@ const SearchableCountryCodeInput = ({ required, value, onChange, placeholder, cl
     setShowSuggestions(false);
   };
 
-  const filtered = COUNTRY_CODES.filter(c => 
-    c.toLowerCase().includes(inputValue.toLowerCase())
-  );
+  const searchKeyword = inputValue.toLowerCase().replace(/^\+/, '').trim();
+  const filtered = COUNTRY_CODES.filter(c => {
+    if (!searchKeyword) return true;
+    return c.toLowerCase().includes(searchKeyword) || c.toLowerCase().includes(inputValue.toLowerCase());
+  });
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
@@ -449,7 +455,7 @@ export default function ApplicationForm() {
   const [admin_department, setAdminDept] = useState(() => savedDraft.admin_department || 'IT');
   const [full_name, setFullName] = useState(() => savedDraft.full_name || '');
   const [email, setEmail] = useState(() => savedDraft.email || '');
-  const [countryCode, setCountryCode] = useState(() => savedDraft.countryCode || '+91');
+  const [countryCode, setCountryCode] = useState(() => savedDraft.countryCode || '');
   const [mobile_number, setMobile] = useState(() => savedDraft.mobile_number || '');
   const [dob, setDob] = useState(() => savedDraft.dob || '');
   const [gender, setGender] = useState(() => savedDraft.gender || '');
