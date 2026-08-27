@@ -143,6 +143,15 @@ def startup_migration():
                 except Exception as pg_err:
                     db.rollback()
                     print(f"Postgres migration error for {table}.{col}: {pg_err}")
+            
+            # Automatically drop the category column from postgres
+            try:
+                db.execute(text("ALTER TABLE candidate_metadata DROP COLUMN IF EXISTS category;"))
+                db.commit()
+                print("Postgres safely dropped category column.")
+            except Exception as pg_err:
+                db.rollback()
+                print(f"Postgres drop error for category: {pg_err}")
         
         # 2. Automatically backfill candidate ages and categories
         try:
