@@ -493,6 +493,18 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                         )}
                       </div>
 
+                      {/* Statement of Purpose */}
+                      {data.sop && (
+                        <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+                          <h4 style={{ margin: '0 0 10px 0', fontSize: '12px', fontWeight: '800', color: '#002147', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Statement of Purpose (SOP)
+                          </h4>
+                          <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.6', color: '#334155', whiteSpace: 'pre-line' }}>
+                            {data.sop}
+                          </p>
+                        </div>
+                      )}
+
                       <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
                         <h4 style={{ margin: '0 0 16px 0', fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Publication Roster Counts</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', color: '#1e293b' }}>

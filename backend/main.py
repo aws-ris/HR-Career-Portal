@@ -107,6 +107,8 @@ def startup_migration():
             ("candidate_metadata", "city", "VARCHAR(100)"),
             ("candidate_metadata", "last_salary", "FLOAT"),
             
+            ("candidate_links_about", "about", "TEXT"),
+            ("candidate_links_about", "sop", "TEXT"),
             ("candidate_links_about", "extracurriculars", "TEXT"),
             ("candidate_links_about", "pub_books", "INTEGER DEFAULT 0"),
             ("candidate_links_about", "pub_papers", "INTEGER DEFAULT 0"),
@@ -705,6 +707,7 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
         links_about = models.CandidateLinksAbout(
             candidate_id   = candidate.id,
             about          = payload.about,
+            sop            = payload.sop,
             google_scholar = payload.google_scholar,
             linkedin       = payload.linkedin,
             pub_books      = payload.pub_books,
@@ -1467,7 +1470,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 "Graduation Univ", "Graduation Degree", "Graduation Score", "Graduation Year",
                 "Postgrad Univ", "Postgrad Degree", "Postgrad Score", "Postgrad Year",
                 "PhD Univ", "PhD Thesis", "PhD Score", "PhD Year",
-                "Scholar Link", "LinkedIn Link", 
+                "Scholar Link", "LinkedIn Link", "Statement of Purpose (SOP)",
                 "Books Count", "Papers Count", "Chapters Count", "Reports Count", "Policy Briefs Count",
                 "Work Company", "Work Role", "Work Start", "Work End"
             ]
@@ -1527,7 +1530,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[19] = full_c.schooling.class_xii_year if (full_c.schooling and full_c.schooling.class_xii_year) else ""
                         row[31] = (full_c.links_about.google_scholar if full_c.links_about else "") or ""
                         row[32] = (full_c.links_about.linkedin if full_c.links_about else "") or ""
-                        row[33] = (full_c.links_about.pub_books if full_c.links_about else 0) or 0
+                        row[33] = (full_c.links_about.sop if full_c.links_about else "") or ""
+                        row[34] = (full_c.links_about.pub_books if full_c.links_about else 0) or 0
                         row[34] = (full_c.links_about.pub_papers if full_c.links_about else 0) or 0
                         row[35] = (full_c.links_about.pub_chapters if full_c.links_about else 0) or 0
                         row[36] = (full_c.links_about.pub_reports if full_c.links_about else 0) or 0

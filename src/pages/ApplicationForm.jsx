@@ -462,6 +462,7 @@ export default function ApplicationForm() {
   const [candidateState, setCandidateState] = useState(() => savedDraft.candidateState || '');
   const [city, setCity] = useState(() => savedDraft.city || '');
   const [pincode, setPincode] = useState(() => savedDraft.pincode || '');
+  const [sop, setSop] = useState(() => savedDraft.sop || '');
   const [dobError, setDobError] = useState('');
 
   // Step 2
@@ -624,6 +625,7 @@ export default function ApplicationForm() {
       candidateState,
       city,
       pincode,
+      sop,
       classXSchool,
       classXBoard,
       classXBoardState,
@@ -657,7 +659,7 @@ export default function ApplicationForm() {
     localStorage.setItem('hr_application_draft', JSON.stringify(draft));
   }, [
     position_applied, admin_department, full_name, email, countryCode, mobile_number, dob, gender,
-    candidateState, city, pincode, grads, postGrads, doctorates, 
+    candidateState, city, pincode, sop, grads, postGrads, doctorates, 
     scholarLink, expYears, expMonths, hasWork, workExps, step, jobId,
     classXSchool, classXBoard, classXBoardState, classXBoardOther, classXScoreType, classXScoreValue, classXYear,
     classXIISchool, classXIIBoard, classXIIBoardState, classXIIBoardOther, classXIIScoreType, classXIIScoreValue, classXIIYear,
@@ -1248,8 +1250,17 @@ export default function ApplicationForm() {
       }
     }
 
-    // Check required fields for Step 3 (Work Experience Details)
+    // Check required fields for Step 3
     if (step === 3) {
+      const sopWords = sop.trim() ? sop.trim().split(/\s+/).length : 0;
+      if (!sop.trim()) {
+        alert("Please enter your Statement of Purpose (SOP).");
+        return;
+      }
+      if (sopWords > 300) {
+        alert("Statement of Purpose cannot exceed 300 words.");
+        return;
+      }
       if (!resumeFile) {
         alert("Please upload your Resume (PDF) first.");
         return;
@@ -1323,6 +1334,7 @@ export default function ApplicationForm() {
       country_code: countryCode,
       mobile_no: mobile_number, 
       about: null,
+      sop: sop.trim() || null,
       google_scholar: scholarLink.trim() || null,
       linkedin: linkedin.trim() || null,
       pub_books: pubBooks,
@@ -2351,7 +2363,37 @@ export default function ApplicationForm() {
 
           {step === 3 && (
             <>
-              <h3>Work Experience Details</h3>
+              <h3>Work Experience & Statement of Purpose</h3>
+              
+              {/* Statement of Purpose (SOP) */}
+              <div className="form-group" style={{ marginBottom: '2rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <label className="form-label" style={{ margin: 0, fontWeight: 700, color: '#002147' }}>
+                    Statement of Purpose (SOP) <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: (sop.trim() ? sop.trim().split(/\s+/).length : 0) > 300 ? '#ef4444' : '#64748b' }}>
+                    {sop.trim() ? sop.trim().split(/\s+/).length : 0} / 300 words
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '0.75rem' }}>
+                  Briefly outline your research interests, career objectives, and motivation for applying (maximum 300 words).
+                </p>
+                <textarea 
+                  rows={6}
+                  className={`form-input ${(triedSubmit && (!sop.trim() || (sop.trim() ? sop.trim().split(/\s+/).length : 0) > 300)) ? 'faulty-input' : ''}`}
+                  placeholder="Type your Statement of Purpose here..."
+                  value={sop}
+                  onChange={e => setSop(e.target.value)}
+                  style={{ width: '100%', resize: 'vertical' }}
+                />
+                {triedSubmit && !sop.trim() && (
+                  <div className="error-text">Statement of Purpose is required.</div>
+                )}
+                {triedSubmit && sop.trim() && (sop.trim().split(/\s+/).length > 300) && (
+                  <div className="error-text">Statement of Purpose cannot exceed 300 words.</div>
+                )}
+              </div>
+
               <p style={{marginBottom: '1rem'}}>Do you have prior work experience?</p>
               <div className="form-group" style={{marginBottom: '2rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}}>
                 <label className="form-label" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
@@ -2761,6 +2803,18 @@ export default function ApplicationForm() {
                 </div>
               </div>
 
+
+                {/* Statement of Purpose Section */}
+                {sop && (
+                  <div className="resume-section">
+                    <div className="resume-section-title-container">
+                      <h3 className="resume-section-title">Statement of Purpose (SOP)</h3>
+                    </div>
+                    <div style={{ background: '#f8fafc', padding: '1rem 1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.9rem', lineHeight: '1.6', color: '#334155', whiteSpace: 'pre-line' }}>
+                      {sop}
+                    </div>
+                  </div>
+                )}
 
               {/* Education Section */}
               <div className="resume-section">

@@ -219,6 +219,7 @@ class ApplicationTrackingResponse(BaseModel):
 # ─────────────────────────────────────────────
 class LinksAboutCreate(BaseModel):
     about:          Optional[str] = Field(None, max_length=3000)
+    sop:            Optional[str] = Field(None, max_length=5000)
     google_scholar: Optional[str] = None
     linkedin:       Optional[str] = None
     pub_books:      Optional[int] = 0
@@ -262,6 +263,7 @@ class CandidateCreate(BaseModel):
 
     # Links & about (goes to candidate_links_about)
     about:          Optional[str] = Field(None, max_length=3000)
+    sop:            Optional[str] = Field(None, max_length=5000)
     google_scholar: Optional[str] = None
     linkedin:       Optional[str] = None
     pub_books:      Optional[int] = 0
