@@ -250,7 +250,8 @@ class CandidateCreate(BaseModel):
     # Personal data (goes to candidate_metadata)
     full_name:           str          = Field(..., min_length=2, max_length=200)
     email:               EmailStr
-    mobile_no:           str          = Field(..., pattern=r'^\d{10}$')
+    country_code:        Optional[str] = Field('+91', pattern=r'^\+\d{1,4}$')
+    mobile_no:           str          = Field(..., pattern=r'^\d{4,15}$')
     dob:                 date
     gender:              Optional[GenderType] = None
     city:                Optional[str]        = None
@@ -303,6 +304,7 @@ class CandidateFullResponse(BaseModel):
     id:                  str
     full_name:           str
     email:               str
+    country_code:        Optional[str] = None
     mobile_no:           str
     dob:                 date
     age:                 Optional[int] = None

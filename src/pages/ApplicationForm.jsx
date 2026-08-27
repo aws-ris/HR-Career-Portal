@@ -30,6 +30,67 @@ const DIPLOMA_TYPES = [
 
 const PASSING_YEARS = Array.from({ length: 61 }, (_, i) => 2030 - i); // 2030 down to 1970
 
+const COUNTRY_CODES = [
+  '+1 (USA/Canada)', '+7 (Russia)', '+20 (Egypt)', '+27 (South Africa)', '+31 (Netherlands)', 
+  '+32 (Belgium)', '+33 (France)', '+34 (Spain)', '+39 (Italy)', '+41 (Switzerland)', 
+  '+44 (UK)', '+49 (Germany)', '+52 (Mexico)', '+54 (Argentina)', '+55 (Brazil)', 
+  '+60 (Malaysia)', '+61 (Australia)', '+62 (Indonesia)', '+63 (Philippines)', '+64 (New Zealand)', 
+  '+65 (Singapore)', '+66 (Thailand)', '+81 (Japan)', '+82 (South Korea)', '+84 (Vietnam)', 
+  '+86 (China)', '+90 (Turkey)', '+91 (India)', '+92 (Pakistan)', '+94 (Sri Lanka)', 
+  '+95 (Myanmar)', '+98 (Iran)', '+234 (Nigeria)', '+254 (Kenya)', '+351 (Portugal)', 
+  '+353 (Ireland)', '+971 (UAE)', '+972 (Israel)', '+974 (Qatar)', '+977 (Nepal)'
+];
+
+const SearchableDropdown = ({ options, value, onChange, placeholder, className }) => {
+  const [inputValue, setInputValue] = useState(value || '');
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    setInputValue(value || '');
+  }, [value]);
+
+  const filteredOptions = options.filter(opt => opt.toLowerCase().includes(inputValue.toLowerCase()));
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <input
+        className={className}
+        placeholder={placeholder}
+        value={inputValue}
+        onChange={(e) => {
+          setInputValue(e.target.value);
+          onChange(e.target.value.split(' ')[0]); // Store only +91
+          setShowDropdown(true);
+        }}
+        onFocus={() => setShowDropdown(true)}
+        onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+      />
+      {showDropdown && filteredOptions.length > 0 && (
+        <ul style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+          background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px',
+          maxHeight: '200px', overflowY: 'auto', padding: 0, margin: '4px 0 0 0',
+          listStyle: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+        }}>
+          {filteredOptions.map(opt => (
+            <li 
+              key={opt}
+              style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
+              onMouseDown={() => {
+                setInputValue(opt);
+                onChange(opt.split(' ')[0]); // Store only the code e.g. +91
+                setShowDropdown(false);
+              }}
+            >
+              {opt}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
 const PUBLICATION_CATEGORIES = [
   'Peer-Reviewed Journal Papers',
   'Books Published',
@@ -360,6 +421,7 @@ export default function ApplicationForm() {
   const [admin_department, setAdminDept] = useState(() => savedDraft.admin_department || 'IT');
   const [full_name, setFullName] = useState(() => savedDraft.full_name || '');
   const [email, setEmail] = useState(() => savedDraft.email || '');
+  const [countryCode, setCountryCode] = useState(() => savedDraft.countryCode || '+91');
   const [mobile_number, setMobile] = useState(() => savedDraft.mobile_number || '');
   const [dob, setDob] = useState(() => savedDraft.dob || '');
   const [gender, setGender] = useState(() => savedDraft.gender || '');
@@ -521,6 +583,7 @@ export default function ApplicationForm() {
       admin_department,
       full_name,
       email,
+      countryCode,
       mobile_number,
       dob,
       gender,
@@ -559,7 +622,7 @@ export default function ApplicationForm() {
     };
     localStorage.setItem('hr_application_draft', JSON.stringify(draft));
   }, [
-    position_applied, admin_department, full_name, email, mobile_number, dob, gender,
+    position_applied, admin_department, full_name, email, countryCode, mobile_number, dob, gender,
     candidateState, city, pincode, grads, postGrads, doctorates, 
     scholarLink, expYears, expMonths, hasWork, workExps, step, jobId,
     classXSchool, classXBoard, classXBoardState, classXBoardOther, classXScoreType, classXScoreValue, classXYear,
@@ -699,7 +762,7 @@ export default function ApplicationForm() {
       const errors = [];
       if (!full_name.trim()) errors.push("Full Name is required.");
       if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) errors.push("A valid Email ID is required.");
-      if (!mobile_number || !/^\d{10}$/.test(mobile_number)) errors.push("Mobile Number must be exactly 10 digits.");
+      if (!mobile_number || !/^\d{4,15}$/.test(mobile_number)) errors.push("Mobile Number must be 4 to 15 digits.");
       if (!dob) {
         errors.push("Date of Birth is required.");
       } else {
@@ -908,7 +971,7 @@ export default function ApplicationForm() {
     // Personal Info (Step 1)
     if (!full_name.trim()) errors.push("Full Name is required.");
     if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) errors.push("A valid Email ID is required.");
-    if (!mobile_number || !/^\d{10}$/.test(mobile_number)) errors.push("Mobile Number must be exactly 10 digits.");
+    if (!mobile_number || !/^\d{4,15}$/.test(mobile_number)) errors.push("Mobile Number must be 4 to 15 digits.");
     if (!dob) {
       errors.push("Date of Birth is required.");
     } else {
@@ -1071,7 +1134,7 @@ export default function ApplicationForm() {
     
     // Check required fields for Step 1
     if (step === 1) {
-      if (!full_name || !email || !mobile_number || !dob || !gender || !candidateState || !city || !pincode) {
+      if (!full_name || !email || !countryCode || !mobile_number || !dob || !gender || !candidateState || !city || !pincode) {
          return; // Let CSS handle the red borders
       }
       
@@ -1223,6 +1286,7 @@ export default function ApplicationForm() {
       full_name, 
       dob: formattedDob, 
       email, 
+      country_code: countryCode,
       mobile_no: mobile_number, 
       about: null,
       google_scholar: scholarLink.trim() || null,
@@ -1546,7 +1610,8 @@ export default function ApplicationForm() {
               <hr style={dividerStyle} />
 
               <div className="form-grid">
-                <div className="form-group col-6">
+                {/* Row 1 */}
+                <div className="form-group col-5">
                   <label className="form-label">Full Name</label>
                   <input 
                     required 
@@ -1555,7 +1620,7 @@ export default function ApplicationForm() {
                     onChange={e => setFullName(e.target.value)} 
                   />
                 </div>
-                <div className="form-group col-6">
+                <div className="form-group col-5">
                   <label className="form-label">Email ID</label>
                   <input 
                     required 
@@ -1565,28 +1630,7 @@ export default function ApplicationForm() {
                     onChange={e => setEmail(e.target.value)} 
                   />
                 </div>
-                <div className="form-group col-4">
-                  <label className="form-label">Mobile Number (10 Digits)</label>
-                  <input 
-                    required 
-                    className={`form-input ${(triedSubmit && !mobile_number) ? 'faulty-input' : ''}`} 
-                    pattern="^\d{10}$" 
-                    value={mobile_number} 
-                    onChange={e => setMobile(e.target.value)} 
-                  />
-                </div>
-                <div className="form-group col-4">
-                  <label className="form-label">Date of Birth (DD/MM/YYYY)</label>
-                  <input 
-                    required 
-                    placeholder="DD/MM/YYYY"
-                    className={`form-input ${(triedSubmit && (!dob || dobError)) ? 'faulty-input' : ''}`} 
-                    value={dob} 
-                    onChange={handleDobChange} 
-                  />
-                  {dobError && <div className="error-text">{dobError}</div>}
-                </div>
-                <div className="form-group col-6">
+                <div className="form-group col-2">
                   <label className="form-label">Gender</label>
                   <select 
                     required 
@@ -1601,22 +1645,56 @@ export default function ApplicationForm() {
                     <option>Prefer not to say</option>
                   </select>
                 </div>
-                <div className="form-group col-6">
-                  <label className="form-label">State / Union Territory</label>
-                  <select 
-                    required 
-                    className={`form-input ${(triedSubmit && !candidateState) ? 'faulty-input' : ''}`} 
-                    value={candidateState} 
-                    onChange={e => setCandidateState(e.target.value)}
-                  >
-                    <option value="">Select State / UT</option>
-                    {['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry'].map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
+
+                {/* Row 2 */}
+                <div className="form-group col-3">
+                  <label className="form-label">Country Code</label>
+                  <SearchableDropdown 
+                    options={COUNTRY_CODES} 
+                    value={countryCode} 
+                    onChange={setCountryCode} 
+                    placeholder="+91" 
+                    className={`form-input ${(triedSubmit && !countryCode) ? 'faulty-input' : ''}`}
+                  />
                 </div>
                 <div className="form-group col-4">
-                  <label className="form-label">City</label>
+                  <label className="form-label">Mobile Number</label>
+                  <input 
+                    required 
+                    className={`form-input ${(triedSubmit && !mobile_number) ? 'faulty-input' : ''}`} 
+                    pattern="^\d{4,15}$" 
+                    value={mobile_number} 
+                    onChange={e => setMobile(e.target.value)} 
+                  />
+                </div>
+                <div className="form-group col-5">
+                  <label className="form-label">Date of Birth (DD/MM/YYYY)</label>
+                  <input 
+                    required 
+                    placeholder="DD/MM/YYYY"
+                    className={`form-input ${(triedSubmit && (!dob || dobError)) ? 'faulty-input' : ''}`} 
+                    value={dob} 
+                    onChange={handleDobChange} 
+                  />
+                  {dobError && <div className="error-text">{dobError}</div>}
+                </div>
+                  {/* Row 3 */}
+                  <div className="form-group col-4">
+                    <label className="form-label">State / Union Territory</label>
+                    <select 
+                      required 
+                      className={`form-input ${(triedSubmit && !candidateState) ? 'faulty-input' : ''}`} 
+                      value={candidateState} 
+                      onChange={e => setCandidateState(e.target.value)}
+                    >
+                      <option value="">Select State / UT</option>
+                      {['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry'].map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group col-4">
+                    <label className="form-label">City</label>
                   <input 
                     required 
                     className={`form-input ${(triedSubmit && !city) ? 'faulty-input' : ''}`} 
@@ -2630,7 +2708,7 @@ export default function ApplicationForm() {
                     </div>
                     <div className="resume-contact-info">
                       <span className="resume-contact-item">📧 {email}</span>
-                      <span className="resume-contact-item">📞 {mobile_number}</span>
+                      <span className="resume-contact-item">📱 {countryCode} {mobile_number}</span>
                       <span className="resume-contact-item">📍 {city}, {candidateState} - {pincode}</span>
                       <span className="resume-contact-item">🎂 {dob}</span>
                       <span className="resume-contact-item">👤 {gender}</span>

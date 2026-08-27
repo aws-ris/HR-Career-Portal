@@ -64,6 +64,7 @@ class CandidateMetadata(Base):
     id                   = Column(String(36),  primary_key=True, default=generate_uuid)
     full_name            = Column(String(200), nullable=False)
     email                = Column(String(200), nullable=False, unique=True)
+    country_code         = Column(String(10),  nullable=True, default='+91')
     mobile_no            = Column(String(20),  nullable=False)
     dob                  = Column(Date,        nullable=False)
     age                  = Column(Integer,     nullable=True)

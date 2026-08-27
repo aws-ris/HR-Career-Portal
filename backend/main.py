@@ -101,6 +101,7 @@ def startup_migration():
             ("job_postings", "contract_period", "INTEGER"),
             ("job_postings", "job_mode", "VARCHAR(50)"),
             
+            ("candidate_metadata", "country_code", "VARCHAR(10)"),
             ("candidate_metadata", "pincode", "VARCHAR(20)"),
             ("candidate_metadata", "age", "INTEGER"),
             ("candidate_metadata", "city", "VARCHAR(100)"),
@@ -636,6 +637,7 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
         if candidate:
             # Update existing candidate details
             candidate.full_name = payload.full_name
+            candidate.country_code = payload.country_code
             candidate.mobile_no = payload.mobile_no
             candidate.dob = payload.dob
             candidate.gender = payload.gender
@@ -661,6 +663,7 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
             candidate = models.CandidateMetadata(
                 full_name           = payload.full_name,
                 email               = payload.email,
+                country_code        = payload.country_code,
                 mobile_no           = payload.mobile_no,
                 dob                 = payload.dob,
                 gender              = payload.gender,
@@ -1504,7 +1507,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         # Basic details
                         row[0] = full_c.full_name
                         row[1] = full_c.email
-                        row[2] = full_c.mobile_no
+                        row[2] = f"{full_c.country_code or ''} {full_c.mobile_no}".strip()
                         row[3] = str(full_c.dob)
                         row[4] = full_c.gender
                         row[5] = ""
