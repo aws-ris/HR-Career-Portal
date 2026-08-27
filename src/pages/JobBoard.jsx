@@ -194,48 +194,48 @@ export default function JobBoard() {
                 }}
               >
                 
-                {/* Card Top Meta (Last date only) */}
+                {/* Card Top Meta (Last Date only) */}
                 {job.deadline && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#c62828', fontSize: '0.75rem', fontWeight: 700, background: '#fef2f2', border: '1px solid #fecaca', padding: '4px 10px', borderRadius: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#c62828', fontSize: '0.78rem', fontWeight: 700, background: '#fef2f2', border: '1px solid #fecaca', padding: '4px 10px', borderRadius: '6px' }}>
                       <Calendar size={13} />
-                      Last date: {new Date(job.deadline).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      Last Date: {new Date(job.deadline).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </div>
                   </div>
                 )}
 
-                {/* Job Title & Position */}
-                <h4 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a', marginBottom: '10px', lineHeight: 1.3 }}>
+                {/* Job Title / Main Heading */}
+                <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '14px', lineHeight: 1.3 }}>
                   {job.title}
                 </h4>
                 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b', fontSize: '0.85rem', marginBottom: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#334155', fontWeight: 600 }}>
-                    <Briefcase size={15} /> {job.position || 'Open Role'}
-                  </span>
-                  <span style={{ color: '#cbd5e1' }}>•</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#002147', fontWeight: 700 }}>
-                    Vacancies: {job.total_openings || 1}
-                  </span>
-                  <span style={{ color: '#cbd5e1' }}>•</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <MapPin size={15} /> {job.location || 'New Delhi, India'}
-                  </span>
+                {/* Clean Multi-Line Metadata Layout */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                  {/* Line 1: Designation / Position Tag */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontSize: '0.88rem', fontWeight: 600 }}>
+                    <Briefcase size={16} style={{ color: '#002147' }} />
+                    <span>{job.position || 'Open Role'}</span>
+                  </div>
+
+                  {/* Line 2: Vacancies */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#002147', fontSize: '0.88rem', fontWeight: 700 }}>
+                    <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: '#c62828' }}></span>
+                    <span>Vacancies: {job.total_openings || 1}</span>
+                  </div>
+
+                  {/* Line 3: Location */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.88rem' }}>
+                    <MapPin size={16} style={{ color: '#64748b' }} />
+                    <span>{job.location || 'New Delhi, India'}</span>
+                  </div>
                 </div>
 
-                <div style={{ fontSize: '0.78rem', color: '#64748b', fontStyle: 'italic', marginBottom: '16px' }}>
+                <div style={{ fontSize: '0.78rem', color: '#64748b', fontStyle: 'italic', marginBottom: '20px' }}>
                   * Number of vacancies may vary.
                 </div>
 
-                {/* Description Preview */}
-                <div style={{ flex: 1, marginBottom: '20px' }}>
-                  <p style={{ fontSize: '0.88rem', color: '#475569', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.6, margin: 0 }}>
-                    {job.description}
-                  </p>
-                </div>
-
                 {/* Action Button: Apply Now only */}
-                <div style={{ paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+                <div style={{ paddingTop: '16px', borderTop: '1px solid #f1f5f9', marginTop: 'auto' }}>
                   <button 
                     onClick={() => navigate(`/apply/${job.id}`)}
                     style={{ width: '100%', padding: '12px', background: '#c62828', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 2px 4px rgba(198,40,40,0.2)' }}

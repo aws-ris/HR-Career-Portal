@@ -3,8 +3,63 @@ import { X } from 'lucide-react';
 
 import { API_BASE as API } from '../../api';
 
-const POSITIONS = ['Professor', 'Associate Professor', 'Assistant Professor', 'Research Assistant', 'Consultant', 'Admin'];
-const DIVISIONS = ['RIS', 'CMEC', 'FITM', 'DAKSHIN', 'AIC'];
+const POSITIONS = [
+  'Professor', 
+  'Associate Professor', 
+  'Assistant Professor', 
+  'Research Assistant', 
+  'Consultant', 
+  'Assistant', 
+  'Director', 
+  'Officer', 
+  'Multi Tasking Staff', 
+  'Associate'
+];
+
+const DIVISIONS = [
+  'RIS', 
+  'CMEC', 
+  'FITM', 
+  'DAKSHIN', 
+  'AIC', 
+  'Admin - HR', 
+  'Admin - IT', 
+  'Admin - Finance', 
+  'Admin - Publication', 
+  'Admin - MTS',
+  'Admin - Library',
+  'General Admin'
+];
+
+const PAY_BANDS = [
+  '5200-20200',
+  '9300-34800',
+  '15600-39100',
+  '37400-67000',
+  '67000-79000',
+  '75500-80000',
+  '80000',
+  '90000'
+];
+
+const PAY_LEVELS = [
+  'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5',
+  'Level 6', 'Level 7', 'Level 8', 'Level 9',
+  'Level 10', 'Level 11', 'Level 12',
+  'Level 13', 'Level 13A', 'Level 14',
+  'Level 15', 'Level 16', 'Level 17', 'Level 18'
+];
+
+const PAY_BAND_DEFAULT_LEVELS = {
+  '5200-20200': 'Level 1',
+  '9300-34800': 'Level 6',
+  '15600-39100': 'Level 10',
+  '37400-67000': 'Level 13',
+  '67000-79000': 'Level 15',
+  '75500-80000': 'Level 16',
+  '80000': 'Level 17',
+  '90000': 'Level 18'
+};
 
 const EMPTY = {
   title: '',
@@ -14,11 +69,11 @@ const EMPTY = {
   requirements: '',
   deadline: '',
   total_openings: 1,
-  min_pay: 20000,
-  max_pay: 40000,
+  pay_band: '15600-39100',
+  pay_level: 'Level 10',
   min_experience: 0,
-  max_experience: 2,
   contract_period: 1,
+  employment_type: 'Regular',
   job_mode: 'Offline',
 };
 
@@ -30,6 +85,17 @@ export default function CreateJobModal({ job, onClose, onSave }) {
 
   useEffect(() => {
     if (job) {
+      const isContractual = (job.contract_period && job.contract_period > 0) || job.job_mode === 'Contractual';
+      
+      // Parse Pay Band and Level if present in job
+      let pb = '15600-39100';
+      let lvl = 'Level 10';
+      if (job.job_mode && job.job_mode.includes('Pay Band')) {
+        const parts = job.job_mode.split('|').map(s => s.trim());
+        if (parts[1]) pb = parts[1].replace('Pay Band', '').trim();
+        if (parts[2]) lvl = parts[2].trim();
+      }
+
       setForm({
         title:          job.title || '',
         position:       job.position || 'Professor',
@@ -38,11 +104,11 @@ export default function CreateJobModal({ job, onClose, onSave }) {
         requirements:   job.requirements || '',
         deadline:       job.deadline ? job.deadline.substring(0, 10) : '',
         total_openings: job.total_openings || 1,
-        min_pay:        job.min_pay || 20000,
-        max_pay:        job.max_pay || 40000,
+        pay_band:       pb,
+        pay_level:      lvl,
         min_experience: job.min_experience !== null ? job.min_experience : 0,
-        max_experience: job.max_experience !== null ? job.max_experience : 2,
         contract_period:job.contract_period || 1,
+        employment_type:isContractual ? 'Contractual' : 'Regular',
         job_mode:       job.job_mode || 'Offline',
       });
     } else {
@@ -60,21 +126,25 @@ export default function CreateJobModal({ job, onClose, onSave }) {
     setLoading(true);
     setError('');
 
+    const isContractual = form.employment_type === 'Contractual';
+
     const payload = {
       title:          form.title.trim(),
       position:       form.position,
       division:       form.division,
       description:    form.description.trim(),
-      requirements:   form.requirements.trim() || null,
+      requirements:   form.requirements ? form.requirements.trim() : null,
       deadline:       form.deadline || null,
       total_openings: parseInt(form.total_openings) || 1,
       status:         publishNow ? 'open' : 'draft',
-      min_pay:        parseInt(form.min_pay) || 20000,
-      max_pay:        parseInt(form.max_pay) || 40000,
+      min_pay:        null,
+      max_pay:        null,
       min_experience: parseInt(form.min_experience) || 0,
-      max_experience: parseInt(form.max_experience) || 0,
-      contract_period:parseInt(form.contract_period) || 1,
-      job_mode:       'Offline',
+      max_experience: null,
+      contract_period:isContractual ? (parseInt(form.contract_period) || 1) : null,
+      job_mode:       isContractual ? 'Contractual' : `Regular | Pay Band ${form.pay_band} | ${form.pay_level}`,
+      pay_band:       isContractual ? null : form.pay_band,
+      pay_level:      isContractual ? null : form.pay_level,
     };
 
     try {
@@ -97,7 +167,18 @@ export default function CreateJobModal({ job, onClose, onSave }) {
         let errMessage = "Unknown Error";
         try {
           const err = await res.json();
-          errMessage = err.detail || JSON.stringify(err);
+          if (typeof err.detail === 'string') {
+            errMessage = err.detail;
+          } else if (Array.isArray(err.detail)) {
+            errMessage = err.detail.map(d => {
+              const field = d.loc ? d.loc.filter(x => x !== 'body').join('.') : '';
+              return field ? `${field}: ${d.msg}` : (d.msg || JSON.stringify(d));
+            }).join(' | ');
+          } else if (typeof err.detail === 'object' && err.detail !== null) {
+            errMessage = JSON.stringify(err.detail);
+          } else {
+            errMessage = JSON.stringify(err);
+          }
         } catch (jsonErr) {
           errMessage = `Status ${res.status}: ${res.statusText || 'Internal Server Error'}`;
         }
@@ -124,27 +205,28 @@ export default function CreateJobModal({ job, onClose, onSave }) {
 
   return (
     <div className="hr-modal-overlay" onClick={onClose}>
-      <div className="hr-modal" onClick={e => e.stopPropagation()}>
+      <div className="hr-modal hr-modal-lg" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="hr-modal-header">
-          <h2 className="hr-modal-title">{isEdit ? 'Edit Job Posting' : 'Create New Posting'}</h2>
-          <button className="hr-modal-close" onClick={onClose}><X size={18} /></button>
+          <div>
+            <h2 className="hr-modal-title">{isEdit ? 'Edit Job Posting' : 'Create New Posting'}</h2>
+            <p className="hr-form-hint" style={{ marginTop: '2px' }}>Fill in position details, description, qualifications, and employment terms.</p>
+          </div>
+          <button className="hr-modal-close" onClick={onClose}><X size={20} /></button>
         </div>
 
         <div className="hr-modal-body">
-          {/* Title */}
-          <div className="hr-form-group">
-            <label className="hr-form-label">Job Title <span className="hr-required">*</span></label>
-            <input
-              className="hr-form-input"
-              placeholder="e.g. Professor – Computer Science"
-              value={form.title}
-              onChange={e => set('title', e.target.value)}
-            />
-          </div>
-
-          {/* Position + Division */}
-          <div className="hr-form-row">
+          {/* Top Primary Details Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1.25rem' }}>
+            <div className="hr-form-group">
+              <label className="hr-form-label">Job Title <span className="hr-required">*</span></label>
+              <input
+                className="hr-form-input"
+                placeholder="e.g. Professor – Computer Science"
+                value={form.title}
+                onChange={e => set('title', e.target.value)}
+              />
+            </div>
             <div className="hr-form-group">
               <label className="hr-form-label">Position <span className="hr-required">*</span></label>
               <select className="hr-form-input" value={form.position} onChange={e => set('position', e.target.value)}>
@@ -159,23 +241,40 @@ export default function CreateJobModal({ job, onClose, onSave }) {
             </div>
           </div>
 
-          {/* Description */}
+          {/* 1. Job Description (Enlarged Box for Full JD) */}
           <div className="hr-form-group">
-            <label className="hr-form-label">Description <span className="hr-required">*</span></label>
-            <p className="hr-form-hint">Public-facing — visible to candidates</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className="hr-form-label">Job Description <span className="hr-required">*</span></label>
+              <span className="hr-form-hint">Paste full job description, scope, and key responsibilities</span>
+            </div>
             <textarea
               className="hr-form-input hr-textarea"
-              placeholder="Describe the role, responsibilities, and what you are looking for..."
+              style={{ minHeight: '220px', resize: 'vertical', lineHeight: '1.6' }}
+              placeholder="Paste full job description here..."
               value={form.description}
               onChange={e => set('description', e.target.value)}
             />
           </div>
 
+          {/* 2. Requirements and Qualification Box */}
+          <div className="hr-form-group">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className="hr-form-label">Requirements and Qualification</label>
+              <span className="hr-form-hint">Key educational background, skills, and prerequisite experience</span>
+            </div>
+            <textarea
+              className="hr-form-input hr-textarea"
+              style={{ minHeight: '160px', resize: 'vertical', lineHeight: '1.6' }}
+              placeholder="Specify degree requirements, mandatory technical skills, certifications, and candidate prerequisites..."
+              value={form.requirements}
+              onChange={e => set('requirements', e.target.value)}
+            />
+          </div>
 
-          {/* Deadline + Openings */}
-          <div className="hr-form-row">
+          {/* Secondary Details Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
             <div className="hr-form-group">
-              <label className="hr-form-label">Deadline</label>
+              <label className="hr-form-label">Last Date to Apply</label>
               <input
                 type="date"
                 className="hr-form-input"
@@ -195,50 +294,104 @@ export default function CreateJobModal({ job, onClose, onSave }) {
             </div>
           </div>
 
-          {/* Dynamic Terms Configuration */}
-          <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              Contract & Compensation Settings
-            </h4>
-            
-            <div className="hr-form-row">
-              <div className="hr-form-group">
-                <label className="hr-form-label">Pay Band (Min) ₹</label>
-                <select className="hr-form-input" value={form.min_pay} onChange={e => set('min_pay', e.target.value)}>
-                  {Array.from({ length: 40 }, (_, i) => 20000 + i * 5000).map(val => (
-                    <option key={`min-${val}`} value={val}>{val.toLocaleString()}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="hr-form-group">
-                <label className="hr-form-label">Pay Band (Max) ₹</label>
-                <select className="hr-form-input" value={form.max_pay} onChange={e => set('max_pay', e.target.value)}>
-                  {Array.from({ length: 40 }, (_, i) => 20000 + i * 5000).map(val => (
-                    <option key={`max-${val}`} value={val}>{val.toLocaleString()}</option>
-                  ))}
-                </select>
+          {/* 3. Contract & Compensation Parameters Section with Toggle */}
+          <div style={{ marginTop: '0.5rem', padding: '1.25rem 1.5rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h4 style={{ fontSize: '14px', fontWeight: '700', color: '#002147', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                💼 Employment Terms & Compensation Parameters
+              </h4>
+              
+              {/* Employment Type Toggle (Regular vs Contractual) */}
+              <div style={{ display: 'inline-flex', background: '#e2e8f0', borderRadius: '8px', padding: '3px' }}>
+                <button
+                  type="button"
+                  onClick={() => set('employment_type', 'Regular')}
+                  style={{
+                    padding: '6px 18px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    background: form.employment_type === 'Regular' ? '#002147' : 'transparent',
+                    color: form.employment_type === 'Regular' ? '#ffffff' : '#475569',
+                    boxShadow: form.employment_type === 'Regular' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                  }}
+                >
+                  Regular
+                </button>
+                <button
+                  type="button"
+                  onClick={() => set('employment_type', 'Contractual')}
+                  style={{
+                    padding: '6px 18px',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    background: form.employment_type === 'Contractual' ? '#002147' : 'transparent',
+                    color: form.employment_type === 'Contractual' ? '#ffffff' : '#475569',
+                    boxShadow: form.employment_type === 'Contractual' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                  }}
+                >
+                  Contractual
+                </button>
               </div>
             </div>
 
-            <div className="hr-form-row">
-              <div className="hr-form-group">
-                <label className="hr-form-label">Min Experience (Years)</label>
-                <input type="number" min="0" className="hr-form-input" value={form.min_experience} onChange={e => set('min_experience', e.target.value)} />
+            {form.employment_type === 'Regular' ? (
+              /* REGULAR POSITION PARAMETERS (7th CPC Pay Band & Level) */
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
+                <div className="hr-form-group">
+                  <label className="hr-form-label">Pay Band</label>
+                  <select 
+                    className="hr-form-input" 
+                    value={form.pay_band} 
+                    onChange={e => {
+                      const pb = e.target.value;
+                      setForm(f => ({
+                        ...f,
+                        pay_band: pb,
+                        pay_level: PAY_BAND_DEFAULT_LEVELS[pb] || f.pay_level
+                      }));
+                    }}
+                  >
+                    {PAY_BANDS.map(pb => (
+                      <option key={pb} value={pb}>{pb}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="hr-form-group">
+                  <label className="hr-form-label">Level</label>
+                  <select className="hr-form-input" value={form.pay_level} onChange={e => set('pay_level', e.target.value)}>
+                    {PAY_LEVELS.map(lvl => (
+                      <option key={lvl} value={lvl}>{lvl}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="hr-form-group">
+                  <label className="hr-form-label">Min Experience (Years)</label>
+                  <input type="number" min="0" className="hr-form-input" value={form.min_experience} onChange={e => set('min_experience', e.target.value)} />
+                </div>
               </div>
-              <div className="hr-form-group">
-                <label className="hr-form-label">Max Experience (Years)</label>
-                <input type="number" min="0" className="hr-form-input" value={form.max_experience} onChange={e => set('max_experience', e.target.value)} />
+            ) : (
+              /* CONTRACTUAL POSITION PARAMETERS */
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
+                <div className="hr-form-group">
+                  <label className="hr-form-label">Min Experience (Years)</label>
+                  <input type="number" min="0" className="hr-form-input" value={form.min_experience} onChange={e => set('min_experience', e.target.value)} />
+                </div>
+                <div className="hr-form-group">
+                  <label className="hr-form-label">Contract Period (Years)</label>
+                  <select className="hr-form-input" value={form.contract_period} onChange={e => set('contract_period', e.target.value)}>
+                    {[1, 2, 3, 4, 5].map(y => <option key={y} value={y}>{y} Year{y > 1 ? 's' : ''}</option>)}
+                  </select>
+                </div>
               </div>
-            </div>
-
-            <div className="hr-form-row">
-              <div className="hr-form-group">
-                <label className="hr-form-label">Contract Period (Years)</label>
-                <select className="hr-form-input" value={form.contract_period} onChange={e => set('contract_period', e.target.value)}>
-                  {[1, 2, 3, 4, 5].map(y => <option key={y} value={y}>{y} Year{y > 1 ? 's' : ''}</option>)}
-                </select>
-              </div>
-            </div>
+            )}
           </div>
 
           {error && <div className="hr-modal-error">{error}</div>}

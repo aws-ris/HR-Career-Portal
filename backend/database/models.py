@@ -44,7 +44,9 @@ class JobPosting(Base):
     min_experience = Column(Integer,     nullable=True)
     max_experience = Column(Integer,     nullable=True)
     contract_period = Column(Integer,    nullable=True)
-    job_mode       = Column(String(50),  nullable=True)
+    job_mode       = Column(String(100), nullable=True)
+    pay_band       = Column(String(50),  nullable=True)
+    pay_level      = Column(String(50),  nullable=True)
 
     applications   = relationship("ApplicationTracking", back_populates="job", cascade="all, delete-orphan")
     token_registry = relationship("TokenRegistry",       cascade="all, delete-orphan")
@@ -246,6 +248,7 @@ class CandidateLinksAbout(Base):
     pub_chapters   = Column(Integer,     nullable=True, default=0)
     pub_reports    = Column(Integer,     nullable=True, default=0)
     pub_policy_briefs = Column(Integer,  nullable=True, default=0)
+    how_heard      = Column(String(500), nullable=True)
 
     candidate = relationship("CandidateMetadata", back_populates="links_about")
 

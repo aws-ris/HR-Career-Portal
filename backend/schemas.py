@@ -13,7 +13,11 @@ class PositionType(str, Enum):
     Assistant_Professor = 'Assistant Professor'
     Consultant          = 'Consultant'
     Research_Assistant  = 'Research Assistant'
-    Admin               = 'Admin'
+    Assistant           = 'Assistant'
+    Director            = 'Director'
+    Officer             = 'Officer'
+    Multi_Tasking_Staff = 'Multi Tasking Staff'
+    Associate           = 'Associate'
 
 class AdminDept(str, Enum):
     IT      = 'IT'
@@ -48,11 +52,18 @@ class JobStatus(str, Enum):
     archived = 'archived'
 
 class DivisionType(str, Enum):
-    RIS     = 'RIS'
-    CMEC    = 'CMEC'
-    FITM    = 'FITM'
-    DAKSHIN = 'DAKSHIN'
-    AIC     = 'AIC'
+    RIS               = 'RIS'
+    CMEC              = 'CMEC'
+    FITM              = 'FITM'
+    DAKSHIN           = 'DAKSHIN'
+    AIC               = 'AIC'
+    Admin_HR          = 'Admin - HR'
+    Admin_IT          = 'Admin - IT'
+    Admin_Finance     = 'Admin - Finance'
+    Admin_Publication = 'Admin - Publication'
+    Admin_MTS         = 'Admin - MTS'
+    Admin_Library     = 'Admin - Library'
+    General_Admin     = 'General Admin'
 
 class EducationLevel(str, Enum):
     undergrad = 'undergrad'
@@ -78,11 +89,11 @@ class SchoolingCreate(BaseModel):
     class_x_score_type:   ScoreType = Field(default=ScoreType.Percentage)
     class_x_score_value:  float = Field(..., ge=0)
     class_x_year:         int = Field(..., ge=1950, le=2030)
-    class_xii_school:     str = Field(default='')
-    class_xii_board:      str = Field(default='Other')
-    class_xii_score_type: ScoreType = Field(default=ScoreType.Percentage)
-    class_xii_score_value: float = Field(..., ge=0)
-    class_xii_year:        int = Field(..., ge=1950, le=2030)
+    class_xii_school:     Optional[str] = Field(default='')
+    class_xii_board:      Optional[str] = Field(default='Other')
+    class_xii_score_type: Optional[ScoreType] = Field(default=ScoreType.Percentage)
+    class_xii_score_value: Optional[float] = Field(default=None, ge=0)
+    class_xii_year:        Optional[int] = Field(default=None, ge=1950, le=2030)
 
     @field_validator('class_x_score_value')
     @classmethod
@@ -99,6 +110,8 @@ class SchoolingCreate(BaseModel):
     @field_validator('class_xii_score_value')
     @classmethod
     def validate_xii_score(cls, v, info):
+        if v is None:
+            return v
         score_type = info.data.get('class_xii_score_type')
         if score_type == ScoreType.Percentage and v > 100:
             raise ValueError('Percentage score_value must be <= 100')
@@ -227,6 +240,7 @@ class LinksAboutCreate(BaseModel):
     pub_chapters:   Optional[int] = 0
     pub_reports:    Optional[int] = 0
     pub_policy_briefs: Optional[int] = 0
+    how_heard:      Optional[str] = None
 
     @field_validator('about')
     @classmethod
@@ -271,6 +285,7 @@ class CandidateCreate(BaseModel):
     pub_chapters:   Optional[int] = 0
     pub_reports:    Optional[int] = 0
     pub_policy_briefs: Optional[int] = 0
+    how_heard:      Optional[str] = None
 
     # Nested education and experience
     schooling:        SchoolingCreate
@@ -291,7 +306,7 @@ class CandidateCreate(BaseModel):
     @classmethod
     def validate_admin_dept(cls, v, info):
         position = info.data.get('position_applied')
-        if position == PositionType.Admin and not v:
+        if position and (position == 'Admin' or getattr(position, 'value', position) == 'Admin') and not v:
             raise ValueError('Admin department must be provided for Admin position')
         return v
 
@@ -329,8 +344,8 @@ class CandidateFullResponse(BaseModel):
 # ─────────────────────────────────────────────
 class JobPostingCreate(BaseModel):
     title:          str               = Field(..., min_length=3, max_length=200)
-    position:       PositionType
-    division:       DivisionType
+    position:       Optional[str]     = None
+    division:       Optional[str]     = None
     description:    str
     requirements:   Optional[str]     = None
     keywords:       Optional[List[str]] = None
@@ -346,6 +361,27 @@ class JobPostingCreate(BaseModel):
     max_experience: Optional[int]     = None
     contract_period:Optional[int]     = None
     job_mode:       Optional[str]     = None
+    pay_band:       Optional[str]     = None
+    pay_level:      Optional[str]     = None
+
+    @field_validator('deadline', mode='before')
+    @classmethod
+    def parse_deadline(cls, v):
+        if not v or v == '':
+            return None
+        if isinstance(v, str):
+            v = v.strip()
+            # Try YYYY-MM-DD
+            try:
+                return datetime.strptime(v, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+            # Try DD-MM-YYYY
+            try:
+                return datetime.strptime(v, '%d-%m-%Y').date()
+            except ValueError:
+                pass
+        return v
 
 class JobPostingResponse(JobPostingCreate):
     id:         str

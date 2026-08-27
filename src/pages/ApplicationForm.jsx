@@ -31,6 +31,34 @@ const DIPLOMA_TYPES = [
 
 const PASSING_YEARS = Array.from({ length: 61 }, (_, i) => 2030 - i); // 2030 down to 1970
 
+const PUBLICATION_CATEGORIES = [
+  {
+    type: 'Peer-Reviewed Journal Papers',
+    label: 'Peer-Reviewed Journal Papers',
+    validationPrompt: 'Enter DOI / ORCID (comma separated if multiple links)'
+  },
+  {
+    type: 'Books & Book Chapters',
+    label: 'Books & Book Chapters',
+    validationPrompt: 'Enter ISBN / DOI (comma separated if multiple links)'
+  },
+  {
+    type: 'Working Papers & Preprints',
+    label: 'Working Papers & Preprints',
+    validationPrompt: 'Enter SSRN, arXiv, RePEc, or DOI links (comma separated)'
+  },
+  {
+    type: 'Research Reports & Policy Briefs',
+    label: 'Research Reports & Policy Briefs',
+    validationPrompt: 'Enter Institutional URLs / Handles (comma separated)'
+  },
+  {
+    type: 'Newspaper Articles & Public Commentary',
+    label: 'Newspaper Articles & Public Commentary',
+    validationPrompt: 'Enter Media links / URLs (comma separated)'
+  }
+];
+
 const SearchableCountryCodeInput = ({ required, value, onChange, placeholder, className }) => {
   const [inputValue, setInputValue] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -125,13 +153,6 @@ const SearchableCountryCodeInput = ({ required, value, onChange, placeholder, cl
   );
 };
 
-const PUBLICATION_CATEGORIES = [
-  'Peer-Reviewed Journal Papers',
-  'Books Published',
-  'Book Chapters',
-  'Research Reports',
-  'Policy Briefs'
-];
 
 const COMMON_SPECIALIZATIONS = [
   // Humanities & Arts
@@ -530,13 +551,13 @@ export default function ApplicationForm() {
       return savedDraft.pubEntries;
     }
     const list = [];
-    if (savedDraft.pubPapers) list.push({ category: 'Peer-Reviewed Journal Papers', count: savedDraft.pubPapers });
-    if (savedDraft.pubBooks) list.push({ category: 'Books Published', count: savedDraft.pubBooks });
-    if (savedDraft.pubChapters) list.push({ category: 'Book Chapters', count: savedDraft.pubChapters });
-    if (savedDraft.pubReports) list.push({ category: 'Research Reports', count: savedDraft.pubReports });
-    if (savedDraft.pubPolicyBriefs) list.push({ category: 'Policy Briefs', count: savedDraft.pubPolicyBriefs });
+    if (savedDraft.pubPapers) list.push({ category: 'Peer-Reviewed Journal Papers', count: savedDraft.pubPapers, link: '' });
+    if (savedDraft.pubBooks) list.push({ category: 'Books & Book Chapters', count: savedDraft.pubBooks, link: '' });
+    if (savedDraft.pubChapters) list.push({ category: 'Working Papers & Preprints', count: savedDraft.pubChapters, link: '' });
+    if (savedDraft.pubReports) list.push({ category: 'Research Reports & Policy Briefs', count: savedDraft.pubReports, link: '' });
+    if (savedDraft.pubPolicyBriefs) list.push({ category: 'Newspaper Articles & Public Commentary', count: savedDraft.pubPolicyBriefs, link: '' });
     if (list.length === 0) {
-      list.push({ category: 'Peer-Reviewed Journal Papers', count: 0 });
+      list.push({ category: 'Peer-Reviewed Journal Papers', count: 0, link: '' });
     }
     return list;
   });
@@ -545,11 +566,11 @@ export default function ApplicationForm() {
     let books = 0, papers = 0, chapters = 0, reports = 0, briefs = 0;
     entries.forEach(e => {
       const c = parseInt(e.count, 10) || 0;
-      if (e.category === 'Books Published') books += c;
+      if (e.category === 'Books & Book Chapters') books += c;
       else if (e.category === 'Peer-Reviewed Journal Papers') papers += c;
-      else if (e.category === 'Book Chapters') chapters += c;
-      else if (e.category === 'Research Reports') reports += c;
-      else if (e.category === 'Policy Briefs') briefs += c;
+      else if (e.category === 'Working Papers & Preprints') chapters += c;
+      else if (e.category === 'Research Reports & Policy Briefs') reports += c;
+      else if (e.category === 'Newspaper Articles & Public Commentary') briefs += c;
     });
     setPubBooks(books);
     setPubPapers(papers);
@@ -568,8 +589,8 @@ export default function ApplicationForm() {
   const addPubEntry = () => {
     if (pubEntries.length < 5) {
       const usedCategories = pubEntries.map(e => e.category);
-      const available = PUBLICATION_CATEGORIES.find(c => !usedCategories.includes(c)) || PUBLICATION_CATEGORIES[0];
-      const fresh = [...pubEntries, { category: available, count: 1 }];
+      const available = PUBLICATION_CATEGORIES.find(c => !usedCategories.includes(c.type)) || PUBLICATION_CATEGORIES[0];
+      const fresh = [...pubEntries, { category: available.type, count: 1, link: '' }];
       setPubEntries(fresh);
       syncPubCounts(fresh);
     }
@@ -586,6 +607,10 @@ export default function ApplicationForm() {
   const [expMonths, setExpMonths] = useState(() => savedDraft.expMonths || '');
   const [lastSalary, setLastSalary] = useState(() => savedDraft.lastSalary || '');
   const [resumeFile, setResumeFile] = useState(null);
+
+  // How did you hear about us states
+  const [howHeard, setHowHeard] = useState(() => savedDraft.howHeard || '');
+  const [howHeardDetails, setHowHeardDetails] = useState(() => savedDraft.howHeardDetails || '');
 
   // Step 4
   const [hasWork, setHasWork] = useState(true);
@@ -1220,24 +1245,14 @@ export default function ApplicationForm() {
 
     }
 
-    // Step 2 Validation: Schooling is mandatory, and at least ONE post-schooling qualification (UG/PG/PhD/Diploma) must be filled
+    // Step 2 Validation: Class X Schooling is compulsory; Class XII & Post-schooling (UG/PG/PhD/Diploma) are optional
     if (step === 2) {
       if (!classXSchool.trim() || !classXScoreValue || !classXYear) {
         alert("Please complete mandatory Class X schooling details.");
         return;
       }
-      if (!classXIISchool.trim() || !classXIIScoreValue || !classXIIYear) {
-        alert("Please complete mandatory Class XII schooling details.");
-        return;
-      }
 
       const allEdu = [...grads, ...postGrads, ...doctorates, ...diplomas];
-      const hasPostSchooling = allEdu.some(entry => (entry.university && entry.university.trim() !== '') || (entry.degree_name && entry.degree_name.trim() !== '') || (entry.degree_select && entry.degree_select.trim() !== ''));
-      if (!hasPostSchooling) {
-        alert("Please fill in at least one post-schooling qualification (Graduation, Post-Graduation, Doctorate, or Diploma).");
-        return;
-      }
-
       const currentYr = new Date().getFullYear();
       for (let entry of allEdu) {
         if (entry.is_pursuing && entry.grad_year) {
@@ -1290,14 +1305,39 @@ export default function ApplicationForm() {
         }
       }
     }
+
+    // Step 4 Validation: If publication count > 0, validation link / identifier is required
+    if (step === 4) {
+      for (let pe of pubEntries) {
+        const cnt = parseInt(pe.count, 10) || 0;
+        if (cnt > 0) {
+          if (!pe.link || !pe.link.trim()) {
+            alert(`Please provide the validation link / identifier (DOI, ISBN, URL, Handle, etc.) for "${pe.category}" as the publication count is set to ${cnt}.`);
+            return;
+          }
+        }
+      }
+    }
     
     setStep(step + 1);
     setTriedSubmit(false);
   };
 
   const handleProceedToPreview = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setTriedSubmit(true);
+
+    // Validate Step 4 before proceeding to preview
+    for (let pe of pubEntries) {
+      const cnt = parseInt(pe.count, 10) || 0;
+      if (cnt > 0) {
+        if (!pe.link || !pe.link.trim()) {
+          alert(`Please provide the validation link / identifier (DOI, ISBN, URL, Handle, etc.) for "${pe.category}" as the publication count is set to ${cnt}.`);
+          return;
+        }
+      }
+    }
+
     setStep(5);
     setTriedSubmit(false);
   };
@@ -1337,6 +1377,9 @@ export default function ApplicationForm() {
       sop: sop.trim() || null,
       google_scholar: scholarLink.trim() || null,
       linkedin: linkedin.trim() || null,
+      how_heard: (howHeard === 'Friend / Colleague' || howHeard === 'Others')
+        ? `${howHeard}: ${howHeardDetails.trim()}`
+        : howHeard,
       pub_books: pubBooks,
       pub_papers: pubPapers,
       pub_chapters: pubChapters,
@@ -1360,19 +1403,20 @@ export default function ApplicationForm() {
         class_x_score_type: classXScoreType,
         class_x_score_value: parseFloat(classXScoreValue),
         class_x_year: parseInt(classXYear, 10) || null,
-        class_xii_school: classXIISchool.trim(),
-        class_xii_board: classXIIBoard === 'State Board'
+        class_xii_school: classXIISchool ? classXIISchool.trim() : null,
+        class_xii_board: classXIISchool ? (classXIIBoard === 'State Board'
           ? `State Board - ${classXIIBoardState}`
           : classXIIBoard === 'Other'
             ? classXIIBoardOther.trim()
-            : classXIIBoard,
-        class_xii_score_type: classXIIScoreType,
-        class_xii_score_value: parseFloat(classXIIScoreValue),
-        class_xii_year: parseInt(classXIIYear, 10) || null
+            : classXIIBoard) : null,
+        class_xii_score_type: classXIISchool ? classXIIScoreType : null,
+        class_xii_score_value: (classXIIScoreValue && !isNaN(parseFloat(classXIIScoreValue))) ? parseFloat(classXIIScoreValue) : null,
+        class_xii_year: (classXIIYear && !isNaN(parseInt(classXIIYear, 10))) ? parseInt(classXIIYear, 10) : null
       },
       higher_education: educations.map(e => ({
         ...e,
         level: e.level === 'Bachelors' ? 'undergrad' : (e.level === 'Masters' ? 'postgrad' : (e.level === 'Doctorate' ? 'phd' : e.level)),
+        score_value: (e.score_value && !isNaN(parseFloat(e.score_value))) ? parseFloat(e.score_value) : null,
         grad_year: e.grad_year ? parseInt(e.grad_year, 10) : null,
         is_pursuing: !!e.is_pursuing,
         duration_value: e.duration_value ? parseInt(e.duration_value, 10) : null,
@@ -2376,7 +2420,7 @@ export default function ApplicationForm() {
                   </span>
                 </div>
                 <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '0.75rem' }}>
-                  Briefly outline your research interests, career objectives, and motivation for applying (maximum 300 words).
+                  Briefly state your background, key skills, and motivation for applying to the RIS (maximum 300 words)
                 </p>
                 <textarea 
                   rows={6}
@@ -2394,7 +2438,6 @@ export default function ApplicationForm() {
                 )}
               </div>
 
-              <p style={{marginBottom: '1rem'}}>Do you have prior work experience?</p>
               <div className="form-group" style={{marginBottom: '2rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}}>
                 <label className="form-label" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
                   <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
@@ -2563,66 +2606,90 @@ export default function ApplicationForm() {
             <>
               <h3>Publications / Works Authored</h3>
               <p style={{marginBottom: '1.5rem', color: 'var(--text-secondary)'}}>
-                Select publication categories from the dropdown menu and enter the number of published works under each (leave blank if none):
+                Select publication categories from the dropdown menu, enter the number of published works, and provide the validation link / identifier (DOI, ISBN, SSRN, URL, Handle, etc.):
               </p>
 
               <div style={{ marginBottom: '2rem' }}>
-                {pubEntries.map((pe, idx) => (
-                  <div key={idx} style={{ marginBottom: '1rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <div className="form-grid" style={{ alignItems: 'center' }}>
-                      <div className="form-group col-7" style={{ marginBottom: 0 }}>
-                        <label className="form-label">Publication Category</label>
-                        <select 
-                          className="form-input"
-                          value={pe.category}
-                          onChange={e => updatePubEntry(idx, 'category', e.target.value)}
-                        >
-                          {PUBLICATION_CATEGORIES.map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
-                          ))}
-                        </select>
-                      </div>
+                {pubEntries.map((pe, idx) => {
+                  const catConfig = PUBLICATION_CATEGORIES.find(c => c.type === pe.category) || PUBLICATION_CATEGORIES[0];
+                  return (
+                    <div key={idx} style={{ marginBottom: '1.25rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <div className="form-grid" style={{ alignItems: 'flex-start' }}>
+                        {/* Dropdown for Publication Category */}
+                        <div className="form-group col-5" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Publication Category</label>
+                          <select 
+                            className="form-input"
+                            value={pe.category}
+                            onChange={e => updatePubEntry(idx, 'category', e.target.value)}
+                          >
+                            {PUBLICATION_CATEGORIES.map(cat => (
+                              <option key={cat.type} value={cat.type}>{cat.label}</option>
+                            ))}
+                          </select>
+                        </div>
 
-                      <div className="form-group col-3" style={{ marginBottom: 0 }}>
-                        <label className="form-label">Number of Publications</label>
-                        <input 
-                          type="number" 
-                          min="0"
-                          max="200"
-                          className="form-input" 
-                          value={pe.count}
-                          onChange={e => updatePubEntry(idx, 'count', Math.max(0, parseInt(e.target.value) || 0))}
-                          placeholder="e.g. 3"
-                        />
-                      </div>
+                        {/* Number of Publications */}
+                        <div className="form-group col-2" style={{ marginBottom: 0 }}>
+                          <label className="form-label">Count</label>
+                          <input 
+                            type="number" 
+                            min="0"
+                            max="200"
+                            className="form-input" 
+                            value={pe.count}
+                            onChange={e => updatePubEntry(idx, 'count', Math.max(0, parseInt(e.target.value) || 0))}
+                            placeholder="e.g. 3"
+                          />
+                        </div>
 
-                      <div className="form-group col-2" style={{ marginBottom: 0, display: 'flex', alignItems: 'flex-end', paddingTop: '1.5rem' }}>
-                        <button 
-                          type="button" 
-                          onClick={() => removePubEntry(idx)}
-                          style={{ 
-                            color: '#ef4444', 
-                            background: '#fef2f2', 
-                            border: '1px solid #fecaca', 
-                            padding: '0.65rem 0.9rem', 
-                            borderRadius: '8px', 
-                            fontSize: '0.82rem', 
-                            fontWeight: 700, 
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            width: '100%',
-                            justifyContent: 'center'
-                          }}
-                          title="Remove category"
-                        >
-                          <Trash2 size={14} /> Remove
-                        </button>
+                        {/* Validation Link Input */}
+                        <div className="form-group col-4" style={{ marginBottom: 0 }}>
+                          <label className="form-label">
+                            Validation Link / Identifier {pe.count > 0 && <span style={{ color: '#ef4444' }}>*</span>}
+                          </label>
+                          <input 
+                            type="text" 
+                            className={`form-input ${(triedSubmit && pe.count > 0 && (!pe.link || !pe.link.trim())) ? 'faulty-input' : ''}`} 
+                            value={pe.link || ''}
+                            onChange={e => updatePubEntry(idx, 'link', e.target.value)}
+                            placeholder={catConfig.validationPrompt}
+                          />
+                          {triedSubmit && pe.count > 0 && (!pe.link || !pe.link.trim()) && (
+                            <div className="error-text" style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '4px' }}>
+                              Validation link required when count &gt; 0.
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Remove Button */}
+                        <div className="form-group col-1" style={{ marginBottom: 0, display: 'flex', alignItems: 'flex-end', paddingTop: '1.75rem' }}>
+                          <button 
+                            type="button" 
+                            onClick={() => removePubEntry(idx)}
+                            style={{ 
+                              color: '#ef4444', 
+                              background: '#fef2f2', 
+                              border: '1px solid #fecaca', 
+                              padding: '0.65rem 0.75rem', 
+                              borderRadius: '8px', 
+                              fontSize: '0.82rem', 
+                              fontWeight: 700, 
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justify: 'center',
+                              width: '100%'
+                            }}
+                            title="Remove category"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {pubEntries.length < 5 && (
                   <button 
@@ -3462,19 +3529,113 @@ export default function ApplicationForm() {
                       </p>
                     )}
 
-                    {(pubBooks > 0 || pubPapers > 0 || pubChapters > 0 || pubReports > 0 || pubPolicyBriefs > 0) ? (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 24px', fontSize: '0.95rem', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        {pubBooks > 0 && <div>📚 <strong>Books Published:</strong> {pubBooks}</div>}
-                        {pubPapers > 0 && <div>📝 <strong>Peer-Reviewed Papers:</strong> {pubPapers}</div>}
-                        {pubChapters > 0 && <div>📖 <strong>Book Chapters:</strong> {pubChapters}</div>}
-                        {pubReports > 0 && <div>📊 <strong>Research Reports:</strong> {pubReports}</div>}
-                        {pubPolicyBriefs > 0 && <div>💡 <strong>Policy Briefs:</strong> {pubPolicyBriefs}</div>}
+                    {(pubEntries && pubEntries.some(e => (parseInt(e.count, 10) || 0) > 0 || (e.link && e.link.trim() !== ''))) ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.92rem', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        {pubEntries.map((pe, idx) => (
+                          ((parseInt(pe.count, 10) || 0) > 0 || (pe.link && pe.link.trim() !== '')) && (
+                            <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>📑 <strong>{pe.category}:</strong> {pe.count || 0} work(s)</span>
+                              </div>
+                              {pe.link && pe.link.trim() !== '' && (
+                                <div style={{ color: '#002147', fontSize: '0.84rem', paddingLeft: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                                  <span style={{ fontWeight: 600, color: '#475569' }}>Validation Links:</span>
+                                  {pe.link.split(',').map((linkStr, lIdx) => {
+                                    const clean = linkStr.trim();
+                                    if (!clean) return null;
+                                    const isUrl = clean.startsWith('http') || clean.includes('doi.org') || clean.includes('.com') || clean.includes('.org') || clean.includes('.in') || clean.includes('.edu');
+                                    return (
+                                      <span key={lIdx} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                        {isUrl ? (
+                                          <a href={clean.startsWith('http') ? clean : `https://${clean}`} target="_blank" rel="noreferrer" style={{ color: '#0284c7', textDecoration: 'underline' }}>{clean}</a>
+                                        ) : (
+                                          <span style={{ color: '#334155', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>{clean}</span>
+                                        )}
+                                        {lIdx < pe.link.split(',').length - 1 && <span style={{ color: '#94a3b8' }}>,</span>}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        ))}
                       </div>
                     ) : (
                       <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No publications declared.</p>
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* Separate Standalone Compulsory Source Box */}
+              <div style={{
+                background: 'linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%)',
+                border: '2px solid #0284c7',
+                borderRadius: '16px',
+                padding: '1.5rem',
+                marginTop: '2rem',
+                marginBottom: '2rem',
+                boxShadow: '0 4px 16px rgba(2, 132, 199, 0.08)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#002147', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    📢 Where did you hear about this vacancy / opportunity? <span style={{ color: '#ef4444', fontSize: '1.1rem' }}>*</span>
+                  </h4>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0284c7', background: '#e0f2fe', padding: '4px 10px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Mandatory
+                  </span>
+                </div>
+
+                <p style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '1rem' }}>
+                  Please select how you discovered this recruitment notification to help us improve our outreach.
+                </p>
+
+                <div className="form-grid">
+                  <div className="form-group col-6" style={{ marginBottom: 0 }}>
+                    <select 
+                      className={`form-input ${(triedSubmit && !howHeard) ? 'faulty-input' : ''}`}
+                      value={howHeard}
+                      onChange={e => setHowHeard(e.target.value)}
+                      style={{ height: '44px', fontWeight: '500' }}
+                    >
+                      <option value="">-- Select Source (Required) --</option>
+                      <option value="LinkedIn">LinkedIn</option>
+                      <option value="Twitter / X">Twitter / X</option>
+                      <option value="Facebook">Facebook</option>
+                      <option value="Instagram">Instagram</option>
+                      <option value="YouTube">YouTube</option>
+                      <option value="RIS Official Website">RIS Official Website</option>
+                      <option value="Newspaper Advertisement">Newspaper Advertisement</option>
+                      <option value="Job Portal / Employment News">Job Portal / Employment News</option>
+                      <option value="Friend / Colleague">Friend / Colleague</option>
+                      <option value="Others">Others</option>
+                    </select>
+                    {triedSubmit && !howHeard && (
+                      <div className="error-text" style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px', fontWeight: '600' }}>
+                        ⚠️ Please select where you heard about this opportunity.
+                      </div>
+                    )}
+                  </div>
+
+                  {(howHeard === 'Friend / Colleague' || howHeard === 'Others') && (
+                    <div className="form-group col-6" style={{ marginBottom: 0 }}>
+                      <input 
+                        type="text"
+                        className={`form-input ${(triedSubmit && (howHeard === 'Friend / Colleague' || howHeard === 'Others') && !howHeardDetails.trim()) ? 'faulty-input' : ''}`}
+                        value={howHeardDetails}
+                        onChange={e => setHowHeardDetails(e.target.value)}
+                        placeholder={howHeard === 'Friend / Colleague' ? "Please specify Friend / Colleague name..." : "Please specify source details..."}
+                        style={{ height: '44px' }}
+                      />
+                      {triedSubmit && (howHeard === 'Friend / Colleague' || howHeard === 'Others') && !howHeardDetails.trim() && (
+                        <div className="error-text" style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '6px', fontWeight: '600' }}>
+                          ⚠️ Please specify details.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -3498,7 +3659,18 @@ export default function ApplicationForm() {
               <button 
                 type="button" 
                 className="btn-primary" 
-                onClick={handleFinalSubmissionClick}
+                onClick={() => {
+                  setTriedSubmit(true);
+                  if (!howHeard) {
+                    alert("Please select where you heard about this vacancy / opportunity.");
+                    return;
+                  }
+                  if ((howHeard === 'Friend / Colleague' || howHeard === 'Others') && !howHeardDetails.trim()) {
+                    alert(`Please specify details for "${howHeard}".`);
+                    return;
+                  }
+                  executeFinalSubmit();
+                }}
                 style={{ margin: 0, backgroundColor: 'var(--brand-accent)', color: '#000' }}
               >
                 Submit Application
