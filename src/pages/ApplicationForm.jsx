@@ -79,7 +79,7 @@ const SearchableCountryCodeInput = ({ required, value, onChange, placeholder, cl
       <input
         required={required}
         className={className}
-        placeholder={placeholder || "+91"}
+        placeholder=""
         value={inputValue}
         onChange={handleInputChange}
         onFocus={() => setShowSuggestions(true)}
@@ -1686,7 +1686,7 @@ export default function ApplicationForm() {
                   <SearchableCountryCodeInput 
                     value={countryCode} 
                     onChange={setCountryCode} 
-                    placeholder="+91" 
+                    placeholder="" 
                     className={`form-input ${(triedSubmit && !countryCode) ? 'faulty-input' : ''}`}
                   />
                 </div>
