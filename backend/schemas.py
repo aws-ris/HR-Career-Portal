@@ -258,7 +258,6 @@ class CandidateCreate(BaseModel):
     pincode:             Optional[str]        = Field(None, pattern=r'^\d{6}$')
     years_of_experience: Optional[float]      = Field(None, ge=0)
     last_salary:         Optional[float]      = Field(None, ge=0)
-    category:            Optional[str]        = None
 
     # Links & about (goes to candidate_links_about)
     about:          Optional[str] = Field(None, max_length=3000)

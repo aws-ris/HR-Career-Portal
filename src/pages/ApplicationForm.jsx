@@ -30,15 +30,6 @@ const DIPLOMA_TYPES = [
 
 const PASSING_YEARS = Array.from({ length: 61 }, (_, i) => 2030 - i); // 2030 down to 1970
 
-const CATEGORIES = [
-  'General (UR)',
-  'OBC (Non-Creamy Layer)',
-  'SC (Scheduled Caste)',
-  'ST (Scheduled Tribe)',
-  'EWS (Economically Weaker Section)',
-  'PwD (Persons with Benchmark Disabilities)'
-];
-
 const PUBLICATION_CATEGORIES = [
   'Peer-Reviewed Journal Papers',
   'Books Published',
@@ -372,7 +363,6 @@ export default function ApplicationForm() {
   const [mobile_number, setMobile] = useState(() => savedDraft.mobile_number || '');
   const [dob, setDob] = useState(() => savedDraft.dob || '');
   const [gender, setGender] = useState(() => savedDraft.gender || '');
-  const [category, setCategory] = useState(() => savedDraft.category || '');
   const [candidateState, setCandidateState] = useState(() => savedDraft.candidateState || '');
   const [city, setCity] = useState(() => savedDraft.city || '');
   const [pincode, setPincode] = useState(() => savedDraft.pincode || '');
@@ -1128,9 +1118,7 @@ export default function ApplicationForm() {
         return alert("City must be at least 2 characters and contain only letters.");
       }
 
-      if (!category) {
-        return alert("Please select your category.");
-      }
+
     }
 
     // Step 2 Validation: Schooling is mandatory, and at least ONE post-schooling qualification (UG/PG/PhD/Diploma) must be filled
@@ -1245,7 +1233,6 @@ export default function ApplicationForm() {
       pub_reports: pubReports,
       pub_policy_briefs: pubPolicyBriefs,
       gender: gender || null,
-      category: category || null,
       state: candidateState || null,
       city: city || null,
       pincode: pincode || null,
@@ -1599,7 +1586,7 @@ export default function ApplicationForm() {
                   />
                   {dobError && <div className="error-text">{dobError}</div>}
                 </div>
-                <div className="form-group col-4">
+                <div className="form-group col-6">
                   <label className="form-label">Gender</label>
                   <select 
                     required 
@@ -1614,19 +1601,7 @@ export default function ApplicationForm() {
                     <option>Prefer not to say</option>
                   </select>
                 </div>
-                <div className="form-group col-4">
-                  <label className="form-label">Category</label>
-                  <select 
-                    required 
-                    className={`form-input ${(triedSubmit && !category) ? 'faulty-input' : ''}`} 
-                    value={category} 
-                    onChange={e => setCategory(e.target.value)}
-                  >
-                    <option value="">Select Category</option>
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div className="form-group col-4">
+                <div className="form-group col-6">
                   <label className="form-label">State / Union Territory</label>
                   <select 
                     required 
@@ -2618,17 +2593,6 @@ export default function ApplicationForm() {
                       </select>
                     </div>
                     <div className="resume-inline-group">
-                      <label className="resume-inline-label">Category</label>
-                      <select 
-                        className="resume-inline-input"
-                        value={category}
-                        onChange={e => setCategory(e.target.value)}
-                      >
-                        <option value="">Select Category</option>
-                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                    </div>
-                    <div className="resume-inline-group">
                       <label className="resume-inline-label">State / UT</label>
                       <select 
                         className="resume-inline-input"
@@ -2670,7 +2634,7 @@ export default function ApplicationForm() {
                       <span className="resume-contact-item">📍 {city}, {candidateState} - {pincode}</span>
                       <span className="resume-contact-item">🎂 {dob}</span>
                       <span className="resume-contact-item">👤 {gender}</span>
-                      <span className="resume-contact-item">🏷️ Category: {category}</span>
+
                     </div>
                   </>
                 )}

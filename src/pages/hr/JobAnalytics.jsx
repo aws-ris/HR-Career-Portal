@@ -267,23 +267,7 @@ export default function JobAnalytics() {
             </ResponsiveContainer>
           </div>
         </div>
-        {stats.categories && (
-          <div className="hr-analytics-card">
-            <div className="hr-analytics-card-header"><TrendingUp size={16} /> <span>Category Mix</span></div>
-            <div style={{ height: 160 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.categories}>
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '9px' }} />
-                  <YAxis hide />
-                  <Tooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}} />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={20}>
-                    {stats.categories.map((entry, index) => <Cell key={`cat-${index}`} fill={['#002147', '#0072B2', '#C8102E', '#009E73', '#5E35B1', '#d97706'][index % 6]} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
+
       </div>
 
       <div className="hr-divider" />

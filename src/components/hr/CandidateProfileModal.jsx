@@ -316,9 +316,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px' }}>
                   <MapPin size={16} style={{ color: '#ef4444' }} /> <strong>Location:</strong> {data.city ? `${data.city}, ` : ''}{data.state}{data.pincode ? ` - ${data.pincode}` : ''}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px' }}>
-                  <Award size={16} style={{ color: '#d97706' }} /> <strong>Category:</strong> <span style={{ fontWeight: 700, color: '#002147' }}>{data.category || 'Unspecified'}</span>
-                </div>
+
               </div>
 
               {/* Education & Experience Columns */}

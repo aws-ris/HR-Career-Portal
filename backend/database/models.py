@@ -73,7 +73,6 @@ class CandidateMetadata(Base):
     pincode              = Column(String(20),  nullable=True)
     years_of_experience  = Column(Float,       nullable=True)
     last_salary          = Column(Float,       nullable=True)
-    category             = Column(String(50),  nullable=True)
 
     @validates('dob')
     def update_age(self, key, dob_value):

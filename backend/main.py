@@ -105,7 +105,6 @@ def startup_migration():
             ("candidate_metadata", "age", "INTEGER"),
             ("candidate_metadata", "city", "VARCHAR(100)"),
             ("candidate_metadata", "last_salary", "FLOAT"),
-            ("candidate_metadata", "category", "VARCHAR(50)"),
             
             ("candidate_links_about", "extracurriculars", "TEXT"),
             ("candidate_links_about", "pub_books", "INTEGER DEFAULT 0"),
@@ -156,9 +155,7 @@ def startup_migration():
                 if cand.dob and cand.age is None:
                     cand.age = today.year - cand.dob.year - ((today.month, today.day) < (cand.dob.month, cand.dob.day))
                     backfilled_count += 1
-                if not cand.category:
-                    cand.category = sample_cats[idx % len(sample_cats)]
-                    cat_count += 1
+
             if backfilled_count > 0 or cat_count > 0:
                 db.commit()
                 print(f"Auto-backfilled ages for {backfilled_count} and categories for {cat_count} candidates.")
@@ -470,7 +467,6 @@ def seed_candidates(db: Session = Depends(get_db)):
             mobile_no=f"9{random.randint(100000000, 999999999)}",
             dob=date(1995, 5, 20),
             gender=random.choice(["Male", "Female"]),
-            category=random.choice(["General (UR)", "OBC (Non-Creamy Layer)", "SC (Scheduled Caste)", "ST (Scheduled Tribe)", "EWS (Economically Weaker Section)"]),
             city=random.choice(["New Delhi", "Mumbai", "Bengaluru", "Chennai"]),
             state=random.choice(["Delhi", "Maharashtra", "Karnataka", "Tamil Nadu"]),
             pincode=random.choice(["110001", "400001", "560001", "600001"]),
@@ -639,7 +635,6 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
             candidate.pincode = payload.pincode
             candidate.years_of_experience = payload.years_of_experience
             candidate.last_salary = payload.last_salary
-            candidate.category = getattr(payload, 'category', None)
             
             # Clean up old relations to prevent duplicates
             if candidate.schooling:
@@ -664,8 +659,7 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
                 state               = payload.state,
                 pincode             = payload.pincode,
                 years_of_experience = payload.years_of_experience,
-                last_salary         = payload.last_salary,
-                category            = getattr(payload, 'category', None)
+                last_salary         = payload.last_salary
             )
             db.add(candidate)
             db.flush()
@@ -981,10 +975,7 @@ def get_global_analytics(db: Session = Depends(get_db)):
         func.count(models.CandidateMetadata.id)
     ).group_by(models.CandidateMetadata.gender).all()
 
-    category_stats = db.query(
-        models.CandidateMetadata.category, 
-        func.count(models.CandidateMetadata.id)
-    ).group_by(models.CandidateMetadata.category).all()
+
 
     state_stats = db.query(
         models.CandidateMetadata.state, 
@@ -1010,7 +1001,6 @@ def get_global_analytics(db: Session = Depends(get_db)):
 
     return {
         "gender": [{"name": g if g else "Other", "value": c} for g, c in gender_stats],
-        "categories": [{"name": cat if cat else "Unspecified", "value": c} for cat, c in category_stats],
         "states": [{"name": s if s else "Unknown", "value": c} for s, c in state_stats],
         "education": [
             {"name": "PhD", "value": phd_count},
@@ -1073,7 +1063,6 @@ def get_job_analytics(job_id: str, db: Session = Depends(get_db)):
 
     return {
         "gender": [{"name": g if g else "Other", "value": c} for g, c in gender_stats],
-        "categories": [{"name": cat if cat else "Unspecified", "value": c} for cat, c in category_stats],
         "states": [{"name": s if s else "Unknown", "value": c} for s, c in state_stats],
         "education": [
             {"name": "PhD", "value": phd_count},
@@ -1143,7 +1132,6 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
         "mobile_no": candidate.mobile_no,
         "dob": candidate.dob.isoformat() if candidate.dob else None,
         "gender": candidate.gender,
-        "category": candidate.category,
         "state": candidate.state,
         "city": candidate.city,
         "pincode": candidate.pincode,
@@ -1400,7 +1388,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
         # 2. Build Headers and Rows based on report type
         if req.report_type == 'standardized':
             headers = [
-                "Full Name", "Category", "LinkedIn", "Class X Score", "Class X Year", "Class XII Score", "Class XII Year", 
+                "Full Name", "LinkedIn", "Class X Score", "Class X Year", "Class XII Score", "Class XII Year", 
                 "Bachelors (UG)", "Bachelors Score", "Bachelors Year",
                 "Masters (PG)", "Masters Score", "Masters Year",
                 "Doctorate (PhD)", "Doctorate Score", "Doctorate Year",
@@ -1440,7 +1428,6 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 
                 row = [
                     full_c.full_name,
-                    full_c.category or "Unspecified",
                     (full_c.links_about.linkedin if full_c.links_about else "") or "",
                     format_schooling_score(full_c.schooling, "x"),
                     full_c.schooling.class_x_year if (full_c.schooling and full_c.schooling.class_x_year) else "",
@@ -1466,7 +1453,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
         else:
             # Detailed Report (Grouped Roster)
             headers = [
-                "Full Name", "Email", "Mobile", "DOB", "Gender", "Category", "State", "City", "Pincode", 
+                "Full Name", "Email", "Mobile", "DOB", "Gender", "State", "City", "Pincode", 
                 "City/State", "Total Exp (Yrs)", "Highest Edu", 
                 "Class X School", "Class X Board", "Class X Score", "Class X Year",
                 "Class XII School", "Class XII Board", "Class XII Score", "Class XII Year",
@@ -1516,7 +1503,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[2] = full_c.mobile_no
                         row[3] = str(full_c.dob)
                         row[4] = full_c.gender
-                        row[5] = full_c.category or ""
+                        row[5] = ""
                         row[6] = full_c.state
                         row[7] = full_c.city
                         row[8] = full_c.pincode
