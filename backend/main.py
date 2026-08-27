@@ -1030,12 +1030,7 @@ def get_job_analytics(job_id: str, db: Session = Depends(get_db)):
         models.ApplicationTracking.job_id == clean_id
     ).group_by(models.CandidateMetadata.gender).all()
 
-    category_stats = db.query(
-        models.CandidateMetadata.category, 
-        func.count(models.CandidateMetadata.id)
-    ).join(models.ApplicationTracking).filter(
-        models.ApplicationTracking.job_id == clean_id
-    ).group_by(models.CandidateMetadata.category).all()
+
 
     state_stats = db.query(
         models.CandidateMetadata.state, 
