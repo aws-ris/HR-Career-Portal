@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE as API } from '../api';
 import { CheckCircle2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import COUNTRY_CODES from '../data/countryCodes.json';
 
 const UG_DEGREES = [
   'B.A.', 'B.Sc.', 'B.Com', 'B.Tech', 'B.E.', 'B.B.A.', 'B.C.A.', 'LL.B.', 'MBBS', 'B.Arch', 'B.Ed.',
@@ -30,62 +31,89 @@ const DIPLOMA_TYPES = [
 
 const PASSING_YEARS = Array.from({ length: 61 }, (_, i) => 2030 - i); // 2030 down to 1970
 
-const COUNTRY_CODES = [
-  '+1 (USA/Canada)', '+7 (Russia)', '+20 (Egypt)', '+27 (South Africa)', '+31 (Netherlands)', 
-  '+32 (Belgium)', '+33 (France)', '+34 (Spain)', '+39 (Italy)', '+41 (Switzerland)', 
-  '+44 (UK)', '+49 (Germany)', '+52 (Mexico)', '+54 (Argentina)', '+55 (Brazil)', 
-  '+60 (Malaysia)', '+61 (Australia)', '+62 (Indonesia)', '+63 (Philippines)', '+64 (New Zealand)', 
-  '+65 (Singapore)', '+66 (Thailand)', '+81 (Japan)', '+82 (South Korea)', '+84 (Vietnam)', 
-  '+86 (China)', '+90 (Turkey)', '+91 (India)', '+92 (Pakistan)', '+94 (Sri Lanka)', 
-  '+95 (Myanmar)', '+98 (Iran)', '+234 (Nigeria)', '+254 (Kenya)', '+351 (Portugal)', 
-  '+353 (Ireland)', '+971 (UAE)', '+972 (Israel)', '+974 (Qatar)', '+977 (Nepal)'
-];
-
-const SearchableDropdown = ({ options, value, onChange, placeholder, className }) => {
-  const [inputValue, setInputValue] = useState(value || '');
-  const [showDropdown, setShowDropdown] = useState(false);
+const SearchableCountryCodeInput = ({ required, value, onChange, placeholder, className }) => {
+  const [inputValue, setInputValue] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
-    setInputValue(value || '');
+    if (!value) {
+      setInputValue('+91 (India)');
+      onChange('+91');
+    } else {
+      const match = COUNTRY_CODES.find(c => c.startsWith(value + ' ') || c === value);
+      setInputValue(match || value);
+    }
   }, [value]);
 
-  const filteredOptions = options.filter(opt => opt.toLowerCase().includes(inputValue.toLowerCase()));
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setInputValue(val);
+    const codeMatch = val.match(/^\+\d+/);
+    if (codeMatch) {
+      onChange(codeMatch[0]);
+    } else {
+      onChange(val);
+    }
+    setShowSuggestions(true);
+  };
+
+  const handleSelect = (item) => {
+    setInputValue(item);
+    const codeMatch = item.match(/^\+\d+/);
+    onChange(codeMatch ? codeMatch[0] : item);
+    setShowSuggestions(false);
+  };
+
+  const filtered = COUNTRY_CODES.filter(c => 
+    c.toLowerCase().includes(inputValue.toLowerCase())
+  );
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
       <input
+        required={required}
         className={className}
-        placeholder={placeholder}
+        placeholder={placeholder || "+91"}
         value={inputValue}
-        onChange={(e) => {
-          setInputValue(e.target.value);
-          onChange(e.target.value.split(' ')[0]); // Store only +91
-          setShowDropdown(true);
-        }}
-        onFocus={() => setShowDropdown(true)}
-        onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+        onChange={handleInputChange}
+        onFocus={() => setShowSuggestions(true)}
+        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
       />
-      {showDropdown && filteredOptions.length > 0 && (
-        <ul style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
-          background: 'white', border: '1px solid #cbd5e1', borderRadius: '6px',
-          maxHeight: '200px', overflowY: 'auto', padding: 0, margin: '4px 0 0 0',
-          listStyle: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+      {showSuggestions && (
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          background: '#ffffff',
+          border: '1px solid #cbd5e1',
+          borderRadius: '8px',
+          maxHeight: '200px',
+          overflowY: 'auto',
+          zIndex: 999,
+          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+          marginTop: '4px'
         }}>
-          {filteredOptions.map(opt => (
-            <li 
-              key={opt}
-              style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}
-              onMouseDown={() => {
-                setInputValue(opt);
-                onChange(opt.split(' ')[0]); // Store only the code e.g. +91
-                setShowDropdown(false);
+          {(filtered.length > 0 ? filtered : COUNTRY_CODES).slice(0, 100).map((c, idx) => (
+            <div
+              key={idx}
+              style={{
+                padding: '8px 12px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                borderBottom: '1px solid #f1f5f9',
+                color: '#1e293b',
+                fontWeight: '500',
+                backgroundColor: '#ffffff'
               }}
+              onMouseDown={() => handleSelect(c)}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#ffffff'}
             >
-              {opt}
-            </li>
+              {c}
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
@@ -1611,7 +1639,7 @@ export default function ApplicationForm() {
 
               <div className="form-grid">
                 {/* Row 1 */}
-                <div className="form-group col-5">
+                <div className="form-group col-4">
                   <label className="form-label">Full Name</label>
                   <input 
                     required 
@@ -1630,7 +1658,7 @@ export default function ApplicationForm() {
                     onChange={e => setEmail(e.target.value)} 
                   />
                 </div>
-                <div className="form-group col-2">
+                <div className="form-group col-3">
                   <label className="form-label">Gender</label>
                   <select 
                     required 
@@ -1649,8 +1677,7 @@ export default function ApplicationForm() {
                 {/* Row 2 */}
                 <div className="form-group col-3">
                   <label className="form-label">Country Code</label>
-                  <SearchableDropdown 
-                    options={COUNTRY_CODES} 
+                  <SearchableCountryCodeInput 
                     value={countryCode} 
                     onChange={setCountryCode} 
                     placeholder="+91" 
