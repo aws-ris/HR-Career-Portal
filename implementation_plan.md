@@ -23,37 +23,37 @@ flowchart TD
         Users["📱 / 💻 Web Browser"]
     end
 
-    subgraph GitHub["GitHub Repository"]
-        Actions["GitHub Actions CI/CD Pipeline (.github/workflows/deploy.yml)"]
+    subgraph GitHubRepo["GitHub Repository"]
+        Actions["GitHub Actions CI/CD Pipeline<br/>.github/workflows/deploy.yml"]
     end
 
     subgraph AWS_Cloud["AWS Account (ap-south-1)"]
-        subgraph Frontend_Tier["Frontend Tier (S3 Static Hosting)"]
-            S3_FE["AWS S3 Bucket: ris-hr-frontend-prod\n(http://ris-hr-frontend-prod.s3-website.ap-south-1.amazonaws.com)"]
+        subgraph Frontend_Tier["Frontend Tier<br/>S3 Static Hosting"]
+            S3_FE["AWS S3 Bucket<br/>ris-hr-frontend-prod"]
         end
 
-        subgraph Backend_Tier["Backend & Data Tier (EC2 t3.large)"]
-            Nginx["Nginx Web Server (Port 80)"]
-            Gunicorn["Gunicorn + 4 Uvicorn Workers (Port 8000)"]
-            Systemd["Systemd Supervisor (hr_backend.service)"]
-            Postgres[("Local PostgreSQL (ris_db)")]
+        subgraph Backend_Tier["Backend & Data Tier<br/>EC2 t3.large"]
+            Nginx["Nginx Web Server<br/>Port 80"]
+            Gunicorn["Gunicorn + 4 Uvicorn Workers<br/>Port 8000"]
+            Systemd["Systemd Supervisor<br/>hr_backend.service"]
+            Postgres[("Local PostgreSQL<br/>ris_db")]
             BackupCron["Daily Midnight Cron Script"]
         end
 
         subgraph Storage_Tier["Resume Storage Tier"]
-            S3_PDFs["AWS S3 Bucket: ris-hr-portal-resumes-prod\n(Private Candidate Resumes & DB Backups)"]
+            S3_PDFs["AWS S3 Bucket<br/>ris-hr-portal-resumes-prod"]
         end
     end
 
-    Users -->|1. Load UI (S3 Website Domain)| S3_FE
-    Users -->|2. REST API Requests| Nginx
+    Users -->|"1. Load UI"| S3_FE
+    Users -->|"2. REST API Requests"| Nginx
     Nginx --> Gunicorn
     Gunicorn --> Postgres
-    Gunicorn -->|Upload Resumes| S3_PDFs
-    BackupCron -->|Upload Snapshots| S3_PDFs
-    
-    Actions -->|Sync Build dist/| S3_FE
-    Actions -->|SSH Code Update| Backend_Tier
+    Gunicorn -->|"Upload Resumes"| S3_PDFs
+    BackupCron -->|"Upload Snapshots"| S3_PDFs
+
+    Actions -->|"Sync Build dist/"| S3_FE
+    Actions -->|"SSH Code Update"| Gunicorn
 ```
 
 ---
