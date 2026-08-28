@@ -1,0 +1,23 @@
+[Unit]
+Description=FastAPI Gunicorn Backend Service for RIS HR Portal
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/var/www/HR_RIS/backend
+EnvironmentFile=/var/www/HR_RIS/backend/.env
+ExecStart=/var/www/HR_RIS/backend/venv/bin/gunicorn \
+    --workers 4 \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --bind 127.0.0.1:8000 \
+    --timeout 120 \
+    --access-logfile /var/log/hr_backend_access.log \
+    --error-logfile /var/log/hr_backend_error.log \
+    main:app
+
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
