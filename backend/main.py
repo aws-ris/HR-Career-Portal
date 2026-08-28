@@ -827,6 +827,19 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
         # 9. Auto-tokenize candidate data in background
         background_tasks.add_task(tokenize_candidate_bg, candidate.id, payload.job_id)
         
+        # 10. Trigger n8n webhook event in background
+        from utils.webhooks import trigger_n8n_event
+        trigger_n8n_event(background_tasks, "candidate-applied", {
+            "candidate_id": candidate.id,
+            "full_name": candidate.full_name,
+            "email": candidate.email,
+            "mobile_no": candidate.mobile_no,
+            "position_applied": payload.position_applied,
+            "admin_department": payload.admin_department,
+            "job_id": payload.job_id,
+            "how_heard": getattr(payload, 'how_heard', None)
+        })
+
         return candidate
     except Exception as e:
         db.rollback()
