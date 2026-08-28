@@ -1,70 +1,75 @@
-name: Production CI-CD Deployment
+name: RIS HR Portal CI/CD Deployment Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  test:
+    name: Build & Test Validation
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js Environment
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22
-        cache: 'npm'
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
 
-    - name: Install dependencies
-      run: npm install
+      - name: Install Backend Dependencies & Validate Syntax
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m py_compile main.py schemas.py database/models.py
 
-    - name: Compile React Frontend
-      run: npm run build
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
 
-    - name: Copy Files to EC2 Server
-      uses: appleboy/scp-action@v0.1.4
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USERNAME }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        source: "dist/,backend/,docker-compose.yml,nginx.conf"
-        target: "/home/ubuntu/hr-portal-temp"
-        overwrite: true
+      - name: Install Frontend Dependencies & Test Build
+        run: |
+          npm ci
+          npm run build
 
-    - name: Run Remote SSH Deploy Commands
-      uses: appleboy/ssh-action@v0.1.6
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USERNAME }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          # 1. Create directory if not exists
-          mkdir -p /home/ubuntu/hr-portal/frontend
-          
-          # 2. Swap backend files
-          rm -rf /home/ubuntu/hr-portal/backend
-          cp -r /home/ubuntu/hr-portal-temp/backend /home/ubuntu/hr-portal/
-          
-          # 3. Swap config files
-          cp /home/ubuntu/hr-portal-temp/docker-compose.yml /home/ubuntu/hr-portal/
-          cp /home/ubuntu/hr-portal-temp/nginx.conf /home/ubuntu/hr-portal/
-          
-          # 4. Swap frontend built assets
-          rm -rf /home/ubuntu/hr-portal/frontend/dist
-          cp -r /home/ubuntu/hr-portal-temp/dist /home/ubuntu/hr-portal/frontend/dist
-          
-          # 5. Clean up temp folder
-          rm -rf /home/ubuntu/hr-portal-temp
-          
-          # 6. Navigate to deployment folder and rebuild backend container
-          cd /home/ubuntu/hr-portal
-          docker compose build backend
-          docker compose up -d --remove-orphans
-          docker compose restart nginx
-          
-          # 7. Clean up dangling images to conserve disk space
-          docker image prune -f
+  deploy:
+    name: Deploy to AWS EC2
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
+    steps:
+      - name: SSH Deploy to AWS EC2 t3.large Instance
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Starting deployment on EC2 instance..."
+            cd /var/www/HR_RIS
+            
+            # Pull latest changes from git
+            git pull origin main || git pull origin master
+            
+            # Backend update
+            cd /var/www/HR_RIS/backend
+            source venv/bin/activate
+            pip install -r requirements.txt
+            
+            # Frontend build
+            cd /var/www/HR_RIS
+            npm ci
+            npm run build
+            
+            # Restart Services
+            sudo systemctl restart hr_backend
+            sudo systemctl reload nginx
+            
+            echo "Deployment completed successfully!"

@@ -1,36 +1,40 @@
-# Deployment Implementation Plan — AWS EC2 (`t3.large`) + S3
+# Deployment Implementation Plan — AWS EC2 (`t3.large`) + CI/CD
 
-This document details the production deployment execution plan for the **RIS HR & Career Portal** on your **`t3.large` EC2 instance (8 GB RAM)** with **Self-Hosted PostgreSQL**, **AWS S3** for resume PDFs/backups, and **Nginx + Gunicorn** for high-concurrency applicant processing.
+This document details the production deployment execution plan for the **RIS HR & Career Portal** on your **`t3.large` EC2 instance (8 GB RAM)** with **External Domain `careers.ris.org.in`**, **Automated GitHub Actions CI/CD Pipeline**, **Self-Hosted PostgreSQL**, and **AWS S3** for resume PDFs/backups.
 
 ---
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Selected Architecture:**
-> - **Server:** Existing AWS EC2 `t3.large` Instance (Ubuntu / Linux, 2 vCPUs, 8 GB RAM).
-> - **Database:** PostgreSQL 15+ installed directly on EC2 (`ris_db` on port 5432).
-> - **File Storage:** AWS S3 Bucket (`ris-hr-portal-resumes-prod`) for PDF resumes & automated daily database backup `.sql.gz` snapshots.
-> - **Process Supervisor:** Systemd managing Gunicorn with 4 Uvicorn ASGI workers.
-> - **Web Server & SSL:** Nginx reverse proxy with Certbot (Let's Encrypt HTTPS).
+> **Production Target Setup:**
+> - **Domain Name:** `careers.ris.org.in` (External Domain — DNS A-Record will point to EC2 Public IP).
+> - **CI/CD Automation:** GitHub Actions Pipeline (`.github/workflows/deploy.yml`). Automatically builds, tests, and deploys code on every push to `main`/`master`.
+> - **Vercel Cleanup:** Vercel serverless configurations (`api/` and `vercel.json`) have been removed from the repository.
+> - **Server Architecture:** AWS EC2 `t3.large` (2 vCPUs, 8 GB RAM) + PostgreSQL 15+ + AWS S3 Bucket (`ris-hr-portal-resumes-prod`).
 
 ---
 
-## Target Deployment Architecture
+## Target Deployment Architecture & Domain Flow
 
 ```mermaid
 flowchart TD
-    subgraph Applicants["Applicants & HR Admins"]
-        Users["📱 / 💻 Web Browser"]
+    subgraph ExternalDNS["External DNS Provider (Domain Management)"]
+        Domain["careers.ris.org.in (A-Record)"]
     end
 
-    subgraph AWS_EC2["Your EC2 t3.large Instance (8 GB RAM)"]
+    subgraph GitHub["GitHub Repository"]
+        Actions["GitHub Actions CI/CD Pipeline (.github/workflows/deploy.yml)"]
+    end
+
+    subgraph AWS_EC2["Your EC2 t3.large Instance"]
         Nginx["Nginx Web Server (Port 80 / 443 HTTPS)"]
+        Certbot["Certbot SSL (Let's Encrypt for careers.ris.org.in)"]
         ReactDist["React Static Frontend Build (/dist)"]
         Gunicorn["Gunicorn + 4 Uvicorn Workers (Port 8000)"]
-        Systemd["Systemd Service Supervisor"]
+        Systemd["Systemd Service Supervisor (hr_backend.service)"]
         Postgres[("Local PostgreSQL Engine (ris_db)")]
-        BackupCron["Daily Midnight Cron Script"]
+        BackupCron["Daily Midnight Cron Backup Script"]
 
         Nginx -->|Serves Static Files| ReactDist
         Nginx -->|Proxy /api/*| Gunicorn
@@ -43,127 +47,73 @@ flowchart TD
         Backups["Daily DB Snapshots (.sql.gz)"]
     end
 
-    Users -->|HTTPS| Nginx
+    Domain -->|DNS A-Record| Nginx
+    Actions -->|Automated SSH Deploy| AWS_EC2
     Gunicorn -->|Upload Resumes| PDFs
     BackupCron -->|Upload Snapshots| Backups
 ```
 
 ---
 
-## Step-by-Step Deployment Phases
+## Today's Deployment & Verification Timeline
 
-### Phase 1: Repository Configuration Files Preparation (Local Workspace)
+### 1. External Domain Mapping (`careers.ris.org.in`)
+- **DNS Action Required:** Log into your domain DNS registrar/DNS panel for `ris.org.in` and add an **A Record**:
+  - **Host / Name:** `careers` (or `careers.ris.org.in`)
+  - **Points to / Value:** `<YOUR-EC2-PUBLIC-IP>` (e.g. `13.127.xxx.xxx`)
+  - **TTL:** 300 seconds
 
-Create operational scripts and configuration files in the project repository:
-1. `backend/scripts/backup_db_to_s3.sh` — Automated database dump & S3 backup script.
-2. `backend/scripts/hr_backend.service` — Systemd service unit file.
-3. `backend/scripts/nginx_hr_portal.conf` — Nginx reverse proxy configuration.
-4. `backend/.env.production.example` — Environment variable template.
+### 2. GitHub Actions Secrets Setup
+In your GitHub repository settings (**Settings $\rightarrow$ Secrets and variables $\rightarrow$ Actions**), add:
+- `EC2_HOST`: `<YOUR-EC2-PUBLIC-IP>`
+- `EC2_USERNAME`: `ubuntu`
+- `EC2_SSH_KEY`: Content of your SSH private key (`.pem` file)
 
----
-
-### Phase 2: AWS S3 Bucket & IAM Security Role Setup
-
-1. **S3 Bucket Creation:**
-   - Create S3 bucket: `ris-hr-portal-resumes-prod` in `ap-south-1` region.
-   - Block all public internet access (access managed securely via IAM).
-2. **IAM Instance Profile Role:**
-   - Create IAM Role: `EC2-S3-HR-Portal-Role` with `AmazonS3FullAccess` policy for bucket `ris-hr-portal-resumes-prod`.
-   - Attach IAM Role to your `t3.large` EC2 instance (**EC2 Console $\rightarrow$ Actions $\rightarrow$ Security $\rightarrow$ Modify IAM role**).
-
----
-
-### Phase 3: EC2 Server Initialization & PostgreSQL Provisioning
-
-Connect to EC2 instance via SSH:
+### 3. Server Setup Command Checklist
+On EC2 instance:
 ```bash
-ssh -i your-key.pem ubuntu@<your-ec2-ip>
+# 1. Install System Dependencies
+sudo apt update && sudo apt install -y postgresql postgresql-contrib python3-pip python3-venv nginx git certbot python3-certbot-nginx awscli
+
+# 2. Setup PostgreSQL
+sudo -u postgres psql -c "CREATE DATABASE ris_db;"
+sudo -u postgres psql -c "CREATE USER hr_user WITH PASSWORD 'YourSecurePassword123!';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ris_db TO hr_user;"
+sudo -u postgres psql -d ris_db -c "GRANT ALL ON SCHEMA public TO hr_user;"
+
+# 3. Clone Repository & Setup Virtual Environment
+cd /var/www
+sudo git clone https://github.com/your-org/HR_RIS.git
+sudo chown -R ubuntu:ubuntu /var/www/HR_RIS
+cd /var/www/HR_RIS/backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt gunicorn uvicorn psycopg2-binary boto3 openpyxl
+
+# 4. Copy Services & Configure Nginx
+sudo cp /var/www/HR_RIS/backend/scripts/hr_backend.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now hr_backend
+
+sudo cp /var/www/HR_RIS/backend/scripts/nginx_hr_portal.conf /etc/nginx/sites-available/hr_portal
+sudo ln -s /etc/nginx/sites-available/hr_portal /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t && sudo systemctl restart nginx
+
+# 5. Enable SSL for Domain
+sudo certbot --nginx -d careers.ris.org.in
+
+# 6. Setup Daily S3 Backup Cron
+sudo cp /var/www/HR_RIS/backend/scripts/backup_db_to_s3.sh /usr/local/bin/
+sudo chmod +x /usr/local/bin/backup_db_to_s3.sh
+(crontab -l 2>/dev/null; echo "0 0 * * * /usr/local/bin/backup_db_to_s3.sh > /dev/null 2>&1") | crontab -
 ```
 
-1. **Install Packages:**
-   ```bash
-   sudo apt update && sudo apt upgrade -y
-   sudo apt install -y postgresql postgresql-contrib python3-pip python3-venv nginx git curl certbot python3-certbot-nginx awscli
-   ```
-
-2. **Configure Local PostgreSQL Database:**
-   ```bash
-   sudo -u postgres psql -c "CREATE DATABASE ris_db;"
-   sudo -u postgres psql -c "CREATE USER hr_user WITH PASSWORD 'YourSecurePassword123!';"
-   sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ris_db TO hr_user;"
-   sudo -u postgres psql -d ris_db -c "GRANT ALL ON SCHEMA public TO hr_user;"
-   ```
-
-3. **Deploy Backend Application Code:**
-   ```bash
-   cd /var/www
-   sudo git clone https://github.com/your-org/HR_RIS.git
-   sudo chown -R ubuntu:ubuntu /var/www/HR_RIS
-   cd /var/www/HR_RIS/backend
-
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   pip install gunicorn uvicorn psycopg2-binary boto3 openpyxl
-   ```
-
-4. **Environment Variables (`/var/www/HR_RIS/backend/.env`):**
-   ```env
-   DATABASE_URL=postgresql://hr_user:YourSecurePassword123!@localhost:5432/ris_db
-   S3_BUCKET_NAME=ris-hr-portal-resumes-prod
-   AWS_REGION=ap-south-1
-   JWT_SECRET=production_jwt_secret_key_change_me_12345
-   ALLOWED_ORIGINS=https://your-domain.org,http://your-ec2-ip
-   ```
-
 ---
 
-### Phase 4: Process Supervision & Web Server Setup
+## Verification & Testing Plan
 
-1. **Gunicorn Systemd Service:**
-   Copy `hr_backend.service` to `/etc/systemd/system/hr_backend.service`:
-   ```bash
-   sudo systemctl daemon-reload
-   sudo systemctl enable hr_backend
-   sudo systemctl start hr_backend
-   sudo systemctl status hr_backend
-   ```
-
-2. **React Frontend Build:**
-   Compile React static production bundle:
-   ```bash
-   cd /var/www/HR_RIS
-   npm run build
-   ```
-
-3. **Nginx Web Server & SSL Configuration:**
-   Copy `nginx_hr_portal.conf` to `/etc/nginx/sites-available/hr_portal`:
-   ```bash
-   sudo ln -s /etc/nginx/sites-available/hr_portal /etc/nginx/sites-enabled/
-   sudo rm /etc/nginx/sites-enabled/default
-   sudo nginx -t
-   sudo systemctl restart nginx
-   
-   # SSL Certificate:
-   sudo certbot --nginx -d your-domain.org
-   ```
-
----
-
-### Phase 5: Automated Daily Backups & Verification
-
-1. **Schedule S3 Database Backup Cron Job:**
-   ```bash
-   sudo cp /var/www/HR_RIS/backend/scripts/backup_db_to_s3.sh /usr/local/bin/backup_db_to_s3.sh
-   sudo chmod +x /usr/local/bin/backup_db_to_s3.sh
-   
-   # Schedule midnight backup:
-   (crontab -l 2>/dev/null; echo "0 0 * * * /usr/local/bin/backup_db_to_s3.sh > /dev/null 2>&1") | crontab -
-   ```
-
-2. **End-to-End Verification Checklist:**
-   - [ ] Verify `HTTP 200 OK` on `https://your-domain.org`.
-   - [ ] Submit candidate application form & check resume PDF in S3 bucket.
-   - [ ] Log in to HR Admin portal & inspect candidate profile.
-   - [ ] Download candidate roster 67-column Detailed Excel export (`.xlsx`).
-   - [ ] Test manual backup script execution (`sudo /usr/local/bin/backup_db_to_s3.sh`).
+1. **CI/CD Pipeline Test:** Push code commit to GitHub `main` branch $\rightarrow$ verify GitHub Actions pipeline completes with green status.
+2. **Domain SSL Test:** Open `https://careers.ris.org.in` in browser $\rightarrow$ verify valid SSL padlock icon and page load.
+3. **Application Submission Test:** Complete public application form $\rightarrow$ verify submit success and check resume PDF in S3 bucket.
+4. **HR Admin Roster & Export Test:** Log in to `/hr/login` $\rightarrow$ inspect full candidate profile and download 67-column Detailed Excel export (`.xlsx`).
