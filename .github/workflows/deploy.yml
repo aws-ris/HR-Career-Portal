@@ -1,4 +1,4 @@
-name: RIS HR Portal CI/CD Deployment Pipeline
+name: RIS HR Portal S3 & EC2 CI/CD Deployment Pipeline
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    name: Build & Test Validation
+  test_and_build:
+    name: Build React & Test Backend
     runs-on: ubuntu-latest
 
     steps:
@@ -33,14 +33,44 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install Frontend Dependencies & Test Build
+      - name: Build React Frontend Bundle
         run: |
           npm ci
           npm run build
 
-  deploy:
-    name: Deploy to AWS EC2
-    needs: test
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+
+  deploy_frontend_s3:
+    name: Deploy Frontend to AWS S3 Website
+    needs: test_and_build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Sync Build to S3 Website Bucket
+        run: |
+          aws s3 sync dist/ s3://${{ secrets.S3_FRONTEND_BUCKET_NAME || 'ris-hr-frontend-prod' }} --delete
+
+  deploy_backend_ec2:
+    name: Deploy Backend to AWS EC2
+    needs: test_and_build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
 
@@ -52,24 +82,14 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            echo "Starting deployment on EC2 instance..."
+            echo "Starting backend deployment on EC2 instance..."
             cd /var/www/HR_RIS
-            
-            # Pull latest changes from git
             git pull origin main || git pull origin master
             
-            # Backend update
             cd /var/www/HR_RIS/backend
             source venv/bin/activate
             pip install -r requirements.txt
             
-            # Frontend build
-            cd /var/www/HR_RIS
-            npm ci
-            npm run build
-            
-            # Restart Services
             sudo systemctl restart hr_backend
             sudo systemctl reload nginx
-            
-            echo "Deployment completed successfully!"
+            echo "Backend deployment complete!"
