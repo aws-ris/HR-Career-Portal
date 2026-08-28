@@ -14,22 +14,32 @@ export default function JobBoard() {
   useEffect(() => {
     document.title = "RIS Careers · Recruitment Portal";
     fetch(`${API}/public/jobs`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
-        setJobs(data);
+        if (Array.isArray(data)) {
+          setJobs(data);
+        } else {
+          console.warn("Received non-array data for jobs:", data);
+          setJobs([]);
+        }
         setLoading(false);
       })
       .catch(err => {
         console.error("Failed to fetch jobs:", err);
+        setJobs([]);
         setLoading(false);
       });
   }, []);
 
-  // Extract unique division categories from jobs list
-  const divisions = ['ALL', ...Array.from(new Set(jobs.map(j => j.division).filter(Boolean)))];
+  const safeJobs = Array.isArray(jobs) ? jobs : [];
+  const divisions = ['ALL', ...Array.from(new Set(safeJobs.map(j => j?.division).filter(Boolean)))];
 
-  const filteredJobs = jobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredJobs = safeJobs.filter(job => {
+    if (!job) return false;
+    const matchesSearch = (job.title && job.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
                           (job.division && job.division.toLowerCase().includes(searchTerm.toLowerCase())) ||
                           (job.position && job.position.toLowerCase().includes(searchTerm.toLowerCase()));
     
