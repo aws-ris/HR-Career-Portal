@@ -1,5 +1,5 @@
 [Unit]
-Description=FastAPI Gunicorn Backend Service for RIS HR Portal
+Description=FastAPI Gunicorn Dedicated Backend Service for HR Portal
 After=network.target
 
 [Service]
@@ -12,8 +12,8 @@ ExecStart=/var/www/HR_RIS/backend/venv/bin/gunicorn \
     --worker-class uvicorn.workers.UvicornWorker \
     --bind 127.0.0.1:8000 \
     --timeout 120 \
-    --access-logfile /var/log/hr_backend_access.log \
-    --error-logfile /var/log/hr_backend_error.log \
+    --access-logfile /var/www/HR_RIS/backend/access.log \
+    --error-logfile /var/www/HR_RIS/backend/error.log \
     main:app
 
 Restart=always

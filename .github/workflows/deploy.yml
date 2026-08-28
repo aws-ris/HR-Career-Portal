@@ -82,14 +82,27 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            echo "Starting backend deployment on EC2 instance..."
+            echo "Starting backend deployment on EC2 instance (13.205.216.81)..."
+            if [ ! -d "/var/www/HR_RIS" ]; then
+              sudo mkdir -p /var/www
+              sudo chown -R ubuntu:ubuntu /var/www
+              git clone https://github.com/${{ github.repository }}.git /var/www/HR_RIS
+            fi
             cd /var/www/HR_RIS
-            git pull origin main || git pull origin master
+            git fetch --all
+            git reset --hard origin/main || git reset --hard origin/master
             
             cd /var/www/HR_RIS/backend
+            if [ ! -d "venv" ]; then
+              python3 -m venv venv
+            fi
             source venv/bin/activate
-            pip install -r requirements.txt
+            pip install -r requirements.txt gunicorn uvicorn psycopg2-binary boto3 openpyxl
             
-            sudo systemctl restart hr_backend
-            sudo systemctl reload nginx
-            echo "Backend deployment complete!"
+            if [ -f "/etc/systemd/system/hr_backend.service" ]; then
+              sudo systemctl restart hr_backend
+            fi
+            if [ -f "/etc/nginx/sites-enabled/hr_portal" ]; then
+              sudo systemctl reload nginx
+            fi
+            echo "Backend deployment completed successfully!"
