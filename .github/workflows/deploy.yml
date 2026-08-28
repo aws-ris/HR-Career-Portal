@@ -35,7 +35,7 @@ jobs:
 
       - name: Build React Frontend Bundle
         run: |
-          npm ci
+          npm install
           npm run build
 
       - name: Upload Build Artifact
@@ -48,7 +48,7 @@ jobs:
     name: Deploy Frontend to AWS S3 Website
     needs: test_and_build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
 
     steps:
       - name: Download Build Artifact
@@ -72,7 +72,7 @@ jobs:
     name: Deploy Backend to AWS EC2
     needs: test_and_build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
 
     steps:
       - name: SSH Deploy to AWS EC2 t3.large Instance
@@ -99,10 +99,13 @@ jobs:
             source venv/bin/activate
             pip install -r requirements.txt gunicorn uvicorn psycopg2-binary boto3 openpyxl
             
+            if [ -f "/etc/systemd/system/hr_portal_backend.service" ]; then
+              sudo systemctl restart hr_portal_backend
+            fi
             if [ -f "/etc/systemd/system/hr_backend.service" ]; then
               sudo systemctl restart hr_backend
             fi
-            if [ -f "/etc/nginx/sites-enabled/hr_portal" ]; then
+            if [ -f "/etc/nginx/sites-enabled/hr_portal_site.conf" ]; then
               sudo systemctl reload nginx
             fi
             echo "Backend deployment completed successfully!"
