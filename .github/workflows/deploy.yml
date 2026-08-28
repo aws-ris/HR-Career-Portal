@@ -1,4 +1,4 @@
-name: RIS HR Portal S3 & EC2 CI/CD Deployment Pipeline
+name: RIS HR Portal EC2 All-In-One CI/CD Pipeline
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  test_and_build:
-    name: Build React & Test Backend
+  build_and_deploy_ec2:
+    name: Build & Deploy to AWS EC2
     runs-on: ubuntu-latest
 
     steps:
@@ -18,94 +18,46 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
-      - name: Install Backend Dependencies & Validate Syntax
+      - name: Validate Backend Syntax
         run: |
           cd backend
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
           python -m py_compile main.py schemas.py database/models.py
 
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Build React Frontend Bundle
-        run: |
-          npm install
-          npm run build
-
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: dist/
-
-  deploy_frontend_s3:
-    name: Deploy Frontend to AWS S3 Website
-    needs: test_and_build
-    runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
-
-    steps:
-      - name: Download Build Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: dist/
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
-
-      - name: Sync Build to S3 Website Bucket
-        run: |
-          aws s3 sync dist/ s3://${{ secrets.S3_FRONTEND_BUCKET_NAME || 'ris-hr-frontend-prod' }} --delete
-
-  deploy_backend_ec2:
-    name: Deploy Backend to AWS EC2
-    needs: test_and_build
-    runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
-
-    steps:
-      - name: SSH Deploy to AWS EC2 t3.large Instance
+      - name: SSH Deploy & Build on AWS EC2 Instance
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            echo "Starting backend deployment on EC2 instance (13.205.216.81)..."
-            if [ ! -d "/var/www/HR_RIS" ]; then
-              sudo mkdir -p /var/www
-              sudo chown -R ubuntu:ubuntu /var/www
-              git clone https://github.com/${{ github.repository }}.git /var/www/HR_RIS
-            fi
+            echo "Starting deployment on EC2 instance (13.205.216.81)..."
+            
+            # 1. Update Repository Code
             cd /var/www/HR_RIS
             git fetch --all
             git reset --hard origin/main || git reset --hard origin/master
             
+            # 2. Update Backend Python Dependencies
             cd /var/www/HR_RIS/backend
-            if [ ! -d "venv" ]; then
-              python3 -m venv venv
-            fi
             source venv/bin/activate
             pip install -r requirements.txt gunicorn uvicorn psycopg2-binary boto3 openpyxl
             
+            # 3. Build React Frontend Static Assets
+            cd /var/www/HR_RIS
+            if command -v npm &> /dev/null; then
+              npm install
+              npm run build
+            fi
+            
+            # 4. Restart Services
             if [ -f "/etc/systemd/system/hr_portal_backend.service" ]; then
               sudo systemctl restart hr_portal_backend
             fi
-            if [ -f "/etc/systemd/system/hr_backend.service" ]; then
-              sudo systemctl restart hr_backend
-            fi
-            if [ -f "/etc/nginx/sites-enabled/hr_portal_site.conf" ]; then
-              sudo systemctl reload nginx
-            fi
-            echo "Backend deployment completed successfully!"
+            
+            sudo cp /var/www/HR_RIS/backend/scripts/nginx_hr_portal.conf /etc/nginx/sites-available/hr_portal_site.conf
+            sudo ln -sf /etc/nginx/sites-available/hr_portal_site.conf /etc/nginx/sites-enabled/
+            sudo rm -f /etc/nginx/sites-enabled/default
+            sudo nginx -t && sudo systemctl reload nginx
+            
+            echo "Deployment completed successfully!"
