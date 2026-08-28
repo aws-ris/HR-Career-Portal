@@ -11,6 +11,36 @@ from typing import List, Optional
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from utils.auth import generate_token, verify_token
 
+MAX_RESUME_FILE_SIZE_BYTES = 5 * 1024 * 1024
+ALLOWED_RESUME_EXTENSIONS = {".pdf", ".docx"}
+ALLOWED_RESUME_MIME_TYPES = {
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
+
+def validate_resume_upload(filename: str, content_type: Optional[str], size_bytes: int):
+    name = (filename or "").lower()
+    file_ext = os.path.splitext(name)[1]
+    mime_type = (content_type or "").split(";")[0].strip().lower()
+
+    if file_ext not in ALLOWED_RESUME_EXTENSIONS and mime_type not in ALLOWED_RESUME_MIME_TYPES:
+        raise ValueError("Resume upload must be a PDF or DOCX file.")
+
+    if size_bytes > MAX_RESUME_FILE_SIZE_BYTES:
+        raise ValueError("Resume file must be 5MB or smaller.")
+
+    return True
+
+
+def get_resume_media_type(filename: str, fallback_content_type: Optional[str] = None) -> str:
+    name = (filename or "").lower()
+    if name.endswith(".pdf"):
+        return "application/pdf"
+    if name.endswith(".docx"):
+        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    return (fallback_content_type or "application/octet-stream").split(";")[0].strip().lower()
+
 auth_scheme = HTTPBearer(auto_error=False)
 
 class LoginRequest(BaseModel):
@@ -1239,6 +1269,8 @@ def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, f
     if not candidate:
         raise ValueError(f"Candidate {candidate_id} not found")
 
+    content_type = get_resume_media_type(filename)
+
     S3_BUCKET = os.getenv("S3_BUCKET_NAME")
     s3_key = f"resumes/{candidate_id}_{filename}"
     uploaded_to_s3 = False
@@ -1252,7 +1284,7 @@ def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, f
                 Bucket=S3_BUCKET,
                 Key=s3_key,
                 Body=file_bytes,
-                ContentType='application/pdf'
+                ContentType=content_type
             )
             uploaded_to_s3 = True
             print(f"[S3] Uploaded resume for candidate {candidate_id} to S3 bucket {S3_BUCKET}")
@@ -1290,8 +1322,11 @@ def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, f
 async def upload_resume(candidate_id: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
     try:
         content = await file.read()
+        validate_resume_upload(file.filename, file.content_type, len(content))
         saved_path, file_path = process_and_save_resume(db, candidate_id, content, file.filename)
         return {"status": "success", "resume_path": saved_path}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

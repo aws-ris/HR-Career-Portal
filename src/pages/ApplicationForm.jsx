@@ -607,6 +607,30 @@ export default function ApplicationForm() {
   const [expMonths, setExpMonths] = useState(() => savedDraft.expMonths || '');
   const [lastSalary, setLastSalary] = useState(() => savedDraft.lastSalary || '');
   const [resumeFile, setResumeFile] = useState(null);
+  const MAX_RESUME_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+  const RESUME_ACCEPT = ".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+  const handleResumeSelection = (file) => {
+    if (!file) return;
+
+    const fileName = (file.name || '').toLowerCase();
+    const mimeType = (file.type || '').toLowerCase();
+    const isAllowedType = fileName.endsWith('.pdf') || fileName.endsWith('.docx') ||
+      mimeType === 'application/pdf' ||
+      mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+    if (!isAllowedType) {
+      alert('Please upload a resume in PDF or DOCX format.');
+      return;
+    }
+
+    if (file.size > MAX_RESUME_FILE_SIZE_BYTES) {
+      alert('Resume file must be 5MB or smaller.');
+      return;
+    }
+
+    setResumeFile(file);
+  };
 
   // How did you hear about us states
   const [howHeard, setHowHeard] = useState(() => savedDraft.howHeard || '');
@@ -995,7 +1019,7 @@ export default function ApplicationForm() {
     if (editWork) {
       const errors = [];
       if (!resumeFile) {
-        errors.push("Resume (PDF) is required.");
+        errors.push("Resume (PDF/DOCX) is required.");
       }
       if (expYears === '' && expMonths === '') {
         errors.push("Professional experience in years and months is required.");
@@ -1161,7 +1185,7 @@ export default function ApplicationForm() {
 
     // Work Experience (Step 4)
     if (!resumeFile) {
-      errors.push("Resume (PDF) is required.");
+      errors.push("Resume (PDF/DOCX) is required.");
     }
     if (expYears === '' && expMonths === '') {
       errors.push("Professional experience in years and months is required.");
@@ -1277,7 +1301,7 @@ export default function ApplicationForm() {
         return;
       }
       if (!resumeFile) {
-        alert("Please upload your Resume (PDF) first.");
+        alert("Please upload your Resume (PDF or DOCX) first.");
         return;
       }
       if (expYears === '' && expMonths === '') {
@@ -2441,19 +2465,14 @@ export default function ApplicationForm() {
               <div className="form-group" style={{marginBottom: '2rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}}>
                 <label className="form-label" style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
                   <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
-                  Upload Resume (PDF)
+                  Upload Resume (PDF or DOCX)
                 </label>
                 <div 
                   onDragOver={e => e.preventDefault()} 
                   onDrop={e => {
                     e.preventDefault();
                     if(e.dataTransfer.files && e.dataTransfer.files[0]) {
-                      const file = e.dataTransfer.files[0];
-                      if(file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf')) {
-                        setResumeFile(file);
-                      } else {
-                        alert("Please drop a valid PDF file.");
-                      }
+                      handleResumeSelection(e.dataTransfer.files[0]);
                     }
                   }}
                   style={{
@@ -2471,10 +2490,10 @@ export default function ApplicationForm() {
                   <input 
                     id="resume-upload-input"
                     type="file" 
-                    accept="application/pdf" 
+                    accept={RESUME_ACCEPT}
                     style={{ display: 'none' }} 
                     onChange={e => {
-                      if(e.target.files && e.target.files[0]) setResumeFile(e.target.files[0]);
+                      if(e.target.files && e.target.files[0]) handleResumeSelection(e.target.files[0]);
                     }} 
                   />
                   {resumeFile ? (
@@ -2490,8 +2509,8 @@ export default function ApplicationForm() {
                       <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ margin: '0 auto 8px auto', display: 'block', color: '#94a3b8' }}>
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line>
                       </svg>
-                      <strong style={{ display: 'block', color: '#1e293b', marginBottom: '4px' }}>Click to Browse or Drag & Drop PDF here</strong>
-                      <span style={{ fontSize: '12px' }}>Max size: 10MB.</span>
+                      <strong style={{ display: 'block', color: '#1e293b', marginBottom: '4px' }}>Click to Browse or Drag & Drop PDF/DOCX here</strong>
+                      <span style={{ fontSize: '12px' }}>Max size: 5MB.</span>
                     </div>
                   )}
                 </div>
@@ -3348,18 +3367,13 @@ export default function ApplicationForm() {
                     </div>
 
                     <div className="resume-inline-group" style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '6px' }}>
-                      <label className="resume-inline-label" style={{ fontWeight: '700' }}>Uploaded Resume (PDF)</label>
+                      <label className="resume-inline-label" style={{ fontWeight: '700' }}>Uploaded Resume (PDF/DOCX)</label>
                       <div 
                         onDragOver={e => e.preventDefault()} 
                         onDrop={e => {
                           e.preventDefault();
                           if(e.dataTransfer.files && e.dataTransfer.files[0]) {
-                            const file = e.dataTransfer.files[0];
-                            if(file.type === "application/pdf" || file.name.toLowerCase().endsWith('.pdf')) {
-                              setResumeFile(file);
-                            } else {
-                              alert("Please drop a valid PDF file.");
-                            }
+                            handleResumeSelection(e.dataTransfer.files[0]);
                           }
                         }}
                         style={{
@@ -3377,10 +3391,10 @@ export default function ApplicationForm() {
                         <input 
                           id="resume-upload-input-review"
                           type="file" 
-                          accept="application/pdf" 
+                          accept={RESUME_ACCEPT}
                           style={{ display: 'none' }} 
                           onChange={e => {
-                            if(e.target.files && e.target.files[0]) setResumeFile(e.target.files[0]);
+                            if(e.target.files && e.target.files[0]) handleResumeSelection(e.target.files[0]);
                           }} 
                         />
                         {resumeFile ? (
@@ -3393,7 +3407,7 @@ export default function ApplicationForm() {
                           </div>
                         ) : (
                           <div style={{ color: '#64748b' }}>
-                            <strong style={{ display: 'block', color: '#1e293b', marginBottom: '2px' }}>Click or Drag PDF here</strong>
+                            <strong style={{ display: 'block', color: '#1e293b', marginBottom: '2px' }}>Click or Drag PDF/DOCX here</strong>
                           </div>
                         )}
                       </div>
