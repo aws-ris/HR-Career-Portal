@@ -85,17 +85,73 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
 @app.post("/api/v1/auth/login")
-def login_admin(req: LoginRequest):
-    admin_user = os.getenv("HR_ADMIN_USERNAME", "hr_ris")
-    admin_pass = os.getenv("HR_ADMIN_PASSWORD", "ris@1234")
-    if req.username == admin_user and req.password == admin_pass:
+def login_admin(req: LoginRequest, db: Session = Depends(get_db)):
+    from utils.auth import verify_password
+    admin_user_env = os.getenv("HR_ADMIN_USERNAME", "hr_ris")
+    admin_pass_env = os.getenv("HR_ADMIN_PASSWORD", "ris@1234")
+    
+    # 1. Database-backed authentication
+    db_admin = db.query(models.AdminUser).filter(
+        models.AdminUser.username == req.username,
+        models.AdminUser.is_active == True
+    ).first()
+    
+    if db_admin and verify_password(req.password, db_admin.password_hash):
+        db_admin.last_login_at = datetime.datetime.utcnow()
+        db.commit()
+        token = generate_token(db_admin.username)
+        return {
+            "status": "success",
+            "token": token,
+            "username": db_admin.username,
+            "full_name": db_admin.full_name or "HR Administrator"
+        }
+        
+    # 2. Environment variable fallback
+    if req.username == admin_user_env and req.password == admin_pass_env:
         token = generate_token(req.username)
-        return {"status": "success", "token": token}
+        return {"status": "success", "token": token, "username": admin_user_env, "full_name": "HR Administrator"}
+        
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid username or password"
     )
+
+@app.post("/api/v1/auth/change-password")
+def change_admin_password(
+    req: ChangePasswordRequest,
+    current_username: str = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from utils.auth import verify_password, hash_password
+    if not req.new_password or len(req.new_password.strip()) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters long.")
+
+    db_admin = db.query(models.AdminUser).filter(models.AdminUser.username == current_username).first()
+    admin_pass_env = os.getenv("HR_ADMIN_PASSWORD", "ris@1234")
+
+    if db_admin:
+        if not verify_password(req.old_password, db_admin.password_hash):
+            raise HTTPException(status_code=400, detail="Current password is incorrect.")
+        db_admin.password_hash = hash_password(req.new_password)
+        db_admin.updated_at = datetime.datetime.utcnow()
+    else:
+        if req.old_password != admin_pass_env:
+            raise HTTPException(status_code=400, detail="Current password is incorrect.")
+        db_admin = models.AdminUser(
+            username=current_username,
+            password_hash=hash_password(req.new_password),
+            full_name="HR Administrator"
+        )
+        db.add(db_admin)
+
+    db.commit()
+    return {"status": "success", "message": "Password updated successfully!"}
 
 from fastapi import File, UploadFile
 from fastapi.responses import FileResponse

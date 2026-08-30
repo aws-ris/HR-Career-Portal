@@ -17,6 +17,24 @@ def generate_uuid():
 
 
 # ─────────────────────────────────────────────
+# Admin Users (Database-Backed Authentication)
+# ─────────────────────────────────────────────
+class AdminUser(Base):
+    __tablename__ = 'admin_users'
+
+    id            = Column(String(36),  primary_key=True, default=generate_uuid)
+    username      = Column(String(100), unique=True, nullable=False, index=True)
+    email         = Column(String(200), nullable=True)
+    full_name     = Column(String(200), nullable=True, default="HR Administrator")
+    password_hash = Column(String(255), nullable=False)
+    role          = Column(String(50),  nullable=False, default="admin")
+    is_active     = Column(Boolean,     nullable=False, default=True)
+    last_login_at = Column(DateTime,    nullable=True)
+    created_at    = Column(DateTime,    nullable=False, default=datetime.utcnow)
+    updated_at    = Column(DateTime,    nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# ─────────────────────────────────────────────
 # Job Postings (unchanged)
 # ─────────────────────────────────────────────
 class JobPosting(Base):
