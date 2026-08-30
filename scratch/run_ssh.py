@@ -7,10 +7,13 @@ cmd = [
     "-i", key_path,
     "-o", "StrictHostKeyChecking=no",
     "ubuntu@13.205.216.81",
-    "sudo -u postgres psql -c 'ALTER SYSTEM SET max_connections = 300;' && sudo systemctl restart postgresql"
+    "sudo systemctl status hr_portal_backend --no-pager -l"
 ]
 
-res = subprocess.run(cmd, capture_output=True, text=True)
-print("STDOUT:", res.stdout)
-print("STDERR:", res.stderr)
+res = subprocess.run(cmd, capture_output=True, text=False)
+stdout_clean = res.stdout.decode('utf-8', errors='ignore').encode('ascii', errors='ignore').decode('ascii')
+stderr_clean = res.stderr.decode('utf-8', errors='ignore').encode('ascii', errors='ignore').decode('ascii')
+
+print("STDOUT:\n", stdout_clean)
+print("STDERR:\n", stderr_clean)
 print("RETURNCODE:", res.returncode)
