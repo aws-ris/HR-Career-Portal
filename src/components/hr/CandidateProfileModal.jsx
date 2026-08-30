@@ -530,6 +530,32 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Application History Section */}
+                      {data.applications && data.applications.length > 0 && (
+                        <div style={{ padding: '20px', background: '#f0fdf4', borderRadius: '16px', border: '1px solid #bbf7d0', marginTop: '20px' }}>
+                          <h4 style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: '800', color: '#166534', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            📂 Application History & Previous Vacancies ({data.applications.length} Total)
+                          </h4>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {data.applications.map((app, idx) => (
+                              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', padding: '12px 16px', borderRadius: '8px', border: '1px solid #dcfce7' }}>
+                                <div>
+                                  <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '13px' }}>
+                                    📌 {app.position_applied || 'Applied Position'} {app.admin_department ? `(${app.admin_department})` : ''}
+                                  </div>
+                                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                                    Submitted: {app.submitted_at ? new Date(app.submitted_at).toLocaleDateString() : 'N/A'}
+                                  </div>
+                                </div>
+                                <span className="hr-status-pill" data-status={app.current_status} style={{ textTransform: 'capitalize', fontSize: '11px' }}>
+                                  {app.current_status ? app.current_status.replace('_', ' ') : 'Received'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
