@@ -1851,7 +1851,22 @@ export default function ApplicationForm() {
                 boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.15)',
                 borderRadius: '0 0 12px 12px'
               }}>
-                <button type="submit" className="btn-primary" style={{ width: '100%', fontSize: '1rem', fontWeight: 800, padding: '14px' }}>
+                <button 
+                  type="submit" 
+                  style={{ 
+                    width: '100%', 
+                    fontSize: '1rem', 
+                    fontWeight: 800, 
+                    padding: '14px 28px',
+                    background: 'linear-gradient(135deg, #002147 0%, #0a3666 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(0, 33, 71, 0.35)',
+                    display: 'block'
+                  }}
+                >
                   Proceed to Education Options ➔
                 </button>
               </div>
@@ -2461,8 +2476,8 @@ export default function ApplicationForm() {
                 display: 'flex',
                 gap: '12px'
               }}>
-                <button type="button" className="btn-secondary" onClick={() => setStep(1)} style={{ padding: '12px 24px' }}>Back</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1, fontSize: '1rem', fontWeight: 800, padding: '12px' }}>Proceed to Work Experience ➔</button>
+                <button type="button" onClick={() => setStep(1)} style={{ padding: '12px 24px', background: '#e2e8f0', color: '#1e293b', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>Back</button>
+                <button type="submit" style={{ flex: 1, fontSize: '1rem', fontWeight: 800, padding: '14px 28px', background: 'linear-gradient(135deg, #002147 0%, #0a3666 100%)', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0, 33, 71, 0.35)' }}>Proceed to Work Experience ➔</button>
               </div>
             </>
           )}
@@ -2665,8 +2680,8 @@ export default function ApplicationForm() {
                 display: 'flex',
                 gap: '12px'
               }}>
-                <button type="button" className="btn-secondary" onClick={() => setStep(2)} style={{ padding: '12px 24px' }}>Back</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1, fontSize: '1rem', fontWeight: 800, padding: '12px' }}>Proceed to Publications ➔</button>
+                <button type="button" onClick={() => setStep(2)} style={{ padding: '12px 24px', background: '#e2e8f0', color: '#1e293b', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>Back</button>
+                <button type="submit" style={{ flex: 1, fontSize: '1rem', fontWeight: 800, padding: '14px 28px', background: 'linear-gradient(135deg, #002147 0%, #0a3666 100%)', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0, 33, 71, 0.35)' }}>Proceed to Publications ➔</button>
               </div>
             </>
           )}
@@ -2797,8 +2812,8 @@ export default function ApplicationForm() {
                 display: 'flex',
                 gap: '12px'
               }}>
-                <button type="button" className="btn-secondary" onClick={() => setStep(3)} style={{ padding: '12px 24px' }}>Back</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1, backgroundColor: 'var(--brand-accent)', color: '#000', fontSize: '1rem', fontWeight: 800, padding: '12px' }}>Proceed to Preview Application ➔</button>
+                <button type="button" onClick={() => setStep(3)} style={{ padding: '12px 24px', background: '#e2e8f0', color: '#1e293b', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>Back</button>
+                <button type="submit" style={{ flex: 1, fontSize: '1rem', fontWeight: 800, padding: '14px 28px', background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', color: '#ffffff', border: 'none', borderRadius: '8px', cursor: 'pointer', boxShadow: '0 4px 14px rgba(217, 119, 6, 0.35)' }}>Proceed to Preview Application ➔</button>
               </div>
             </>
           )}
