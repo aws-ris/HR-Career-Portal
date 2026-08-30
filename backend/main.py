@@ -90,6 +90,8 @@ class ChangePasswordRequest(BaseModel):
     new_password: str
 
 @app.post("/api/v1/auth/login")
+@app.post("/v1/auth/login")
+@app.post("/auth/login")
 def login_admin(req: LoginRequest, db: Session = Depends(get_db)):
     from utils.auth import verify_password
     admin_user_env = os.getenv("HR_ADMIN_USERNAME", "hr_ris")
@@ -640,6 +642,8 @@ def seed_candidates(db: Session = Depends(get_db)):
 # ─────────────────────────────────────────────
 
 @app.get("/api/v1/public/jobs")
+@app.get("/v1/public/jobs")
+@app.get("/public/jobs")
 def get_public_jobs(db: Session = Depends(get_db)):
     """
     Returns only 'open' jobs for the candidate landing page.
