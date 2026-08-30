@@ -503,6 +503,18 @@ def seed_test_data(db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success", "message": f"Successfully seeded {created} professional jobs."}
 
+@app.get("/api/v1/system/seed-5-per-job")
+def seed_5_per_job(db: Session = Depends(get_db)):
+    """
+    Internal trigger to inject 5 candidates for every active job posting.
+    """
+    try:
+        from inject_5_per_job import inject_candidates
+        inject_candidates()
+        return {"status": "success", "message": "Successfully injected 5 diverse candidates per job posting into PostgreSQL!"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.get("/api/v1/wipe-c")
 def wipe_candidates(db: Session = Depends(get_db)):
     """
