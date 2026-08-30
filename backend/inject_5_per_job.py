@@ -148,7 +148,7 @@ def inject_candidates():
                     level="postgrad",
                     degree_name="M.A. Economics / Public Policy",
                     university=uni2,
-                    score_type="CGPA",
+                    score_type="CGPA (Out of 10)",
                     score_value=round(random.uniform(7.5, 9.4), 2),
                     grad_year=birth_year + 23,
                     entry_order=2
@@ -160,7 +160,7 @@ def inject_candidates():
                         level="phd",
                         degree_name=f"Ph.D. in {job.division} Studies",
                         university=uni1,
-                        score_type="CGPA",
+                        score_type="CGPA (Out of 10)",
                         score_value=round(random.uniform(8.5, 9.8), 2),
                         grad_year=birth_year + 27,
                         entry_order=3
