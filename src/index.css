@@ -1828,3 +1828,342 @@ textarea.form-input {
   margin-top: 3px;
   line-height: 1.35;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   🏢 BLOOMBERG HR ADMIN DASHBOARD SYSTEM (.hr-shell, .hr-sidebar, .hr-table)
+   ───────────────────────────────────────────────────────────── */
+
+.hr-shell {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8fafc;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+}
+
+/* Bloomberg Midnight Dark Sidebar */
+.hr-sidebar {
+  width: 260px;
+  background: #090d16;
+  border-right: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  flex-shrink: 0;
+  color: #f8fafc;
+}
+
+.hr-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #1e293b;
+  margin-bottom: 24px;
+}
+
+.hr-sidebar-logo img {
+  height: 38px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 4px;
+}
+
+.hr-sidebar-label {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.hr-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.hr-nav-section-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #f59e0b;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 12px 12px 6px 12px;
+}
+
+.hr-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  color: #94a3b8;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hr-nav-item:hover {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.hr-nav-item.active {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border-left: 3px solid #f59e0b;
+  font-weight: 700;
+}
+
+.hr-nav-chevron {
+  margin-left: auto;
+  opacity: 0.5;
+}
+
+.hr-main {
+  flex: 1;
+  padding: 32px 40px;
+  overflow-y: auto;
+  background: #f8fafc;
+}
+
+/* Page Header & KPIs */
+.hr-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.hr-page-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.hr-page-subtitle {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.hr-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.hr-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--kpi-accent, #0284c7);
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s ease;
+}
+
+.hr-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.08);
+}
+
+.hr-kpi-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--kpi-accent, #0f172a);
+}
+
+.hr-kpi-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.hr-kpi-label {
+  font-size: 0.825rem;
+  font-weight: 700;
+  color: #475569;
+  margin-top: 2px;
+}
+
+.hr-kpi-sub {
+  font-size: 0.75rem;
+  color: #ef4444;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+/* Toolbar & Tabs */
+.hr-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.hr-tabs {
+  display: flex;
+  background: #e2e8f0;
+  padding: 4px;
+  border-radius: 10px;
+  gap: 2px;
+}
+
+.hr-tab {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hr-tab.active {
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.hr-tab-count {
+  background: #cbd5e1;
+  color: #0f172a;
+  font-size: 0.725rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.hr-tab.active .hr-tab-count {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.hr-btn-create {
+  background: #f59e0b;
+  color: #090d16;
+  font-size: 0.875rem;
+  font-weight: 800;
+  padding: 10px 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+}
+
+.hr-btn-create:hover {
+  background: #d97706;
+  color: #ffffff;
+}
+
+/* Bloomberg Dark Table Header */
+.hr-table-wrap {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+.hr-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.hr-table th {
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 14px 20px;
+}
+
+.hr-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.hr-table tr:last-child td {
+  border-bottom: none;
+}
+
+.hr-table tr:hover td {
+  background: #f8fafc;
+}
+
+.hr-table-title-link {
+  color: #0f172a;
+  font-weight: 800;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.hr-table-title-link:hover {
+  color: #f59e0b;
+}
+
+.hr-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hr-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.hr-action {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.hr-action:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.hr-action.primary {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.hr-action.danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
