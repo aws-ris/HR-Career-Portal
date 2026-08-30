@@ -1371,21 +1371,28 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
         about_text = candidate.links_about.about if candidate.links_about and candidate.links_about.about else ""
         text_to_scan = f"{about_text}\n{sop_text}".strip()
 
-        def parse_groq_json(raw_str):
+        def parse_groq_json(raw_input):
             import re
-            if not raw_str:
+            if not raw_input:
                 return {}
-            cleaned = raw_str.strip()
+            if isinstance(raw_input, dict):
+                return raw_input
+            cleaned = str(raw_input).strip()
             match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', cleaned)
             if match:
                 cleaned = match.group(1).strip()
             try:
-                return json.loads(cleaned)
+                res = json.loads(cleaned)
+                if isinstance(res, dict):
+                    return res
+                return {}
             except Exception:
                 m_obj = re.search(r'\{[\s\S]*\}', cleaned)
                 if m_obj:
                     try:
-                        return json.loads(m_obj.group(0))
+                        res = json.loads(m_obj.group(0))
+                        if isinstance(res, dict):
+                            return res
                     except Exception:
                         pass
                 return {}
