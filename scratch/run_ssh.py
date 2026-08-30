@@ -7,7 +7,7 @@ cmd = [
     "-i", key_path,
     "-o", "StrictHostKeyChecking=no",
     "ubuntu@13.205.216.81",
-    "sudo -u postgres psql -d hr_portal_ris_db -c 'SELECT count(*) FROM candidate_metadata; SELECT count(*) FROM application_tracking;'"
+    "cd /var/www/HR_RIS/backend && source venv/bin/activate && python3 scripts/load_test_1000.py"
 ]
 
 res = subprocess.run(cmd, capture_output=True, text=False)

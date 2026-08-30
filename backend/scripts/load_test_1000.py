@@ -200,4 +200,7 @@ def run_1000_load_test():
     print("═" * 65)
 
 if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1].isdigit():
+        NUM_CONCURRENT_REQUESTS = int(sys.argv[1])
     run_1000_load_test()
