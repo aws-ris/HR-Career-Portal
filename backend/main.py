@@ -1416,72 +1416,79 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
 @app.get("/api/v1/applications/{candidate_id}/executive_dossier/download", dependencies=[Depends(get_current_admin)])
 def download_executive_dossier(candidate_id: str, preview: bool = False, db: Session = Depends(get_db)):
     from fastapi.responses import Response
-    candidate = db.query(models.CandidateMetadata).options(
-        joinedload(models.CandidateMetadata.higher_education),
-        joinedload(models.CandidateMetadata.publications),
-        joinedload(models.CandidateMetadata.work_experiences),
-        joinedload(models.CandidateMetadata.links_about),
-        joinedload(models.CandidateMetadata.resume_payload),
-        joinedload(models.CandidateMetadata.applications).joinedload(models.ApplicationTracking.job)
-    ).filter(models.CandidateMetadata.id == candidate_id).first()
+    try:
+        candidate = db.query(models.CandidateMetadata).options(
+            joinedload(models.CandidateMetadata.higher_education),
+            joinedload(models.CandidateMetadata.publications),
+            joinedload(models.CandidateMetadata.work_experiences),
+            joinedload(models.CandidateMetadata.links_about),
+            joinedload(models.CandidateMetadata.resume_payload),
+            joinedload(models.CandidateMetadata.applications).joinedload(models.ApplicationTracking.job)
+        ).filter(models.CandidateMetadata.id == candidate_id).first()
 
-    if not candidate:
-        raise HTTPException(status_code=404, detail="Candidate not found")
+        if not candidate:
+            raise HTTPException(status_code=404, detail="Candidate not found")
 
-    payload = candidate.resume_payload
-    ai_eval_data = None
+        payload = candidate.resume_payload
+        ai_eval_data = None
 
-    if payload and payload.ai_evaluation_json:
-        try:
-            ai_eval_data = json.loads(payload.ai_evaluation_json)
-        except Exception:
-            pass
+        if payload and payload.ai_evaluation_json:
+            try:
+                ai_eval_data = json.loads(payload.ai_evaluation_json)
+            except Exception:
+                pass
 
-    if not ai_eval_data:
-        from services.ai_evaluator import evaluate_candidate_qualitative
-        c_job = candidate.applications[0].job if (candidate.applications and candidate.applications[0].job) else None
-        j_title = c_job.title if c_job else "General Research Specialist"
-        j_reqs = c_job.requirements if c_job else "PhD/Masters, Policy Analysis"
-        cand_dict = {
-            "full_name": candidate.full_name,
-            "years_of_experience": candidate.years_of_experience,
-            "degrees": [f"{e.level.upper()}: {e.degree_name} ({e.university})" for e in candidate.higher_education],
-            "publications": [f"{p.pub_type.upper()}: {p.title}" for p in candidate.publications],
-            "work_experiences": [f"{w.role} at {w.company_name}" for w in candidate.work_experiences],
-            "sop": candidate.links_about.sop if candidate.links_about else "",
-            "about": candidate.links_about.about if candidate.links_about else ""
-        }
-        ai_eval_data = evaluate_candidate_qualitative(j_title, j_reqs, cand_dict)
-        if payload:
-            payload.ai_evaluation_json = json.dumps(ai_eval_data)
+        if not ai_eval_data:
+            from services.ai_evaluator import evaluate_candidate_qualitative
+            c_job = candidate.applications[0].job if (candidate.applications and candidate.applications[0].job) else None
+            j_title = c_job.title if c_job else "General Research Specialist"
+            j_reqs = c_job.requirements if c_job else "PhD/Masters, Policy Analysis"
+            cand_dict = {
+                "full_name": candidate.full_name or "Applicant",
+                "years_of_experience": candidate.years_of_experience or 0,
+                "degrees": [f"{e.level.upper() if e.level else 'DEGREE'}: {e.degree_name} ({e.university})" for e in (candidate.higher_education or [])],
+                "publications": [f"{p.pub_type.upper() if p.pub_type else 'PUB'}: {p.title}" for p in (candidate.publications or [])],
+                "work_experiences": [f"{w.role} at {w.company_name}" for w in (candidate.work_experiences or [])],
+                "sop": candidate.links_about.sop if (candidate.links_about and candidate.links_about.sop) else "",
+                "about": candidate.links_about.about if (candidate.links_about and candidate.links_about.about) else ""
+            }
+            ai_eval_data = evaluate_candidate_qualitative(j_title, j_reqs, cand_dict)
+            if not payload:
+                payload = models.CandidateResumePayload(candidate_id=candidate_id, ai_evaluation_json=json.dumps(ai_eval_data))
+                db.add(payload)
+            else:
+                payload.ai_evaluation_json = json.dumps(ai_eval_data)
             db.commit()
 
-    cand_profile_dict = {
-        "full_name": candidate.full_name,
-        "email": candidate.email,
-        "mobile_no": candidate.mobile_no,
-        "country_code": candidate.country_code,
-        "city": candidate.city,
-        "state": candidate.state,
-        "years_of_experience": candidate.years_of_experience,
-        "graduation": [{"degree_name": g.degree_name, "university": g.university} for g in candidate.higher_education],
-        "sop": candidate.links_about.sop if candidate.links_about else ""
-    }
-
-    from services.pdf_generator import generate_executive_dossier_pdf
-    pdf_bytes = generate_executive_dossier_pdf(cand_profile_dict, ai_eval_data)
-
-    disposition = "inline" if preview else "attachment"
-    clean_name = candidate.full_name.replace(" ", "_") if candidate.full_name else candidate_id
-    filename = f"Executive_Dossier_{clean_name}.pdf"
-
-    return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition": f'{disposition}; filename="{filename}"'
+        cand_profile_dict = {
+            "full_name": candidate.full_name or "Applicant",
+            "email": candidate.email or "N/A",
+            "mobile_no": candidate.mobile_no or "",
+            "country_code": candidate.country_code or "",
+            "city": candidate.city or "",
+            "state": candidate.state or "",
+            "years_of_experience": candidate.years_of_experience or 0,
+            "graduation": [{"degree_name": g.degree_name, "university": g.university} for g in (candidate.higher_education or [])],
+            "sop": candidate.links_about.sop if (candidate.links_about and candidate.links_about.sop) else ""
         }
-    )
+
+        from services.pdf_generator import generate_executive_dossier_pdf
+        pdf_bytes = generate_executive_dossier_pdf(cand_profile_dict, ai_eval_data)
+
+        disposition = "inline" if preview else "attachment"
+        clean_name = (candidate.full_name or "Applicant").replace(" ", "_")
+        filename = f"Executive_Dossier_{clean_name}.pdf"
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'{disposition}; filename="{filename}"'
+            }
+        )
+    except Exception as route_err:
+        print(f"❌ [Executive Dossier Download Route Error]: {route_err}")
+        raise HTTPException(status_code=500, detail=f"Dossier PDF Generation Error: {str(route_err)}")
 
 
 @app.get("/api/v1/applications/{candidate_id}/resume/download", dependencies=[Depends(get_current_admin)])
