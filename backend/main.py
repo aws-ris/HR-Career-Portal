@@ -1364,6 +1364,7 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
 
     try:
         import groq
+        import json
         groq_client = groq.Groq(api_key=groq_api_key)
 
         sop_text = candidate.links_about.sop if candidate.links_about and candidate.links_about.sop else ""
