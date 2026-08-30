@@ -29,6 +29,7 @@ def send_single_application(args):
     
     payload = {
         "job_id": job_id,
+        "position_applied": "Research Assistant",
         "full_name": f"LoadTest Candidate #{request_id}",
         "email": email,
         "country_code": "+91",
