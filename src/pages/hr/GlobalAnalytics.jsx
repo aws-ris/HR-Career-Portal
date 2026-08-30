@@ -76,8 +76,8 @@ export default function GlobalAnalytics() {
     <div className="hr-page">
       <div className="hr-page-header">
         <div>
-          <h1 className="hr-page-title">Global Command Center</h1>
-          <p className="hr-page-subtitle">Real-time talent pool demographics (Highest Qualification Only)</p>
+          <h1 className="hr-page-title">Analytics</h1>
+          <p className="hr-page-subtitle">Real-time talent Insights</p>
         </div>
       </div>
 
@@ -99,27 +99,27 @@ export default function GlobalAnalytics() {
                   ))}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
-                <Legend verticalAlign="bottom" iconType="circle" height={36}/>
+                <Legend verticalAlign="bottom" iconType="circle" height={36} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </AnalyticsCard>
 
         {/* 2. State Distribution */}
-        <AnalyticsCard title="Top Talent Hubs" icon={Globe}>
+        <AnalyticsCard title="State-wise Analysis" icon={Globe}>
           <div style={{ height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.states} layout="vertical" margin={{ left: 10, right: 30 }}>
                 <XAxis type="number" hide />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  width={100} 
-                  axisLine={false} 
-                  tickLine={false} 
-                  style={{ fontSize: '12px', fontWeight: 600, fill: '#475569' }} 
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  width={100}
+                  axisLine={false}
+                  tickLine={false}
+                  style={{ fontSize: '12px', fontWeight: 600, fill: '#475569' }}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(241, 245, 249, 0.6)'}} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(241, 245, 249, 0.6)' }} />
                 <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={20}>
                   {data.states.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS.states[index % COLORS.states.length]} />
@@ -131,18 +131,18 @@ export default function GlobalAnalytics() {
         </AnalyticsCard>
 
         {/* 3. Highest Education Level */}
-        <AnalyticsCard title="Seniority (Highest Degree)" icon={GraduationCap}>
+        <AnalyticsCard title="Qualification-wise Analysis" icon={GraduationCap}>
           <div style={{ height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.education} margin={{ top: 20, bottom: 20 }}>
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  style={{ fontSize: '12px', fontWeight: 700, fill: '#1e293b' }} 
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  style={{ fontSize: '12px', fontWeight: 700, fill: '#1e293b' }}
                 />
                 <YAxis hide />
-                <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(241, 245, 249, 0.6)'}} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(241, 245, 249, 0.6)' }} />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={50}>
                   {data.education.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS.edu[entry.name]} />
