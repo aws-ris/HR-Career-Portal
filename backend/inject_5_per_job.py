@@ -183,7 +183,6 @@ def inject_candidates():
                     candidate_id=candidate.id,
                     pub_type="paper",
                     title=f"Empirical Evaluation of {job.title} in South Asia",
-                    doi_link="https://doi.org/10.1016/j.jies.2022.04.001",
                     entry_order=1
                 ))
 
