@@ -6,81 +6,118 @@ import urllib.request
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 
-# Target URL
 TARGET_URL = "http://13.205.216.81/api/v1/applications"
 NUM_CONCURRENT_REQUESTS = 1000
 
-def get_active_job_id():
+names = [
+    ("Ananya Sharma", "Female"), ("Rohan Verma", "Male"), ("Priya Nair", "Female"), ("Vikram Sengupta", "Male"), ("Sneha Kulkarni", "Female"),
+    ("Aarav Mehta", "Male"), ("Meera Deshmukh", "Female"), ("Aditya Roy", "Male"), ("Kavya Reddy", "Female"), ("Tushar Saxena", "Male"),
+    ("Divya Iyer", "Female"), ("Siddharth Rao", "Male"), ("Ishita Banerjee", "Female"), ("Karan Malhotra", "Male"), ("Nidhi Patel", "Female"),
+    ("Varun Kapoor", "Male"), ("Pooja Joshi", "Female"), ("Abhinav Pandey", "Male"), ("Tanvi Agarwal", "Female"), ("Rahul Bhatia", "Male")
+]
+
+universities = [
+    "Jawaharlal Nehru University (JNU)", "Delhi School of Economics (DSE)", "IIT Delhi",
+    "University of Hyderabad", "Tata Institute of Social Sciences (TISS)", "St. Xavier's College, Mumbai",
+    "Madras School of Economics", "Indian Institute of Foreign Trade (IIFT)", "Ashoka University"
+]
+
+companies = [
+    "NITI Aayog", "NIPFP", "ICRIER", "Observer Research Foundation (ORF)", "CPR India",
+    "RIS", "KPMG India", "Ernst & Young (EY)", "World Bank India", "ADB South Asia"
+]
+
+def fetch_active_jobs():
+    """
+    Fetches real open job postings directly from the backend API.
+    """
     try:
         req = urllib.request.Request("http://13.205.216.81/api/v1/public/jobs")
         with urllib.request.urlopen(req, timeout=5) as response:
             if response.status == 200:
-                data = json.loads(response.read().decode('utf-8'))
-                if isinstance(data, list) and len(data) > 0:
-                    print(f"📋 Fetched active Job ID for load test: '{data[0]['title']}' ({data[0]['id']})")
-                    return data[0]['id']
+                jobs = json.loads(response.read().decode('utf-8'))
+                if isinstance(jobs, list) and len(jobs) > 0:
+                    print(f"📋 Fetched {len(jobs)} active job postings from database for load test:")
+                    for j in jobs:
+                        print(f"  - '{j['title']}' | Position: {j.get('position', 'Research Assistant')} | ID: {j['id']}")
+                    return jobs
     except Exception as e:
-        print(f"⚠️ Could not fetch active job ID ({e}), using default fallback.")
-    return "test-job-id"
+        print(f"⚠️ Could not fetch active jobs from backend ({e}), using default fallback job.")
+        
+    return [{
+        "id": None,
+        "title": "Consultant (International Trade & G20 Policy)",
+        "position": "Consultant",
+        "division": "RIS"
+    }]
 
 def send_single_application(args):
-    request_id, job_id = args
+    request_id, selected_job = args
+    name, gender = names[request_id % len(names)]
     email = f"loadtest.cand{request_id}.{random.randint(1000, 9999)}@policy-loadtest.org"
+    uni1 = universities[request_id % len(universities)]
+    uni2 = universities[(request_id + 1) % len(universities)]
+    company = companies[request_id % len(companies)]
+    
+    position_val = selected_job.get("position") or "Research Assistant"
+    job_id_val = selected_job.get("id")
+    dept_val = selected_job.get("division")
     
     payload = {
-        "job_id": job_id,
-        "position_applied": "Research Assistant",
-        "full_name": f"LoadTest Candidate #{request_id}",
+        "job_id": job_id_val,
+        "position_applied": position_val,
+        "admin_department": dept_val if dept_val in ['IT', 'HR', 'Finance', 'Library', 'Other'] else None,
+        "full_name": f"{name} (Load #{request_id})",
         "email": email,
         "country_code": "+91",
         "mobile_no": f"9876{random.randint(100000, 999999)}",
-        "dob": "1995-05-15",
-        "gender": "Male" if request_id % 2 == 0 else "Female",
+        "dob": f"{random.randint(1990, 1999)}-0{random.randint(1,9)}-{random.randint(10,28)}",
+        "gender": gender,
         "city": "New Delhi",
         "state": "Delhi",
         "pincode": "110001",
-        "years_of_experience": round(random.uniform(2.0, 8.0), 1),
-        "last_salary": 12.5,
-        "about": "High-throughput concurrent load test application submission.",
-        "sop": "Testing backend resiliency under 1,000 concurrent applications.",
-        "how_heard": "Load Test Suite",
+        "years_of_experience": round(random.uniform(2.0, 10.0), 1),
+        "last_salary": round(random.uniform(6.0, 20.0), 1),
+        "about": f"High-throughput candidate applicant specializing in {selected_job.get('title', 'Policy Research')}.",
+        "sop": f"I am applying for {selected_job.get('title')} to contribute quantitative policy research expertise to RIS.",
+        "how_heard": "RIS Career Portal",
         "schooling": {
-            "class_x_school": "DPS New Delhi",
+            "class_x_school": "Delhi Public School",
             "class_x_board": "CBSE",
             "class_x_score_type": "Percentage",
-            "class_x_score_value": 90.0,
-            "class_x_year": 2011,
-            "class_xii_school": "DPS New Delhi",
+            "class_x_score_value": round(random.uniform(82.0, 95.0), 1),
+            "class_x_year": 2012,
+            "class_xii_school": "Delhi Public School",
             "class_xii_board": "CBSE",
             "class_xii_score_type": "Percentage",
-            "class_xii_score_value": 88.5,
-            "class_xii_year": 2013
+            "class_xii_score_value": round(random.uniform(80.0, 96.0), 1),
+            "class_xii_year": 2014
         },
         "higher_education": [
             {
                 "level": "undergrad",
-                "degree_name": "B.A. Economics",
-                "university": "Delhi University",
+                "degree_name": "B.A. (Hons) Economics",
+                "university": uni1,
                 "score_type": "Percentage",
-                "score_value": 82.0,
-                "grad_year": 2016,
+                "score_value": round(random.uniform(75.0, 88.0), 1),
+                "grad_year": 2017,
                 "entry_order": 1
             },
             {
                 "level": "postgrad",
-                "degree_name": "M.A. Public Policy",
-                "university": "JNU",
+                "degree_name": "M.A. Economics / Public Policy",
+                "university": uni2,
                 "score_type": "CGPA (Out of 10)",
-                "score_value": 8.8,
-                "grad_year": 2018,
+                "score_value": round(random.uniform(7.8, 9.4), 2),
+                "grad_year": 2019,
                 "entry_order": 2
             }
         ],
         "work_experience": [
             {
-                "company_name": "NITI Aayog",
-                "role": "Policy Analyst",
-                "start_date": "2018-06-01",
+                "company_name": company,
+                "role": "Research Fellow",
+                "start_date": "2019-06-01",
                 "is_current": True,
                 "entry_order": 1
             }
@@ -114,8 +151,8 @@ def run_1000_load_test():
     print(f"🎯 Target API URL: {TARGET_URL}")
     print(f"⚡ Simultaneous Requests: {NUM_CONCURRENT_REQUESTS}\n")
 
-    job_id = get_active_job_id()
-    tasks_args = [(i + 1, job_id) for i in range(NUM_CONCURRENT_REQUESTS)]
+    active_jobs = fetch_active_jobs()
+    tasks_args = [(i + 1, active_jobs[i % len(active_jobs)]) for i in range(NUM_CONCURRENT_REQUESTS)]
 
     start_wall = time.time()
 
