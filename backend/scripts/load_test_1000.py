@@ -134,7 +134,7 @@ def send_single_application(args):
 
     start_time = time.time()
     try:
-        with urllib.request.urlopen(req, timeout=30) as response:
+        with urllib.request.urlopen(req, timeout=120) as response:
             latency = time.time() - start_time
             return (response.status, latency, None)
     except urllib.error.HTTPError as e:

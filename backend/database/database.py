@@ -22,15 +22,22 @@ if not any(h in SQLALCHEMY_DATABASE_URL for h in ["localhost", "db", "postgres",
     else:
         SQLALCHEMY_DATABASE_URL += "?sslmode=require"
 
-# SQLite requires check_same_thread=False, Postgres does not!
+# SQLite requires check_same_thread=False, Postgres gets connection pool tuning!
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
     )
 else:
     try:
-        # Try connecting to configured Postgres database
-        engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
+        # High-concurrency connection pool tuning for 1,000+ simultaneous submissions
+        engine = create_engine(
+            SQLALCHEMY_DATABASE_URL,
+            pool_size=30,
+            max_overflow=50,
+            pool_timeout=60,
+            pool_recycle=1800,
+            pool_pre_ping=True
+        )
         # Test connection
         with engine.connect() as conn:
             pass
@@ -48,26 +55,6 @@ Base = declarative_base()
 def get_db():
     db = SessionLocal()
     try:
-        # Auto-close expired jobs dynamically
-        from database import models
-        import datetime
-        today = datetime.date.today()
-        try:
-            expired_jobs = db.query(models.JobPosting).filter(
-                models.JobPosting.status == 'open',
-                models.JobPosting.deadline != None,
-                models.JobPosting.deadline < today,
-                models.JobPosting.is_deleted == False
-            ).all()
-            if expired_jobs:
-                for job in expired_jobs:
-                    job.status = 'closed'
-                    job.updated_at = datetime.datetime.utcnow()
-                db.commit()
-        except Exception as e:
-            print(f"Error auto-closing expired jobs: {e}")
-            db.rollback()
-            
         yield db
     finally:
         db.close()
