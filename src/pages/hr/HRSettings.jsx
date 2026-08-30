@@ -235,47 +235,6 @@ export default function HRSettings() {
         </form>
       </div>
 
-      {/* Forgot Password Notice Box */}
-      <div style={{
-        background: '#fffbe6',
-        borderRadius: '16px',
-        border: '1px solid #ffe58f',
-        padding: '24px 28px',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '16px'
-      }}>
-        <div style={{
-          width: '40px',
-          height: '40px',
-          borderRadius: '10px',
-          background: '#faad14',
-          color: '#ffffff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0
-        }}>
-          <HelpCircle size={22} />
-        </div>
-        <div>
-          <h4 style={{ margin: '0 0 6px 0', fontSize: '1rem', fontWeight: 800, color: '#873800' }}>
-            Forgot your current password?
-          </h4>
-          <p style={{ margin: '0 0 12px 0', fontSize: '0.875rem', color: '#612500', lineHeight: 1.6 }}>
-            In case you have forgotten your password or are unable to log in, please contact the <strong>IT Department</strong> for password update assistance.
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '0.825rem', color: '#873800', fontWeight: 700 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Mail size={14} /> Contact IT Support: <u>it-support@ris.org.in</u>
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <PhoneCall size={14} /> Extension: 402 / IT Cell
-            </span>
-          </div>
-        </div>
-      </div>
-
     </div>
   );
 }

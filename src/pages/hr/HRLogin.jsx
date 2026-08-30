@@ -257,6 +257,24 @@ export default function HRLogin() {
               </>
             )}
           </button>
+          {/* Forgot Password IT Notice Banner */}
+          <div style={{
+            marginTop: '20px',
+            padding: '12px 14px',
+            background: 'rgba(245, 158, 11, 0.08)',
+            border: '1px solid rgba(245, 158, 11, 0.25)',
+            borderRadius: '10px',
+            textAlign: 'center',
+            fontSize: '0.8rem',
+            color: '#fcd34d',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px'
+          }}>
+            <span>🔑 Forgot Password? Contact IT Department for password update.</span>
+          </div>
         </form>
 
         {/* Back Link */}
