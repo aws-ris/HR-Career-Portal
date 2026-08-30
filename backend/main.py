@@ -1361,10 +1361,29 @@ def download_resume(candidate_id: str, preview: bool = False, db: Session = Depe
     raise HTTPException(status_code=404, detail="S3 bucket not configured or resume file missing")
 
 
-def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, filename: str):
+def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, filename: str, job_id: Optional[str] = None):
     candidate = db.query(models.CandidateMetadata).filter(models.CandidateMetadata.id == candidate_id).first()
     if not candidate:
         raise ValueError(f"Candidate {candidate_id} not found")
+
+    # ── Job Categorization Folder Naming ──
+    job_folder_name = "general_applications"
+    app_rec = None
+    if job_id:
+        app_rec = db.query(models.ApplicationTracking).filter_by(candidate_id=candidate_id, job_id=job_id).first()
+    if not app_rec:
+        app_rec = db.query(models.ApplicationTracking).filter_by(candidate_id=candidate_id).order_by(models.ApplicationTracking.submitted_at.desc()).first()
+
+    if app_rec:
+        raw_title = "general_applications"
+        if app_rec.job and app_rec.job.title:
+            raw_title = app_rec.job.title
+        elif app_rec.position_applied:
+            raw_title = app_rec.position_applied
+            
+        import re
+        job_folder_name = re.sub(r'[^a-zA-Z0-9_-]', '_', raw_title).strip('_')
+        job_folder_name = re.sub(r'_+', '_', job_folder_name)
 
     content_type = get_resume_media_type(filename)
     S3_BUCKET = os.getenv("S3_BUCKET_NAME")
@@ -1372,12 +1391,13 @@ def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, f
     aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
     aws_region = os.getenv("AWS_REGION", "ap-south-1")
     
-    s3_key = f"resumes/{candidate_id}_{filename}"
+    # Categorized S3 Path Structure: jobs/{job_folder}/resumes/{candidate_id}_{filename}
+    s3_key = f"jobs/{job_folder_name}/resumes/{candidate_id}_{filename}"
 
     if not S3_BUCKET:
-        raise ValueError("AWS S3 bucket is not configured. Please set S3_BUCKET_NAME, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY in environment.")
+        raise ValueError("AWS S3 bucket is not configured. Please set S3_BUCKET_NAME in environment.")
 
-    # ── Direct AWS S3 Upload ──
+    # ── Direct AWS S3 Categorized Upload ──
     try:
         import boto3
         from botocore.client import Config
@@ -1393,36 +1413,33 @@ def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, f
             Body=file_bytes,
             ContentType=content_type
         )
-        print(f"✅ [S3 Pure Storage] Resume for candidate {candidate_id} uploaded directly to S3: '{s3_key}'")
+        print(f"✅ [S3 Categorized Upload] Saved under job folder: '{s3_key}'")
     except Exception as e:
         print(f"❌ [S3 Upload Error] Failed to upload resume to S3: {e}")
         raise ValueError(f"S3 Upload Failed: {str(e)}")
 
-    # Store ONLY S3 path reference in PostgreSQL (NO binary BLOBs in DB, NO files on EC2 disk)
+    # Store ONLY S3 path reference in PostgreSQL
     payload = db.query(models.CandidateResumePayload).filter(models.CandidateResumePayload.candidate_id == candidate_id).first()
     if payload:
         payload.resume_path = s3_key
-        payload.pdf_blob = None  # DB remains 100% lightweight
+        payload.pdf_blob = None
     else:
         payload = models.CandidateResumePayload(
             candidate_id=candidate_id, 
             resume_path=s3_key, 
-            pdf_blob=None  # DB remains 100% lightweight
+            pdf_blob=None
         )
         db.add(payload)
 
     db.commit()
     return s3_key, s3_key
 
-    db.commit()
-    return rel_path, file_path
-
 @app.post("/api/v1/applications/{candidate_id}/resume")
-async def upload_resume(candidate_id: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_resume(candidate_id: str, job_id: Optional[str] = None, file: UploadFile = File(...), db: Session = Depends(get_db)):
     try:
         content = await file.read()
         validate_resume_upload(file.filename, file.content_type, len(content))
-        saved_path, file_path = process_and_save_resume(db, candidate_id, content, file.filename)
+        saved_path, file_path = process_and_save_resume(db, candidate_id, content, file.filename, job_id=job_id)
         return {"status": "success", "resume_path": saved_path}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
