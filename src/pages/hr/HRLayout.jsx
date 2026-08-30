@@ -45,10 +45,11 @@ export default function HRLayout() {
           </NavLink>
 
           <p className="hr-nav-section-label" style={{ marginTop: '2rem' }}>SYSTEM</p>
-          <a className="hr-nav-item disabled" aria-disabled="true">
+          <NavLink to="/hr/settings" className={({ isActive }) => `hr-nav-item ${isActive ? 'active' : ''}`}>
             <Settings size={18} />
             <span>Settings</span>
-          </a>
+            <ChevronRight size={14} className="hr-nav-chevron" />
+          </NavLink>
         </nav>
 
         <div className="hr-sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
