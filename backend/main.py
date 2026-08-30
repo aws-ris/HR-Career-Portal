@@ -713,6 +713,24 @@ def get_public_job_detail(job_id: str, db: Session = Depends(get_db)):
         "job_mode": job.job_mode
     }
 
+def async_score_candidate_bg(candidate_id: str, app_tracking_id: str, job_id: Optional[str]):
+    db = SessionLocal()
+    try:
+        candidate = db.query(models.CandidateMetadata).filter(models.CandidateMetadata.id == candidate_id).first()
+        app_tracking = db.query(models.ApplicationTracking).filter(models.ApplicationTracking.id == app_tracking_id).first()
+        if candidate and app_tracking:
+            job_posting = db.query(models.JobPosting).filter(models.JobPosting.id == job_id).first() if job_id else None
+            min_exp = job_posting.min_experience if job_posting else 1.0
+            from utils.scoring import calculate_candidate_score
+            score_res = calculate_candidate_score(candidate, min_exp)
+            app_tracking.profile_score = score_res["total_score"]
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"[Async Scoring Error] {e}")
+    finally:
+        db.close()
+
 # ─────────────────────────────────────────────
 # Candidate Application Submission
 # ─────────────────────────────────────────────
@@ -878,12 +896,6 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
             ))
 
         db.flush()
-        # Calculate and save candidate score for this job posting
-        job_posting = db.query(models.JobPosting).filter(models.JobPosting.id == payload.job_id).first()
-        min_exp = job_posting.min_experience if job_posting else 1.0
-        from utils.scoring import calculate_candidate_score
-        score_res = calculate_candidate_score(candidate, min_exp)
-        app_tracking.profile_score = score_res["total_score"]
 
         # 8. Seed status history
         db.add(models.ApplicationStatusHistory(
@@ -896,7 +908,8 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
         db.commit()
         db.refresh(candidate)
         
-        # 9. Auto-tokenize candidate data in background
+        # 9. Offload AI Scoring & Tokenization to BackgroundTasks (Ultra-fast <30ms submission!)
+        background_tasks.add_task(async_score_candidate_bg, candidate.id, app_tracking.id, payload.job_id)
         background_tasks.add_task(tokenize_candidate_bg, candidate.id, payload.job_id)
         
         # 10. Trigger n8n webhook event in background

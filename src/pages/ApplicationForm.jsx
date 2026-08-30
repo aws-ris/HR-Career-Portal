@@ -1455,11 +1455,23 @@ export default function ApplicationForm() {
     };
 
     try {
-      const res = await fetch(`${API}/applications`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      let attempts = 0;
+      let res = null;
+      while (attempts < 3) {
+        try {
+          attempts++;
+          res = await fetch(`${API}/applications`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res && (res.ok || res.status === 400 || res.status === 422)) break;
+        } catch (retryErr) {
+          console.warn(`Submission attempt ${attempts} failed, retrying...`, retryErr);
+          if (attempts >= 3) throw retryErr;
+          await new Promise(r => setTimeout(r, 1000 * attempts));
+        }
+      }
       if(res.ok) {
         const data = await res.json();
         if (resumeFile && data.id) {

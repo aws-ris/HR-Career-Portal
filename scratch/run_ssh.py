@@ -7,7 +7,7 @@ cmd = [
     "-i", key_path,
     "-o", "StrictHostKeyChecking=no",
     "ubuntu@13.205.216.81",
-    "sudo tail -n 30 /var/log/nginx/error.log"
+    "sudo -u postgres psql -d hr_portal_ris_db -c 'SELECT count(*) FROM candidate_metadata; SELECT count(*) FROM application_tracking;'"
 ]
 
 res = subprocess.run(cmd, capture_output=True, text=False)
