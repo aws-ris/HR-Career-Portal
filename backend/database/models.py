@@ -282,6 +282,7 @@ class CandidateResumePayload(Base):
     pdf_blob         = Column(LargeBinary,  nullable=True)
     raw_resume_text  = Column(Text,         nullable=True)
     resume_embedding = Column(ArrayFloat,   nullable=True)
+    ai_evaluation_json = Column(Text,       nullable=True)
 
     candidate = relationship("CandidateMetadata", back_populates="resume_payload")
 

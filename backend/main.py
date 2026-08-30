@@ -1394,6 +1394,21 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
 
     eval_result = evaluate_candidate_qualitative(job_title, job_requirements, candidate_dict)
     eval_result["candidate_id"] = candidate_id
+
+    # 💾 Save / Upsert AI Evaluation JSON in PostgreSQL database (candidate_resume_payload)
+    payload = db.query(models.CandidateResumePayload).filter(
+        models.CandidateResumePayload.candidate_id == candidate_id
+    ).first()
+    if not payload:
+        payload = models.CandidateResumePayload(
+            candidate_id=candidate_id,
+            ai_evaluation_json=json.dumps(eval_result)
+        )
+        db.add(payload)
+    else:
+        payload.ai_evaluation_json = json.dumps(eval_result)
+    
+    db.commit()
     return eval_result
 
 
@@ -1404,50 +1419,87 @@ def download_resume(candidate_id: str, preview: bool = False, db: Session = Depe
         models.CandidateResumePayload.candidate_id == candidate_id
     ).first()
     
-    if not payload or not payload.resume_path:
+    if not payload:
         raise HTTPException(status_code=404, detail="Resume record not found for candidate")
-        
-    filename = os.path.basename(payload.resume_path)
-    
-    # ── Single Source of Truth: Pure AWS S3 Storage ──
-    S3_BUCKET = os.getenv("S3_BUCKET_NAME")
-    aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
-    aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-    aws_region = os.getenv("AWS_REGION", "ap-south-1")
 
-    if S3_BUCKET:
+    candidate = db.query(models.CandidateMetadata).options(
+        joinedload(models.CandidateMetadata.higher_education),
+        joinedload(models.CandidateMetadata.publications),
+        joinedload(models.CandidateMetadata.work_experiences),
+        joinedload(models.CandidateMetadata.links_about)
+    ).filter(models.CandidateMetadata.id == candidate_id).first()
+
+    # 📄 If AI Evaluation is stored in PostgreSQL, generate Executive Dossier Snapshot PDF
+    if payload.ai_evaluation_json and candidate:
         try:
-            import boto3
-            from botocore.client import Config
-            s3_kwargs = {"region_name": aws_region, "config": Config(signature_version='s3v4')}
-            if aws_access_key and aws_secret_key:
-                s3_kwargs["aws_access_key_id"] = aws_access_key
-                s3_kwargs["aws_secret_access_key"] = aws_secret_key
+            ai_eval_data = json.loads(payload.ai_evaluation_json)
+            cand_dict = {
+                "full_name": candidate.full_name,
+                "email": candidate.email,
+                "mobile_no": candidate.mobile_no,
+                "country_code": candidate.country_code,
+                "city": candidate.city,
+                "state": candidate.state,
+                "years_of_experience": candidate.years_of_experience,
+                "graduation": [{"degree_name": g.degree_name, "university": g.university} for g in candidate.higher_education],
+                "sop": candidate.links_about.sop if candidate.links_about else ""
+            }
 
-            s3_client = boto3.client('s3', **s3_kwargs)
+            from services.pdf_generator import generate_executive_dossier_pdf
+            pdf_bytes = generate_executive_dossier_pdf(cand_dict, ai_eval_data)
+
             disposition = "inline" if preview else "attachment"
-            
-            # Generate secure temporary presigned download URL directly from S3
-            presigned_url = s3_client.generate_presigned_url(
-                'get_object',
-                Params={
-                    'Bucket': S3_BUCKET,
-                    'Key': payload.resume_path,
-                    'ResponseContentDisposition': f'{disposition}; filename="{filename}"'
-                },
-                ExpiresIn=900
-            )
-            return RedirectResponse(url=presigned_url)
-        except Exception as e:
-            print(f"[S3 Download Error] Failed to generate S3 pre-signed URL: {e}")
-            raise HTTPException(status_code=500, detail=f"S3 Download Failed: {str(e)}")
+            clean_name = candidate.full_name.replace(" ", "_") if candidate.full_name else candidate_id
+            filename = f"Executive_Dossier_{clean_name}.pdf"
 
-    # Local fallback if S3 bucket is not configured
-    if payload.resume_path and os.path.exists(payload.resume_path):
-        headers = {"Content-Disposition": f'{"inline" if preview else "attachment"}; filename="{filename}"'}
-        return FileResponse(path=payload.resume_path, headers=headers, media_type="application/pdf")
-        
-    raise HTTPException(status_code=404, detail="S3 bucket not configured or resume file missing")
+            return Response(
+                content=pdf_bytes,
+                media_type="application/pdf",
+                headers={
+                    "Content-Disposition": f'{disposition}; filename="{filename}"'
+                }
+            )
+        except Exception as pdf_err:
+            print(f"⚠️ [Executive PDF Generation Error]: {pdf_err}")
+
+    # Fallback to original CV if AI evaluation has not been run yet
+    if payload.resume_path:
+        filename = os.path.basename(payload.resume_path)
+        S3_BUCKET = os.getenv("S3_BUCKET_NAME")
+        aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
+        aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+        aws_region = os.getenv("AWS_REGION", "ap-south-1")
+
+        if S3_BUCKET:
+            try:
+                import boto3
+                from botocore.client import Config
+                s3_kwargs = {"region_name": aws_region, "config": Config(signature_version='s3v4')}
+                if aws_access_key and aws_secret_key:
+                    s3_kwargs["aws_access_key_id"] = aws_access_key
+                    s3_kwargs["aws_secret_access_key"] = aws_secret_key
+
+                s3_client = boto3.client('s3', **s3_kwargs)
+                disposition = "inline" if preview else "attachment"
+                
+                presigned_url = s3_client.generate_presigned_url(
+                    'get_object',
+                    Params={
+                        'Bucket': S3_BUCKET,
+                        'Key': payload.resume_path,
+                        'ResponseContentDisposition': f'{disposition}; filename="{filename}"'
+                    },
+                    ExpiresIn=900
+                )
+                return RedirectResponse(url=presigned_url)
+            except Exception as e:
+                print(f"[S3 Download Error] Failed to generate S3 pre-signed URL: {e}")
+
+        if payload.resume_path and os.path.exists(payload.resume_path):
+            headers = {"Content-Disposition": f'{"inline" if preview else "attachment"}; filename="{filename}"'}
+            return FileResponse(path=payload.resume_path, headers=headers, media_type="application/pdf")
+
+    raise HTTPException(status_code=404, detail="CV file or Executive Dossier unavailable")
 
 
 def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, filename: str, job_id: Optional[str] = None):
