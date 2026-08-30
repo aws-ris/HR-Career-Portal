@@ -87,8 +87,11 @@ graph TD
      - Resume download link.
      - **`📂 Application History & Previous Vacancies`**: Shows every previous job vacancy applied for by this candidate across the portal, along with submission dates and status history.
 
-4. **Changing Admin Password:**
-   - Click **"Change Password"** in the top navigation bar of the HR Admin Portal, or reset immediately via CLI on the server (`python3 manage_admin.py`).
+4. **Account Settings & Password Updates:**
+   - Click **"Settings"** in the sidebar navigation (`/hr/settings`).
+   - Enter your **Current Password**, **New Password** (min 6 characters), and **Confirm New Password**.
+   - Click **Confirm & Update Password** to save changes securely.
+   - **Forgot Password Notice:** In case a user forgets their password, a prominent notice directs them to contact the IT Department at `it-support@ris.org.in` or Extension `402`.
 
 ---
 
