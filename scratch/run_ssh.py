@@ -7,7 +7,7 @@ cmd = [
     "-i", key_path,
     "-o", "StrictHostKeyChecking=no",
     "ubuntu@13.205.216.81",
-    "sudo systemctl status hr_portal_backend --no-pager -l"
+    "sudo tail -n 30 /var/log/nginx/error.log"
 ]
 
 res = subprocess.run(cmd, capture_output=True, text=False)

@@ -162,7 +162,7 @@ def run_1000_load_test():
     status_codes = {}
     errors = {}
 
-    with ThreadPoolExecutor(max_workers=100) as executor:
+    with ThreadPoolExecutor(max_workers=30) as executor:
         results = list(executor.map(send_single_application, tasks_args))
 
     total_duration = time.time() - start_wall
