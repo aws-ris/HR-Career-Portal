@@ -1416,6 +1416,7 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
 @app.get("/api/v1/applications/{candidate_id}/executive_dossier/download", dependencies=[Depends(get_current_admin)])
 def download_executive_dossier(candidate_id: str, preview: bool = False, db: Session = Depends(get_db)):
     from fastapi.responses import Response
+    import json
     try:
         candidate = db.query(models.CandidateMetadata).options(
             joinedload(models.CandidateMetadata.higher_education),
