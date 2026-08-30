@@ -32,8 +32,8 @@ else:
         # High-concurrency connection pool tuning for 1,000+ simultaneous submissions
         engine = create_engine(
             SQLALCHEMY_DATABASE_URL,
-            pool_size=30,
-            max_overflow=50,
+            pool_size=15,
+            max_overflow=20,
             pool_timeout=60,
             pool_recycle=1800,
             pool_pre_ping=True
