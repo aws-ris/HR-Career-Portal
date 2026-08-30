@@ -339,6 +339,29 @@ The **n8n Daily Health Check Workflow** (`backend/scripts/n8n_daily_health_check
 
 ---
 
+### 🗄️ Remote PostgreSQL Database Access Guide (From Local PC)
+
+To connect your local GUI database client (DBeaver, pgAdmin, VS Code Database Client, or TablePlus) to the EC2 PostgreSQL database:
+
+#### Method 1: SSH Tunneling (Recommended Secure Method)
+1. **Command Line Tunnel:** Run in local PowerShell:
+   ```powershell
+   ssh -i "$env:USERPROFILE\.ssh\my_ec2_portable_ssh.pem" -L 5433:127.0.0.1:5432 ubuntu@13.205.216.81
+   ```
+2. **Database Client Connection Credentials:**
+   - **Host:** `127.0.0.1` (or `localhost`)
+   - **Port:** `5433`
+   - **Database Name:** `hr_portal_ris_db`
+   - **Username:** `postgres`
+
+#### Method 2: DBeaver / pgAdmin Built-in SSH Tunnel
+1. Create a new PostgreSQL connection in DBeaver / pgAdmin.
+2. In **Main Tab**: Host = `127.0.0.1`, Port = `5432`, Database = `hr_portal_ris_db`, User = `postgres`.
+3. In **SSH Tab**: Check *"Use SSH Tunnel"*, Host = `13.205.216.81`, User = `ubuntu`, Auth = Private Key (`my_ec2_portable_ssh.pem`).
+4. Click **Test Connection** $\rightarrow$ Connected!
+
+---
+
 ### 🏆 Verification & Benchmark Summary
 
 ```text
