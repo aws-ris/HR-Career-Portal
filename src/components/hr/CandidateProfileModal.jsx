@@ -6,6 +6,35 @@ import { API_BASE as API } from '../../api';
 export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [aiEval, setAiEval] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const runAiEvaluation = async () => {
+    setAiLoading(true);
+    const token = localStorage.getItem('hr_token');
+    try {
+      const url = jobId 
+        ? `${API}/candidates/${candidateId}/ai_evaluate?job_id=${jobId}`
+        : `${API}/candidates/${candidateId}/ai_evaluate`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const result = await res.json();
+      if (res.ok) {
+        setAiEval(result);
+      } else {
+        alert(result.detail || 'AI Evaluation failed');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Failed to connect to AI evaluation server');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!candidateId) return;
@@ -208,7 +237,17 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
             </div>
           </div>
           
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button 
+              onClick={runAiEvaluation}
+              disabled={aiLoading}
+              style={{ 
+                display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', 
+                background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', color: 'white', border: 'none', borderRadius: '8px', 
+                fontWeight: '800', fontSize: '14px', cursor: aiLoading ? 'wait' : 'pointer', boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)'
+              }}>
+              <Award size={18} /> {aiLoading ? 'Running Groq AI Crew...' : '🤖 Run AI Evaluation'}
+            </button>
             <button 
               onClick={() => window.open(`${API}/applications/${candidateId}/resume/download?preview=true&token=${localStorage.getItem('hr_token') || ''}`, '_blank')}
               style={{ 

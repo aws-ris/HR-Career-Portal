@@ -1334,6 +1334,155 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
     }
 
 
+@app.post("/api/v1/candidates/{candidate_id}/ai_evaluate", dependencies=[Depends(get_current_admin)])
+async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None, db: Session = Depends(get_db)):
+    candidate = db.query(models.CandidateMetadata).options(
+        joinedload(models.CandidateMetadata.schooling),
+        joinedload(models.CandidateMetadata.higher_education),
+        joinedload(models.CandidateMetadata.publications),
+        joinedload(models.CandidateMetadata.work_experiences),
+        joinedload(models.CandidateMetadata.links_about),
+        joinedload(models.CandidateMetadata.resume_payload),
+        joinedload(models.CandidateMetadata.applications).joinedload(models.ApplicationTracking.job)
+    ).filter(models.CandidateMetadata.id == candidate_id).first()
+
+    if not candidate:
+        raise HTTPException(status_code=404, detail=f"Candidate {candidate_id} not found")
+
+    job = None
+    if job_id:
+        job = db.query(models.JobPosting).filter(models.JobPosting.id == job_id).first()
+    elif candidate.applications and candidate.applications[0].job:
+        job = candidate.applications[0].job
+
+    job_title = job.title if job else "General Policy & Research Specialist"
+    job_requirements = f"Title: {job_title}\nDescription: {job.description if job else 'Research & Policy analysis'}\nRequirements: {job.requirements if job else 'PhD/Masters, Publications, Relevant Policy experience'}"
+
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    if not groq_api_key:
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY is not configured in backend environment.")
+
+    try:
+        import groq
+        groq_client = groq.Groq(api_key=groq_api_key)
+
+        sop_text = candidate.links_about.sop if candidate.links_about and candidate.links_about.sop else ""
+        about_text = candidate.links_about.about if candidate.links_about and candidate.links_about.about else ""
+        text_to_scan = f"{about_text}\n{sop_text}".strip()
+
+        # 🤖 Multi-Agent Step 1: Academic & Publication Specialist
+        academic_prompt = f"""
+        Analyze Candidate Academic & Publication Credentials for '{job_title}':
+        Higher Education: {[{'level': e.level, 'degree': e.degree_name, 'university': e.university, 'score': e.score_value} for e in candidate.higher_education]}
+        Publications: {[{'type': p.pub_type, 'title': p.title} for p in candidate.publications]}
+        
+        Return JSON: {{"academic_score": 25, "academic_summary": "string"}}
+        """
+        ac_res = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": academic_prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.1
+        )
+        academic_eval = json.loads(ac_res.choices[0].message.content)
+
+        # 🤖 Multi-Agent Step 2: Work Experience Specialist
+        exp_prompt = f"""
+        Analyze Work Experience against requirements:
+        Job Requirements: {job_requirements}
+        Total Years: {candidate.years_of_experience}
+        Work History: {[{'role': w.role, 'company': w.company_name, 'current': w.is_current} for w in candidate.work_experiences]}
+        
+        Return JSON: {{"experience_score": 25, "experience_summary": "string"}}
+        """
+        exp_res = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": exp_prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.1
+        )
+        exp_eval = json.loads(exp_res.choices[0].message.content)
+
+        # 🤖 Multi-Agent Step 3: SOP Stylometric & AI Content Detector Agent
+        detector_prompt = f"""
+        Perform AI Content Detection and Stylometric Analysis on the following Candidate SOP/Text:
+        TEXT: "{text_to_scan if text_to_scan else 'No SOP text provided.'}"
+        
+        Analyze for ChatGPT/Claude clichés, sentence length uniformity (burstiness), token predictability (perplexity).
+        Return JSON:
+        {{
+            "ai_probability_score": 12,
+            "ai_classification": "Likely Human (Authentic)" | "Mixed / AI-Assisted" | "Highly Likely AI-Generated",
+            "detected_cliches": ["phrase 1"],
+            "sop_alignment_score": 30
+        }}
+        """
+        ai_res = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": detector_prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.0
+        )
+        sop_eval = json.loads(ai_res.choices[0].message.content)
+
+        # ⚖️ Multi-Agent Step 4: Selection Committee Chair (Consensus & Synthesis)
+        consensus_prompt = f"""
+        Synthesize evaluations and produce the final Committee Dossier:
+        Job Title: {job_title}
+        Academic Eval: {json.dumps(academic_eval)}
+        Experience Eval: {json.dumps(exp_eval)}
+        SOP & AI Detection Eval: {json.dumps(sop_eval)}
+        
+        Return JSON:
+        {{
+            "overall_match_score": 88,
+            "recommendation": "Strong Match" | "Moderate Match" | "Not Recommended",
+            "key_strengths": ["bullet 1", "bullet 2", "bullet 3"],
+            "potential_flags": ["flag 1", "flag 2"],
+            "tailored_interview_questions": ["question 1", "question 2", "question 3"]
+        }}
+        """
+        chair_res = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": consensus_prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.2
+        )
+        final_eval = json.loads(chair_res.choices[0].message.content)
+
+        overall_score = final_eval.get("overall_match_score", 88)
+
+        # Update candidate application profile score in DB
+        if candidate.applications:
+            for app_rec in candidate.applications:
+                app_rec.profile_score = float(overall_score)
+            db.commit()
+
+        return {
+            "status": "success",
+            "candidate_id": candidate_id,
+            "overall_match_score": overall_score,
+            "recommendation": final_eval.get("recommendation", "Strong Match"),
+            "scores_breakdown": {
+                "academic_score": academic_eval.get("academic_score", 25),
+                "experience_score": exp_eval.get("experience_score", 25),
+                "sop_score": sop_eval.get("sop_alignment_score", 30)
+            },
+            "ai_detector": {
+                "ai_probability_score": sop_eval.get("ai_probability_score", 12),
+                "ai_classification": sop_eval.get("ai_classification", "Likely Human (Authentic)"),
+                "detected_cliches": sop_eval.get("detected_cliches", [])
+            },
+            "key_strengths": final_eval.get("key_strengths", []),
+            "potential_flags": final_eval.get("potential_flags", []),
+            "tailored_interview_questions": final_eval.get("tailored_interview_questions", [])
+        }
+
+    except Exception as e:
+        print(f"❌ [Groq AI Evaluation Error] {e}")
+        raise HTTPException(status_code=500, detail=f"Groq AI Evaluation Failed: {str(e)}")
+
+
 @app.get("/api/v1/applications/{candidate_id}/resume/download", dependencies=[Depends(get_current_admin)])
 def download_resume(candidate_id: str, preview: bool = False, db: Session = Depends(get_db)):
     from fastapi.responses import RedirectResponse, Response
