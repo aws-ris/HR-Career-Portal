@@ -182,6 +182,14 @@ erDiagram
 
 ---
 
+### Data Freshness & Caching Architecture
+
+- **Real-Time Direct Database Querying:** All API GET endpoints (such as `/api/v1/public/jobs`, `/api/v1/candidates/{id}/full_profile`, and admin roster tables) query PostgreSQL **directly in real time**.
+- **No Stale Cache Risks:** The system intentionally avoids intermediate caching layers (like Redis or Nginx `proxy_cache`). Any update made by an HR administrator (e.g. status change from `received` to `shortlisted`) or candidate submission is **instantly visible**.
+- **Pooled Connections:** While queries execute directly against PostgreSQL every time, database TCP sockets are efficiently recycled using SQLAlchemy's connection pool (`pool_size=20`, `max_overflow=100`, `pool_timeout=120s`).
+
+---
+
 ### API Reference
 
 #### 1. Candidate Application Submission
