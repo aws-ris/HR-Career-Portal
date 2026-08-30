@@ -1315,16 +1315,30 @@ def download_resume(candidate_id: str, preview: bool = False, db: Session = Depe
         models.CandidateResumePayload.candidate_id == candidate_id
     ).first()
     
-    filename = os.path.basename(payload.resume_path) if (payload and payload.resume_path) else "resume.pdf"
+    if not payload or not payload.resume_path:
+        raise HTTPException(status_code=404, detail="Resume record not found for candidate")
+        
+    filename = os.path.basename(payload.resume_path)
     
-    # S3 Storage Path Integration
+    # ── Single Source of Truth: Pure AWS S3 Storage ──
     S3_BUCKET = os.getenv("S3_BUCKET_NAME")
-    if S3_BUCKET and payload and payload.resume_path and payload.resume_path.startswith("resumes/"):
+    aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
+    aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+    aws_region = os.getenv("AWS_REGION", "ap-south-1")
+
+    if S3_BUCKET:
         try:
             import boto3
             from botocore.client import Config
-            s3_client = boto3.client('s3', region_name='ap-south-1', config=Config(signature_version='s3v4'))
+            s3_kwargs = {"region_name": aws_region, "config": Config(signature_version='s3v4')}
+            if aws_access_key and aws_secret_key:
+                s3_kwargs["aws_access_key_id"] = aws_access_key
+                s3_kwargs["aws_secret_access_key"] = aws_secret_key
+
+            s3_client = boto3.client('s3', **s3_kwargs)
             disposition = "inline" if preview else "attachment"
+            
+            # Generate secure temporary presigned download URL directly from S3
             presigned_url = s3_client.generate_presigned_url(
                 'get_object',
                 Params={
@@ -1336,30 +1350,15 @@ def download_resume(candidate_id: str, preview: bool = False, db: Session = Depe
             )
             return RedirectResponse(url=presigned_url)
         except Exception as e:
-            print(f"[S3 Download] Error generating pre-signed URL: {e}. Falling back to database/local file storage.")
+            print(f"[S3 Download Error] Failed to generate S3 pre-signed URL: {e}")
+            raise HTTPException(status_code=500, detail=f"S3 Download Failed: {str(e)}")
 
-    # Check if we have the blob (Database-First Storage Fallback)
-    if not payload or not payload.pdf_blob:
-        # Fallback to local path if blob is missing for some reason
-        if payload and payload.resume_path and os.path.exists(payload.resume_path):
-            headers = {}
-            if preview:
-                headers["Content-Disposition"] = f'inline; filename="{filename}"'
-            else:
-                headers["Content-Disposition"] = f'attachment; filename="{filename}"'
-            return FileResponse(path=payload.resume_path, headers=headers, media_type="application/pdf")
+    # Local fallback if S3 bucket is not configured
+    if payload.resume_path and os.path.exists(payload.resume_path):
+        headers = {"Content-Disposition": f'{"inline" if preview else "attachment"}; filename="{filename}"'}
+        return FileResponse(path=payload.resume_path, headers=headers, media_type="application/pdf")
         
-        raise HTTPException(status_code=404, detail="Resume not found in persistent storage")
-    
-    # Stream directly from database blob (fallback)
-    disposition = "inline" if preview else "attachment"
-    return Response(
-        content=payload.pdf_blob,
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition": f'{disposition}; filename="{filename}"'
-        }
-    )
+    raise HTTPException(status_code=404, detail="S3 bucket not configured or resume file missing")
 
 
 def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, filename: str):
@@ -1368,50 +1367,52 @@ def process_and_save_resume(db: Session, candidate_id: str, file_bytes: bytes, f
         raise ValueError(f"Candidate {candidate_id} not found")
 
     content_type = get_resume_media_type(filename)
-
     S3_BUCKET = os.getenv("S3_BUCKET_NAME")
+    aws_access_key = os.getenv("AWS_ACCESS_KEY_ID")
+    aws_secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+    aws_region = os.getenv("AWS_REGION", "ap-south-1")
+    
     s3_key = f"resumes/{candidate_id}_{filename}"
-    uploaded_to_s3 = False
 
-    if S3_BUCKET:
-        try:
-            import boto3
-            from botocore.client import Config
-            s3_client = boto3.client('s3', region_name='ap-south-1', config=Config(signature_version='s3v4'))
-            s3_client.put_object(
-                Bucket=S3_BUCKET,
-                Key=s3_key,
-                Body=file_bytes,
-                ContentType=content_type
-            )
-            uploaded_to_s3 = True
-            print(f"[S3] Uploaded resume for candidate {candidate_id} to S3 bucket {S3_BUCKET}")
-        except Exception as e:
-            print(f"[S3] Error uploading to S3: {e}. Falling back to database/local file storage.")
+    if not S3_BUCKET:
+        raise ValueError("AWS S3 bucket is not configured. Please set S3_BUCKET_NAME, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY in environment.")
 
-    upload_dir = os.path.join(os.path.dirname(__file__), "uploads", "resumes")
-    os.makedirs(upload_dir, exist_ok=True)
-    safe_filename = f"{candidate_id}_{filename}"
-    file_path = os.path.join(upload_dir, safe_filename)
+    # ── Direct AWS S3 Upload ──
     try:
-        with open(file_path, "wb") as f:
-            f.write(file_bytes)
-    except:
-        pass
+        import boto3
+        from botocore.client import Config
+        s3_kwargs = {"region_name": aws_region, "config": Config(signature_version='s3v4')}
+        if aws_access_key and aws_secret_key:
+            s3_kwargs["aws_access_key_id"] = aws_access_key
+            s3_kwargs["aws_secret_access_key"] = aws_secret_key
 
-    rel_path = s3_key if uploaded_to_s3 else os.path.join("uploads", "resumes", safe_filename).replace("\\", "/")
+        s3_client = boto3.client('s3', **s3_kwargs)
+        s3_client.put_object(
+            Bucket=S3_BUCKET,
+            Key=s3_key,
+            Body=file_bytes,
+            ContentType=content_type
+        )
+        print(f"✅ [S3 Pure Storage] Resume for candidate {candidate_id} uploaded directly to S3: '{s3_key}'")
+    except Exception as e:
+        print(f"❌ [S3 Upload Error] Failed to upload resume to S3: {e}")
+        raise ValueError(f"S3 Upload Failed: {str(e)}")
 
+    # Store ONLY S3 path reference in PostgreSQL (NO binary BLOBs in DB, NO files on EC2 disk)
     payload = db.query(models.CandidateResumePayload).filter(models.CandidateResumePayload.candidate_id == candidate_id).first()
     if payload:
-        payload.resume_path = rel_path
-        payload.pdf_blob = None if uploaded_to_s3 else file_bytes
+        payload.resume_path = s3_key
+        payload.pdf_blob = None  # DB remains 100% lightweight
     else:
         payload = models.CandidateResumePayload(
             candidate_id=candidate_id, 
-            resume_path=rel_path, 
-            pdf_blob=None if uploaded_to_s3 else file_bytes
+            resume_path=s3_key, 
+            pdf_blob=None  # DB remains 100% lightweight
         )
         db.add(payload)
+
+    db.commit()
+    return s3_key, s3_key
 
     db.commit()
     return rel_path, file_path
