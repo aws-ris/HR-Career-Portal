@@ -1310,6 +1310,7 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
         "profile_score": score_res["total_score"],
         "profile_score_breakdown": score_res["breakdown"],
         "about": candidate.links_about.about if candidate.links_about else None,
+        "sop": candidate.links_about.sop if candidate.links_about else None,
         "google_scholar": candidate.links_about.google_scholar if candidate.links_about else None,
         "linkedin": candidate.links_about.linkedin if candidate.links_about else None,
         "pub_books": candidate.links_about.pub_books if candidate.links_about else 0,
