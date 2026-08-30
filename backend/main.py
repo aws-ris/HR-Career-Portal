@@ -1392,6 +1392,7 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
         "about": candidate.links_about.about if candidate.links_about else ""
     }
 
+    import json
     eval_result = evaluate_candidate_qualitative(job_title, job_requirements, candidate_dict)
     eval_result["candidate_id"] = candidate_id
 
