@@ -1851,7 +1851,9 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 # Experience & Salary (56-61)
                 "Total Exp (Yrs)", "Last Salary (LPA)", "Work Organization", "Work Designation", "Work Start Date", "Work End Date",
                 # Publications (62-67)
-                "Books Count", "Peer-Reviewed Papers Count", "Preprints / Chapters Count", "Research Reports Count", "Policy Briefs Count", "Publication Validation Links"
+                "Books Count", "Peer-Reviewed Papers Count", "Preprints / Chapters Count", "Research Reports Count", "Policy Briefs Count", "Publication Validation Links",
+                # AI Selection Brief (68-70)
+                "AI Semantic Alignment", "AI SOP Authenticity", "AI Matched Skill Tags"
             ]
             
             rows_to_write = []
@@ -1878,8 +1880,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     single_line_rows.append(current_r)
                 
                 if max_rows > 1:
-                    # Merge candidate static metadata columns (1 to 35) and overall publication count columns (62 to 67)
-                    for col in list(range(1, 36)) + list(range(62, 68)):
+                    # Merge candidate static metadata columns (1 to 35) and overall publication/AI columns (62 to 70)
+                    for col in list(range(1, 36)) + list(range(62, 71)):
                         merge_ranges.append((current_r, current_r + max_rows - 1, col))
                 
                 val_links = []
@@ -1894,6 +1896,17 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 admin_dept = (latest_app.admin_department if latest_app else None) or c.get('admin_department', '') or ""
                 current_stat = (latest_app.current_status if latest_app else None) or c.get('current_status', 'received')
                 sub_date = (str(latest_app.submitted_at)[:10] if (latest_app and latest_app.submitted_at) else "") or (str(c.get('submitted_at', ''))[:10] if c.get('submitted_at') else "")
+
+                # Parse AI Evaluation Data if present in PostgreSQL
+                ai_align, ai_auth, ai_tags_str = "", "", ""
+                if full_c.resume_payload and full_c.resume_payload.ai_evaluation_json:
+                    try:
+                        ai_eval_obj = json.loads(full_c.resume_payload.ai_evaluation_json)
+                        ai_align = ai_eval_obj.get("semantic_alignment", "")
+                        ai_auth = ai_eval_obj.get("ai_detector", {}).get("ai_classification", "")
+                        ai_tags_str = ", ".join(ai_eval_obj.get("matched_skill_tags", []))
+                    except Exception:
+                        pass
 
                 for i in range(max_rows):
                     row = [""] * len(headers)
@@ -1955,6 +1968,11 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[64] = (full_c.links_about.pub_reports if full_c.links_about else 0) or 0
                         row[65] = (full_c.links_about.pub_policy_briefs if full_c.links_about else 0) or 0
                         row[66] = val_links_text
+
+                        # AI Evaluation Columns
+                        row[67] = ai_align
+                        row[68] = ai_auth
+                        row[69] = ai_tags_str
                     
                     # Graduation details (Cols 35-39 index)
                     if i < len(undergrads):
