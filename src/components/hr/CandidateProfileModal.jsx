@@ -46,6 +46,9 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
       .then(res => res.json())
       .then(d => {
         setData(d);
+        if (d?.ai_evaluation) {
+          setAiEval(d.ai_evaluation);
+        }
         setLoading(false);
       })
       .catch(e => {
@@ -238,16 +241,6 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
           </div>
           
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <button 
-              onClick={runAiEvaluation}
-              disabled={aiLoading}
-              style={{ 
-                display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', 
-                background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', color: 'white', border: 'none', borderRadius: '8px', 
-                fontWeight: '800', fontSize: '14px', cursor: aiLoading ? 'wait' : 'pointer', boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)'
-              }}>
-              <Award size={18} /> {aiLoading ? 'Running Groq AI Crew...' : '🤖 Run AI Evaluation'}
-            </button>
             <button 
               onClick={() => window.open(`${API}/applications/${candidateId}/resume/download?preview=true&token=${localStorage.getItem('hr_token') || ''}`, '_blank')}
               style={{ 
@@ -606,12 +599,24 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
         {/* Footer */}
         <div style={{ 
           padding: '16px 32px', 
-          borderTop: '1px solid #f1f5f9', 
+          borderTop: '1px solid #e2e8f0', 
           display: 'flex', 
-          justifyContent: 'flex-end', 
+          justifyContent: 'space-between',
+          alignItems: 'center', 
           background: '#f8fafc'
         }}>
-          <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#2563eb', color: 'white', cursor: 'pointer', fontWeight: '600' }}>OK</button>
+          <button 
+            onClick={runAiEvaluation}
+            disabled={aiLoading}
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 22px', 
+              background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', color: 'white', border: 'none', borderRadius: '8px', 
+              fontWeight: '800', fontSize: '14px', cursor: aiLoading ? 'wait' : 'pointer', boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)'
+            }}>
+            <Award size={18} /> {aiLoading ? 'Running Groq AI Crew...' : '🤖 Run AI Evaluation'}
+          </button>
+
+          <button onClick={onClose} style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', background: '#002147', color: 'white', cursor: 'pointer', fontWeight: '700' }}>OK</button>
         </div>
       </div>
     </div>

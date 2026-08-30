@@ -1333,6 +1333,28 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
         } for app in candidate.applications]
     }
 
+    # Automatically compute/attach qualitative AI selection brief
+    try:
+        from services.ai_evaluator import evaluate_candidate_qualitative
+        c_job = candidate.applications[0].job if (candidate.applications and candidate.applications[0].job) else None
+        j_title = c_job.title if c_job else "General Research Role"
+        j_reqs = c_job.requirements if c_job else "PhD/Masters, Policy experience"
+        cand_summary_dict = {
+            "full_name": candidate.full_name,
+            "years_of_experience": candidate.years_of_experience,
+            "degrees": [f"{e.level.upper()}: {e.degree_name} ({e.university})" for e in grad + postgrad + phd],
+            "publications": [f"{p.pub_type.upper()}: {p.title}" for p in candidate.publications],
+            "work_experiences": [f"{w.role} at {w.company_name}" for w in candidate.work_experiences],
+            "sop": candidate.links_about.sop if candidate.links_about else "",
+            "about": candidate.links_about.about if candidate.links_about else ""
+        }
+        res_profile["ai_evaluation"] = evaluate_candidate_qualitative(j_title, j_reqs, cand_summary_dict)
+    except Exception as ex:
+        print(f"⚠️ [Full Profile AI Evaluation Auto-Attach Warning]: {ex}")
+        res_profile["ai_evaluation"] = None
+
+    return res_profile
+
 
 @app.post("/api/v1/candidates/{candidate_id}/ai_evaluate", dependencies=[Depends(get_current_admin)])
 async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None, db: Session = Depends(get_db)):
