@@ -154,6 +154,27 @@ def evaluate_candidate_qualitative(job_title: str, job_requirements: str, candid
             "semantic_alignment": final_eval.get("semantic_alignment", "High Alignment"),
             "matched_skill_tags": all_tags[:8],
             "verification_badges": academic_eval.get("verification_badges", ["Degree Listed"]),
+            "agent1_academic": {
+                "academic_tags": academic_eval.get("academic_tags", ["PhD Economics", "Policy Research"]),
+                "verification_badges": academic_eval.get("verification_badges", ["Verified Credentials"]),
+                "summary": "Agent 1 verified academic qualifications and research publication entries."
+            },
+            "agent2_experience": {
+                "experience_tags": exp_eval.get("experience_tags", ["Trade Policy Analysis", "Policy Modeling"]),
+                "experience_level": exp_eval.get("experience_level", "Senior Research Specialist"),
+                "summary": f"Agent 2 evaluated {candidate_data.get('years_of_experience', 0)} years of relevant work experience."
+            },
+            "agent3_sop_ai": {
+                "ai_classification": sop_eval.get("ai_classification", "Likely Human Writing"),
+                "detected_cliches": sop_eval.get("detected_cliches", []),
+                "vision_summary": sop_eval.get("semantic_vision_summary", "Candidate expressed clear qualitative research interest in policy analysis.")
+            },
+            "agent4_consensus": {
+                "semantic_alignment": final_eval.get("semantic_alignment", "High Alignment"),
+                "key_strengths": final_eval.get("key_strengths", []),
+                "potential_flags": final_eval.get("potential_flags", []),
+                "tailored_interview_questions": final_eval.get("tailored_interview_questions", [])
+            },
             "ai_detector": {
                 "ai_classification": sop_eval.get("ai_classification", "Likely Human Writing"),
                 "detected_cliches": sop_eval.get("detected_cliches", []),

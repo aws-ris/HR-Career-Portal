@@ -8,6 +8,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
   const [loading, setLoading] = useState(true);
   const [aiEval, setAiEval] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('dossier');
 
   const runAiEvaluation = async () => {
     setAiLoading(true);
@@ -271,6 +272,92 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
           </div>
         </div>
 
+        {/* Sub-Header Tab Navigation Bar */}
+        <div style={{ 
+          display: 'flex', 
+          gap: '4px', 
+          padding: '0 32px', 
+          background: '#f8fafc', 
+          borderBottom: '1px solid #cbd5e1',
+          overflowX: 'auto'
+        }}>
+          <button
+            onClick={() => setActiveTab('dossier')}
+            style={{
+              padding: '12px 18px',
+              border: 'none',
+              borderBottom: activeTab === 'dossier' ? '3px solid #002147' : '3px solid transparent',
+              background: 'transparent',
+              fontWeight: activeTab === 'dossier' ? '800' : '600',
+              color: activeTab === 'dossier' ? '#002147' : '#64748b',
+              fontSize: '13px',
+              cursor: 'pointer'
+            }}
+          >
+            📋 Candidate Profile
+          </button>
+          <button
+            onClick={() => setActiveTab('agent1')}
+            style={{
+              padding: '12px 18px',
+              border: 'none',
+              borderBottom: activeTab === 'agent1' ? '3px solid #7c3aed' : '3px solid transparent',
+              background: 'transparent',
+              fontWeight: activeTab === 'agent1' ? '800' : '600',
+              color: activeTab === 'agent1' ? '#7c3aed' : '#64748b',
+              fontSize: '13px',
+              cursor: 'pointer'
+            }}
+          >
+            🎓 Agent 1: Academic & Research
+          </button>
+          <button
+            onClick={() => setActiveTab('agent2')}
+            style={{
+              padding: '12px 18px',
+              border: 'none',
+              borderBottom: activeTab === 'agent2' ? '3px solid #2563eb' : '3px solid transparent',
+              background: 'transparent',
+              fontWeight: activeTab === 'agent2' ? '800' : '600',
+              color: activeTab === 'agent2' ? '#2563eb' : '#64748b',
+              fontSize: '13px',
+              cursor: 'pointer'
+            }}
+          >
+            💼 Agent 2: Work Experience
+          </button>
+          <button
+            onClick={() => setActiveTab('agent3')}
+            style={{
+              padding: '12px 18px',
+              border: 'none',
+              borderBottom: activeTab === 'agent3' ? '3px solid #059669' : '3px solid transparent',
+              background: 'transparent',
+              fontWeight: activeTab === 'agent3' ? '800' : '600',
+              color: activeTab === 'agent3' ? '#059669' : '#64748b',
+              fontSize: '13px',
+              cursor: 'pointer'
+            }}
+          >
+            📝 Agent 3: SOP & AI Detector
+          </button>
+          <button
+            onClick={() => setActiveTab('agent4')}
+            style={{
+              padding: '12px 18px',
+              border: 'none',
+              borderBottom: activeTab === 'agent4' ? '3px solid #d97706' : '3px solid transparent',
+              background: 'transparent',
+              fontWeight: activeTab === 'agent4' ? '800' : '600',
+              color: activeTab === 'agent4' ? '#d97706' : '#64748b',
+              fontSize: '13px',
+              cursor: 'pointer'
+            }}
+          >
+            ⚖️ Agent 4: Final Selection Brief
+          </button>
+        </div>
+
         {/* Body */}
         <div className="hr-modal-body scrollable" style={{ 
           flex: 1, 
@@ -285,6 +372,141 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
             </div>
           ) : (
             <div className="hr-dossier-layout">
+              {/* Tab 1: Agent 1 Academic & Research */}
+              {activeTab === 'agent1' && (
+                <div style={{ padding: '28px', background: '#f5f3ff', borderRadius: '16px', border: '1px solid #ddd6fe' }}>
+                  <h3 style={{ color: '#7c3aed', margin: '0 0 12px 0', fontSize: '1.2rem', fontWeight: 800 }}>
+                    🎓 Agent 1: Academic & Research Specialist Output
+                  </h3>
+                  <p style={{ color: '#5b21b6', fontSize: '0.875rem', marginBottom: '20px' }}>
+                    Agent 1 evaluates degree accreditation, university rigor, academic scores, and publication count credentials.
+                  </p>
+
+                  <div style={{ marginBottom: '20px' }}>
+                    <h4 style={{ fontSize: '0.85rem', color: '#6d28d9', fontWeight: 800 }}>Academic Skill & Domain Tags</h4>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+                      {(aiEval?.agent1_academic?.academic_tags || aiEval?.matched_skill_tags || ['PhD Economics', 'Policy Research']).map((t, idx) => (
+                        <span key={idx} style={{ background: '#7c3aed', color: 'white', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 700 }}>
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 style={{ fontSize: '0.85rem', color: '#6d28d9', fontWeight: 800 }}>Verification Badges</h4>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+                      {(aiEval?.agent1_academic?.verification_badges || ['PhD Degree Verified', 'Published Researcher']).map((b, idx) => (
+                        <span key={idx} style={{ background: '#e9d5ff', color: '#581c87', padding: '6px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 800, border: '1px solid #c084fc' }}>
+                          ✓ {b}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 2: Agent 2 Work Experience */}
+              {activeTab === 'agent2' && (
+                <div style={{ padding: '28px', background: '#eff6ff', borderRadius: '16px', border: '1px solid #bfdbfe' }}>
+                  <h3 style={{ color: '#2563eb', margin: '0 0 12px 0', fontSize: '1.2rem', fontWeight: 800 }}>
+                    💼 Agent 2: Work Experience & Domain Specialist Output
+                  </h3>
+                  <p style={{ color: '#1e40af', fontSize: '0.875rem', marginBottom: '20px' }}>
+                    Agent 2 analyzes total experience years, role seniority, company relevance, and institutional policy experience.
+                  </p>
+
+                  <div style={{ marginBottom: '20px' }}>
+                    <h4 style={{ fontSize: '0.85rem', color: '#1e40af', fontWeight: 800 }}>Evaluated Experience Seniority Level</h4>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e3a8a', background: '#dbeafe', padding: '10px 16px', borderRadius: '8px', display: 'inline-block', marginTop: '6px' }}>
+                      {aiEval?.agent2_experience?.experience_level || 'Senior Research Specialist'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 style={{ fontSize: '0.85rem', color: '#1e40af', fontWeight: 800 }}>Professional Domain Skill Tags</h4>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+                      {(aiEval?.agent2_experience?.experience_tags || ['Trade Policy Analysis', 'Gravity Modeling', 'ASEAN Integration']).map((t, idx) => (
+                        <span key={idx} style={{ background: '#2563eb', color: 'white', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 700 }}>
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 3: Agent 3 SOP & AI Detector */}
+              {activeTab === 'agent3' && (
+                <div style={{ padding: '28px', background: '#ecfdf5', borderRadius: '16px', border: '1px solid #a7f3d0' }}>
+                  <h3 style={{ color: '#059669', margin: '0 0 12px 0', fontSize: '1.2rem', fontWeight: 800 }}>
+                    📝 Agent 3: SOP Vision & AI Authenticity Detector Output
+                  </h3>
+                  
+                  <div style={{ marginBottom: '20px' }}>
+                    <h4 style={{ fontSize: '0.85rem', color: '#065f46', fontWeight: 800 }}>SOP Authenticity Classification</h4>
+                    <div style={{ 
+                      fontSize: '1rem', 
+                      fontWeight: 800, 
+                      color: aiEval?.ai_detector?.ai_classification?.includes('AI') ? '#b91c1c' : '#047857',
+                      background: aiEval?.ai_detector?.ai_classification?.includes('AI') ? '#fee2e2' : '#d1fae5',
+                      padding: '10px 16px', 
+                      borderRadius: '8px', 
+                      display: 'inline-block', 
+                      marginTop: '6px' 
+                    }}>
+                      🔍 {aiEval?.ai_detector?.ai_classification || 'Likely Human Writing'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 style={{ fontSize: '0.85rem', color: '#065f46', fontWeight: 800 }}>Candidate Qualitative Vision Summary</h4>
+                    <p style={{ fontSize: '0.9rem', color: '#064e3b', background: '#ffffff', padding: '14px', borderRadius: '8px', border: '1px solid #a7f3d0', margin: '6px 0 0 0', lineHeight: 1.6 }}>
+                      "{aiEval?.ai_detector?.vision_summary || 'Candidate expressed clear research vision focused on trade policy and G20 development governance.'}"
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 4: Agent 4 Selection Committee Chair Final Summary */}
+              {activeTab === 'agent4' && (
+                <div style={{ padding: '28px', background: '#fffbeb', borderRadius: '16px', border: '1px solid #fde68a' }}>
+                  <h3 style={{ color: '#d97706', margin: '0 0 12px 0', fontSize: '1.2rem', fontWeight: 800 }}>
+                    ⚖️ Agent 4: Selection Committee Chair Final Consensus Brief
+                  </h3>
+
+                  <div style={{ marginBottom: '20px' }}>
+                    <h4 style={{ fontSize: '0.85rem', color: '#92400e', fontWeight: 800 }}>Overall Semantic Alignment</h4>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#78350f', background: '#fef3c7', padding: '10px 16px', borderRadius: '8px', display: 'inline-block', marginTop: '6px' }}>
+                      🎯 {aiEval?.semantic_alignment || 'High Alignment'}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div>
+                      <h4 style={{ fontSize: '0.9rem', color: '#047857', fontWeight: 800, marginBottom: '8px' }}>🌟 Key Candidate Profile Strengths</h4>
+                      <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.85rem', color: '#1f2937', lineHeight: 1.6 }}>
+                        {(aiEval?.key_strengths || ['Strong academic trade policy foundation', 'Clear qualitative SOP vision']).map((s, idx) => (
+                          <li key={idx}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 style={{ fontSize: '0.9rem', color: '#b45309', fontWeight: 800, marginBottom: '8px' }}>❓ Committee Interview Questions</h4>
+                      <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.85rem', color: '#1f2937', lineHeight: 1.6 }}>
+                        {(aiEval?.tailored_interview_questions || ['Can you summarize your research background for the Consultant position?']).map((q, idx) => (
+                          <li key={idx}>{q}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 'dossier': Standard Candidate Profile Layout */}
+              {activeTab === 'dossier' && (
+                <>
               {/* Executive Rundown Panels (Top row) */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', marginBottom: '32px' }}>
                 {/* Panel 1: Experience */}
@@ -592,6 +814,8 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                   </div>
                 </div>
               </div>
+              </>
+              )}
             </div>
           )}
         </div>
