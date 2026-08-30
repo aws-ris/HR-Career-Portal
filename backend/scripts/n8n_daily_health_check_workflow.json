@@ -1,0 +1,141 @@
+{
+  "name": "Daily EC2 & 3-Software System Health Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24,
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger-1",
+      "name": "Every Day at 8 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8005/api/v1/public/jobs",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "check-hr-portal",
+      "name": "Check HR Portal (Port 8005)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 180]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/docs",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "check-rag-kms",
+      "name": "Check RAG KMS (Port 8000)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 340]
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:5678/",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "check-n8n-engine",
+      "name": "Check n8n Engine (Port 5678)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 500]
+    },
+    {
+      "parameters": {
+        "command": "python3 -c \"import shutil, psutil, json; total, used, free = shutil.disk_usage('/'); mem = psutil.virtual_memory(); print(json.dumps({'disk_used_percent': round((used/total)*100, 1), 'free_gb': round(free/(1024**3), 1), 'ram_used_percent': mem.percent, 'ram_free_mb': round(mem.available/(1024**2), 1)}))\""
+      },
+      "id": "check-system-metrics",
+      "name": "Fetch EC2 RAM & Disk Metrics",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [720, 340]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate Health Status across all 3 software services\nconst hrStatus = $items('Check HR Portal (Port 8005)')[0]?.json ? '🟢 UP (200 OK)' : '🔴 DOWN';\nconst ragStatus = $items('Check RAG KMS (Port 8000)')[0]?.json ? '🟢 UP (200 OK)' : '🔴 DOWN';\nconst n8nStatus = $items('Check n8n Engine (Port 5678)')[0]?.json ? '🟢 UP (200 OK)' : '🔴 DOWN';\n\nlet rawMetrics = {};\ntry {\n  rawMetrics = JSON.parse($items('Fetch EC2 RAM & Disk Metrics')[0]?.json?.stdout || '{}');\n} catch(e) {}\n\nconst isAllHealthy = (hrStatus.includes('UP') && ragStatus.includes('UP') && n8nStatus.includes('UP'));\nconst statusSummary = isAllHealthy ? '🟢 ALL SYSTEMS OPERATIONAL' : '⚠️ WARNING: ONE OR MORE SERVICES DOWN';\n\nconst emailHtml = `\n<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;\">\n  <div style=\"background-color: ${isAllHealthy ? '#0f766e' : '#b91c1c'}; color: white; padding: 20px; text-align: center;\">\n    <h2 style=\"margin: 0;\">🖥️ RIS EC2 Daily System Health Report</h2>\n    <p style=\"margin: 5px 0 0 0; font-weight: bold;\">${statusSummary}</p>\n  </div>\n  <div style=\"padding: 24px; background-color: #f8fafc;\">\n    <h3 style=\"color: #1e293b; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px;\">📡 Active Software Services</h3>\n    <table style=\"width: 100%; border-collapse: collapse;\">\n      <tr><td style=\"padding: 8px 0; font-weight: bold;\">1. HR Career Portal (Port 8005):</td><td style=\"text-align: right;\">${hrStatus}</td></tr>\n      <tr><td style=\"padding: 8px 0; font-weight: bold;\">2. KMS RAG System (Port 8000):</td><td style=\"text-align: right;\">${ragStatus}</td></tr>\n      <tr><td style=\"padding: 8px 0; font-weight: bold;\">3. n8n Automation Engine (Port 5678):</td><td style=\"text-align: right;\">${n8nStatus}</td></tr>\n    </table>\n    <h3 style=\"color: #1e293b; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; margin-top: 24px;\">💾 EC2 Hardware & Memory Metrics</h3>\n    <table style=\"width: 100%; border-collapse: collapse;\">\n      <tr><td style=\"padding: 8px 0; font-weight: bold;\">Disk Space Usage:</td><td style=\"text-align: right;\">${rawMetrics.disk_used_percent || 'N/A'}% (${rawMetrics.free_gb || 'N/A'} GB Free)</td></tr>\n      <tr><td style=\"padding: 8px 0; font-weight: bold;\">RAM Usage:</td><td style=\"text-align: right;\">${rawMetrics.ram_used_percent || 'N/A'}% (${rawMetrics.ram_free_mb || 'N/A'} MB Free)</td></tr>\n    </table>\n  </div>\n  <div style=\"background-color: #e2e8f0; text-align: center; padding: 12px; font-size: 0.85rem; color: #64748b;\">\n    Automated System Health Monitoring • RIS Server Infrastructure\n  </div>\n</div>\n`;\n\nreturn [{\n  json: {\n    subject: `[System Health] ${statusSummary} - EC2 Server (${new Date().toLocaleDateString()})`,\n    emailHtml,\n    isAllHealthy\n  }\n}];"
+      },
+      "id": "build-health-report",
+      "name": "Build System Health Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 340]
+    },
+    {
+      "parameters": {
+        "fromEmail": "admin@ris-tms.org",
+        "toEmail": "admin@ris-tms.org",
+        "subject": "={{ $json.subject }}",
+        "html": "={{ $json.emailHtml }}"
+      },
+      "id": "send-health-email",
+      "name": "Send Health Email Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1200, 340]
+    }
+  ],
+  "connections": {
+    "Every Day at 8 AM": {
+      "main": [
+        [
+          { "node": "Check HR Portal (Port 8005)", "type": "main", "index": 0 },
+          { "node": "Check RAG KMS (Port 8000)", "type": "main", "index": 0 },
+          { "node": "Check n8n Engine (Port 5678)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Check HR Portal (Port 8005)": {
+      "main": [
+        [
+          { "node": "Fetch EC2 RAM & Disk Metrics", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Check RAG KMS (Port 8000)": {
+      "main": [
+        [
+          { "node": "Fetch EC2 RAM & Disk Metrics", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Check n8n Engine (Port 5678)": {
+      "main": [
+        [
+          { "node": "Fetch EC2 RAM & Disk Metrics", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Fetch EC2 RAM & Disk Metrics": {
+      "main": [
+        [
+          { "node": "Build System Health Report", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build System Health Report": {
+      "main": [
+        [
+          { "node": "Send Health Email Alert", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  }
+}
