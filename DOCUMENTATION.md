@@ -185,6 +185,104 @@ erDiagram
 
 ---
 
+### Complete Database Schema & Candidate Input Field Mapping Matrix
+
+#### 1. Candidate Persona & Demographics (`candidate_metadata`)
+*Stores candidate personal information and persona attributes.*
+
+| Form Input Field | DB Table | DB Column Name | Data Type | Notes / Constraints |
+|---|---|---|---|---|
+| Full Name | `candidate_metadata` | `full_name` | `VARCHAR(200)` | Mandatory |
+| Email Address | `candidate_metadata` | `email` | `VARCHAR(200)` | Unique Persona Key |
+| Country Code | `candidate_metadata` | `country_code` | `VARCHAR(10)` | Default `+91` |
+| Mobile Number | `candidate_metadata` | `mobile_no` | `VARCHAR(20)` | Mandatory |
+| Date of Birth | `candidate_metadata` | `dob` | `DATE` | Mandatory |
+| Calculated Age | `candidate_metadata` | `age` | `INTEGER` | Auto-calculated from DOB |
+| Gender | `candidate_metadata` | `gender` | `VARCHAR(30)` | Male / Female / Other |
+| City | `candidate_metadata` | `city` | `VARCHAR(100)` | City of residence |
+| State | `candidate_metadata` | `state` | `VARCHAR(100)` | State of residence |
+| Pincode | `candidate_metadata` | `pincode` | `VARCHAR(20)` | Postal PIN code |
+| Total Work Experience | `candidate_metadata` | `years_of_experience` | `FLOAT` | Total experience in years |
+| Current / Last Salary | `candidate_metadata` | `last_salary` | `FLOAT` | Optional financial field |
+
+#### 2. Schooling Information (`candidate_schooling`)
+*Stores Class X & Class XII secondary education records (1:1 with candidate).*
+
+| Form Input Field | DB Table | DB Column Name | Data Type | Notes / Constraints |
+|---|---|---|---|---|
+| Class X School Name | `candidate_schooling` | `class_x_school` | `VARCHAR(250)` | School name |
+| Class X Education Board | `candidate_schooling` | `class_x_board` | `VARCHAR(100)` | CBSE, ICSE, State Board, etc. |
+| Class X Score Type | `candidate_schooling` | `class_x_score_type` | `VARCHAR(20)` | `Percentage` or `CGPA` |
+| Class X Score Value | `candidate_schooling` | `class_x_score_value` | `FLOAT` | Score numerical value |
+| Class X Year of Passing | `candidate_schooling` | `class_x_year` | `INTEGER` | e.g. `2007` |
+| Class XII School Name | `candidate_schooling` | `class_xii_school` | `VARCHAR(250)` | School name |
+| Class XII Education Board | `candidate_schooling` | `class_xii_board` | `VARCHAR(100)` | Board name |
+| Class XII Score Type | `candidate_schooling` | `class_xii_score_type` | `VARCHAR(20)` | `Percentage` or `CGPA` |
+| Class XII Score Value | `candidate_schooling` | `class_xii_score_value` | `FLOAT` | Score numerical value |
+| Class XII Year of Passing | `candidate_schooling` | `class_xii_year` | `INTEGER` | e.g. `2009` |
+
+#### 3. Higher Education (`candidate_higher_education`)
+*Stores Graduation, Post-Graduation, PhD/Doctorate, and Diplomas (1:N with candidate).*
+
+| Form Input Field | DB Table | DB Column Name | Data Type | Notes / Constraints |
+|---|---|---|---|---|
+| Education Level | `candidate_higher_education` | `level` | `VARCHAR(20)` | `undergrad`, `postgrad`, `phd`, `diploma` |
+| University / Institution | `candidate_higher_education` | `university` | `VARCHAR(200)` | University name |
+| Degree Name & Discipline | `candidate_higher_education` | `degree_name` | `VARCHAR(200)` | e.g. *BA Economics*, *MA International Trade* |
+| Score Marking System | `candidate_higher_education` | `score_type` | `VARCHAR(20)` | `Percentage`, `CGPA (Out of 10)`, `CGPA (Out of 4)` |
+| Score Value | `candidate_higher_education` | `score_value` | `FLOAT` | Percentage / CGPA value |
+| Graduation Year | `candidate_higher_education` | `grad_year` | `INTEGER` | Passing year |
+| Is Pursuing Status | `candidate_higher_education` | `is_pursuing` | `BOOLEAN` | `True` if ongoing |
+| Course Duration | `candidate_higher_education` | `duration_value` | `INTEGER` | e.g. `3` |
+| Duration Unit | `candidate_higher_education` | `duration_unit` | `VARCHAR(10)` | `Years` / `Months` |
+
+#### 4. Work Experience (`candidate_work_experience`)
+*Stores candidate employment history & past roles (1:N with candidate).*
+
+| Form Input Field | DB Table | DB Column Name | Data Type | Notes / Constraints |
+|---|---|---|---|---|
+| Employer / Organization | `candidate_work_experience` | `company_name` | `VARCHAR(200)` | Company / Institution |
+| Job Designation / Role | `candidate_work_experience` | `role` | `VARCHAR(200)` | Position title |
+| Employment Start Date | `candidate_work_experience` | `start_date` | `DATE` | Start date |
+| Employment End Date | `candidate_work_experience` | `end_date` | `DATE` | End date (null if current) |
+| Is Currently Working | `candidate_work_experience` | `is_current` | `BOOLEAN` | `True` if current job |
+
+#### 5. Research Publications (`candidate_publications`)
+*Stores paper titles, books, chapters, and journal publications (1:N with candidate).*
+
+| Form Input Field | DB Table | DB Column Name | Data Type | Notes / Constraints |
+|---|---|---|---|---|
+| Publication Type | `candidate_publications` | `pub_type` | `VARCHAR(30)` | `book`, `chapter`, `paper`, `thesis`, `journal`, `article` |
+| Title of Paper / Book | `candidate_publications` | `title` | `VARCHAR(500)` | Publication title |
+| Parent Book / Journal Name | `candidate_publications` | `parent_book` | `VARCHAR(500)` | Publisher or journal name |
+
+#### 6. Online Profiles, SOP & Outreach (`candidate_links_about`)
+*Stores aggregate counts, Statement of Purpose (SOP), LinkedIn/Scholar URLs, and referral source.*
+
+| Form Input Field | DB Table | DB Column Name | Data Type | Notes / Constraints |
+|---|---|---|---|---|
+| About Candidate / Bio | `candidate_links_about` | `about` | `TEXT` | Summary biography |
+| Statement of Purpose (SOP) | `candidate_links_about` | `sop` | `TEXT` | Research SOP |
+| Google Scholar URL | `candidate_links_about` | `google_scholar` | `VARCHAR(500)` | Profile link |
+| LinkedIn URL | `candidate_links_about` | `linkedin` | `VARCHAR(500)` | Profile link |
+| Peer-Reviewed Papers Count | `candidate_links_about` | `pub_papers` | `INTEGER` | Quantitative count |
+| Books & Chapters Count | `candidate_links_about` | `pub_books` | `INTEGER` | Quantitative count |
+| Working Papers Count | `candidate_links_about` | `pub_chapters` | `INTEGER` | Quantitative count |
+| Policy Briefs Count | `candidate_links_about` | `pub_policy_briefs` | `INTEGER` | Quantitative count |
+| Research Reports Count | `candidate_links_about` | `pub_reports` | `INTEGER` | Quantitative count |
+| Referral Outreach Source | `candidate_links_about` | `how_heard` | `VARCHAR(500)` | *"Where did you hear about this post?"* |
+
+#### 7. AWS S3 Resume Storage & Text Extract (`candidate_resume_payload`)
+*Pure S3 reference and extracted resume text for AI vector search.*
+
+| Asset / Payload | DB Table | DB Column Name | Data Type | Notes / Constraints |
+|---|---|---|---|---|
+| Categorized AWS S3 Path | `candidate_resume_payload` | `resume_path` | `VARCHAR(500)` | e.g. `jobs/{job}/resumes/{id}_cv.pdf` |
+| Parsed Plain Text | `candidate_resume_payload` | `raw_resume_text` | `TEXT` | Extracted text for AI RAG |
+| AI Vector Embedding | `candidate_resume_payload` | `resume_embedding` | `ARRAY(FLOAT)` | Vector embedding for semantic search |
+
+---
+
 ### Data Freshness & Caching Architecture
 
 - **Real-Time Direct Database Querying:** All API GET endpoints (such as `/api/v1/public/jobs`, `/api/v1/candidates/{id}/full_profile`, and admin roster tables) query PostgreSQL **directly in real time**.
