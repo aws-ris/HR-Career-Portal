@@ -97,24 +97,30 @@ def login_admin(req: LoginRequest, db: Session = Depends(get_db)):
     admin_user_env = os.getenv("HR_ADMIN_USERNAME", "hr_ris")
     admin_pass_env = os.getenv("HR_ADMIN_PASSWORD", "ris@1234")
     
-    # 1. Database-backed authentication
+    # 1. Database-backed authentication (Sole authority if user exists in DB)
     db_admin = db.query(models.AdminUser).filter(
         models.AdminUser.username == req.username,
         models.AdminUser.is_active == True
     ).first()
     
-    if db_admin and verify_password(req.password, db_admin.password_hash):
-        db_admin.last_login_at = datetime.datetime.utcnow()
-        db.commit()
-        token = generate_token(db_admin.username)
-        return {
-            "status": "success",
-            "token": token,
-            "username": db_admin.username,
-            "full_name": db_admin.full_name or "HR Administrator"
-        }
+    if db_admin:
+        if verify_password(req.password, db_admin.password_hash):
+            db_admin.last_login_at = datetime.datetime.utcnow()
+            db.commit()
+            token = generate_token(db_admin.username)
+            return {
+                "status": "success",
+                "token": token,
+                "username": db_admin.username,
+                "full_name": db_admin.full_name or "HR Administrator"
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid username or password"
+            )
         
-    # 2. Environment variable fallback
+    # 2. Environment variable fallback ONLY if user record does not exist in DB yet
     if req.username == admin_user_env and req.password == admin_pass_env:
         token = generate_token(req.username)
         return {"status": "success", "token": token, "username": admin_user_env, "full_name": "HR Administrator"}
