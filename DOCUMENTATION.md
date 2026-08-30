@@ -264,6 +264,7 @@ To support 1,000+ simultaneous candidate submissions on a single 2 vCPU `t3.larg
 All production web application repositories are standardized under **`/var/www/`**:
 
 - 📁 `/var/www/HR_RIS` — HR Career Portal codebase.
+- 📁 `/var/www/HR_RIS/backend/uploads/resumes/` — Local persistent resume PDF/DOCX storage.
 - 📁 `/var/www/rag_system` — Knowledge Management / RAG API codebase.
 - 📁 `/var/www/kms-frontend` — KMS Frontend UI static files.
 
