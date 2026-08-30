@@ -1,15 +1,17 @@
 :root {
-  /* Bloomberg / Institutional Financial Press Palette */
-  --ris-navy: #090d16;
-  --ris-navy-card: #0f172a;
-  --ris-navy-border: #1e293b;
-  --ris-gold: #f59e0b;
-  --ris-gold-hover: #d97706;
-  --ris-gold-subtle: rgba(245, 158, 11, 0.12);
-  --ris-blue: #0284c7;
-  --ris-blue-bright: #2563eb;
-  --ris-emerald: #10b981;
-  --ris-slate-bg: #f8fafc;
+  /* 🏛️ RIS Executive Portal Design System (Original & Copyright-Compliant) */
+  --ris-navy-primary: #061121;
+  --ris-navy-surface: #0b1a30;
+  --ris-navy-card: #112340;
+  --ris-navy-border: #1e3a5f;
+  
+  --ris-gold-accent: #d97706;
+  --ris-gold-bright: #f59e0b;
+  --ris-gold-subtle: rgba(217, 119, 6, 0.12);
+  
+  --ris-blue-accent: #0284c7;
+  --ris-emerald: #059669;
+  --ris-rose: #dc2626;
   
   --bg-primary: #f8fafc;
   --bg-surface: #ffffff;
@@ -20,14 +22,14 @@
   --border-color: #e2e8f0;
   --border-sharp: #cbd5e1;
   --input-bg: #ffffff;
-  --input-focus-ring: rgba(37, 99, 235, 0.25);
+  --input-focus-ring: rgba(2, 132, 199, 0.25);
 
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05);
-  --shadow-md: 0 4px 14px -2px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 20px 30px -10px rgba(15, 23, 42, 0.12);
+  --shadow-sm: 0 1px 3px rgba(6, 17, 33, 0.05);
+  --shadow-md: 0 4px 14px -2px rgba(6, 17, 33, 0.08);
+  --shadow-lg: 0 20px 30px -10px rgba(6, 17, 33, 0.12);
 
   --transition-fast: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
