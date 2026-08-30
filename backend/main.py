@@ -75,6 +75,25 @@ def get_current_admin(
 # create_all is safe here — it only creates tables that don't exist yet
 Base.metadata.create_all(bind=engine)
 
+# Ensure default admin user exists in PostgreSQL DB
+try:
+    from utils.auth import hash_password
+    with SessionLocal() as _db:
+        _admin_user_env = os.getenv("HR_ADMIN_USERNAME", "hr_ris")
+        _admin_pass_env = os.getenv("HR_ADMIN_PASSWORD", "ris@1234")
+        _admin_rec = _db.query(models.AdminUser).filter(models.AdminUser.username == _admin_user_env).first()
+        if not _admin_rec:
+            _admin_rec = models.AdminUser(
+                username=_admin_user_env,
+                password_hash=hash_password(_admin_pass_env),
+                full_name="HR Administrator"
+            )
+            _db.add(_admin_rec)
+            _db.commit()
+            print(f"✅ Seeded default admin user '{_admin_user_env}' in PostgreSQL database")
+except Exception as _e:
+    print(f"⚠️ Warning initializing admin user: {_e}")
+
 app = FastAPI(title="RIS Hiring Portal API", version="2.0.0")
 
 app.add_middleware(
