@@ -1379,7 +1379,7 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
         Return JSON: {{"academic_score": 25, "academic_summary": "string"}}
         """
         ac_res = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="groq/compound",
             messages=[{"role": "user", "content": academic_prompt}],
             response_format={"type": "json_object"},
             temperature=0.1
@@ -1396,7 +1396,7 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
         Return JSON: {{"experience_score": 25, "experience_summary": "string"}}
         """
         exp_res = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="groq/compound",
             messages=[{"role": "user", "content": exp_prompt}],
             response_format={"type": "json_object"},
             temperature=0.1
@@ -1418,7 +1418,7 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
         }}
         """
         ai_res = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="groq/compound",
             messages=[{"role": "user", "content": detector_prompt}],
             response_format={"type": "json_object"},
             temperature=0.0
@@ -1443,7 +1443,7 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
         }}
         """
         chair_res = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="groq/compound",
             messages=[{"role": "user", "content": consensus_prompt}],
             response_format={"type": "json_object"},
             temperature=0.2
