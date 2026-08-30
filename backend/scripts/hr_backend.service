@@ -10,7 +10,7 @@ EnvironmentFile=/var/www/HR_RIS/backend/.env
 ExecStart=/var/www/HR_RIS/backend/venv/bin/gunicorn \
     --workers 4 \
     --worker-class uvicorn.workers.UvicornWorker \
-    --bind 127.0.0.1:8000 \
+    --bind 127.0.0.1:8005 \
     --timeout 120 \
     --access-logfile /var/www/HR_RIS/backend/access.log \
     --error-logfile /var/www/HR_RIS/backend/error.log \
