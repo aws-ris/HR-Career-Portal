@@ -1371,6 +1371,25 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
         about_text = candidate.links_about.about if candidate.links_about and candidate.links_about.about else ""
         text_to_scan = f"{about_text}\n{sop_text}".strip()
 
+        def parse_groq_json(raw_str):
+            import re
+            if not raw_str:
+                return {}
+            cleaned = raw_str.strip()
+            match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', cleaned)
+            if match:
+                cleaned = match.group(1).strip()
+            try:
+                return json.loads(cleaned)
+            except Exception:
+                m_obj = re.search(r'\{[\s\S]*\}', cleaned)
+                if m_obj:
+                    try:
+                        return json.loads(m_obj.group(0))
+                    except Exception:
+                        pass
+                return {}
+
         # 🤖 Multi-Agent Step 1: Academic & Publication Specialist
         academic_prompt = f"""
         Analyze Candidate Academic & Publication Credentials for '{job_title}':
@@ -1385,7 +1404,7 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
             response_format={"type": "json_object"},
             temperature=0.1
         )
-        academic_eval = json.loads(ac_res.choices[0].message.content)
+        academic_eval = parse_groq_json(ac_res.choices[0].message.content)
 
         # 🤖 Multi-Agent Step 2: Work Experience Specialist
         exp_prompt = f"""
@@ -1402,7 +1421,7 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
             response_format={"type": "json_object"},
             temperature=0.1
         )
-        exp_eval = json.loads(exp_res.choices[0].message.content)
+        exp_eval = parse_groq_json(exp_res.choices[0].message.content)
 
         # 🤖 Multi-Agent Step 3: SOP Stylometric & AI Content Detector Agent
         detector_prompt = f"""
@@ -1413,7 +1432,7 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
         Return JSON:
         {{
             "ai_probability_score": 12,
-            "ai_classification": "Likely Human (Authentic)" | "Mixed / AI-Assisted" | "Highly Likely AI-Generated",
+            "ai_classification": "Likely Human (Authentic)",
             "detected_cliches": ["phrase 1"],
             "sop_alignment_score": 30
         }}
@@ -1424,7 +1443,7 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
             response_format={"type": "json_object"},
             temperature=0.0
         )
-        sop_eval = json.loads(ai_res.choices[0].message.content)
+        sop_eval = parse_groq_json(ai_res.choices[0].message.content)
 
         # ⚖️ Multi-Agent Step 4: Selection Committee Chair (Consensus & Synthesis)
         consensus_prompt = f"""
@@ -1437,7 +1456,7 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
         Return JSON:
         {{
             "overall_match_score": 88,
-            "recommendation": "Strong Match" | "Moderate Match" | "Not Recommended",
+            "recommendation": "Strong Match",
             "key_strengths": ["bullet 1", "bullet 2", "bullet 3"],
             "potential_flags": ["flag 1", "flag 2"],
             "tailored_interview_questions": ["question 1", "question 2", "question 3"]
@@ -1449,7 +1468,7 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
             response_format={"type": "json_object"},
             temperature=0.2
         )
-        final_eval = json.loads(chair_res.choices[0].message.content)
+        final_eval = parse_groq_json(chair_res.choices[0].message.content)
 
         overall_score = final_eval.get("overall_match_score", 88)
 
