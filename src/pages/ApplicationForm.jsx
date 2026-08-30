@@ -1840,7 +1840,21 @@ export default function ApplicationForm() {
                 </div>
               </div>
 
-              <button type="submit" className="btn-primary" style={{width: '100%'}}>Proceed to Education Options</button>
+              <div style={{
+                position: 'sticky',
+                bottom: 0,
+                zIndex: 1000,
+                background: '#ffffff',
+                padding: '16px 24px',
+                marginTop: '24px',
+                borderTop: '2px solid #002147',
+                boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.15)',
+                borderRadius: '0 0 12px 12px'
+              }}>
+                <button type="submit" className="btn-primary" style={{ width: '100%', fontSize: '1rem', fontWeight: 800, padding: '14px' }}>
+                  Proceed to Education Options ➔
+                </button>
+              </div>
             </>
           )}
 
@@ -2434,9 +2448,21 @@ export default function ApplicationForm() {
                 </>
               )}
 
-              <div style={{display: 'flex'}}>
-                <button type="button" className="btn-secondary" onClick={() => setStep(1)}>Back</button>
-                <button type="submit" className="btn-primary" style={{flex: 1}}>Proceed to Work Experience</button>
+              <div style={{
+                position: 'sticky',
+                bottom: 0,
+                zIndex: 1000,
+                background: '#ffffff',
+                padding: '16px 24px',
+                marginTop: '24px',
+                borderTop: '2px solid #002147',
+                boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.15)',
+                borderRadius: '0 0 12px 12px',
+                display: 'flex',
+                gap: '12px'
+              }}>
+                <button type="button" className="btn-secondary" onClick={() => setStep(1)} style={{ padding: '12px 24px' }}>Back</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, fontSize: '1rem', fontWeight: 800, padding: '12px' }}>Proceed to Work Experience ➔</button>
               </div>
             </>
           )}
@@ -2626,9 +2652,21 @@ export default function ApplicationForm() {
                 </button>
               </div>
 
-              <div style={{display: 'flex'}}>
-                <button type="button" className="btn-secondary" onClick={() => setStep(2)}>Back</button>
-                <button type="submit" className="btn-primary" style={{flex: 1}}>Proceed to Publications</button>
+              <div style={{
+                position: 'sticky',
+                bottom: 0,
+                zIndex: 1000,
+                background: '#ffffff',
+                padding: '16px 24px',
+                marginTop: '24px',
+                borderTop: '2px solid #002147',
+                boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.15)',
+                borderRadius: '0 0 12px 12px',
+                display: 'flex',
+                gap: '12px'
+              }}>
+                <button type="button" className="btn-secondary" onClick={() => setStep(2)} style={{ padding: '12px 24px' }}>Back</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, fontSize: '1rem', fontWeight: 800, padding: '12px' }}>Proceed to Publications ➔</button>
               </div>
             </>
           )}
@@ -2746,9 +2784,21 @@ export default function ApplicationForm() {
                 </div>
               </div>
 
-              <div style={{display: 'flex'}}>
-                <button type="button" className="btn-secondary" onClick={() => setStep(3)}>Back</button>
-                <button type="submit" className="btn-primary" style={{flex: 1, backgroundColor: 'var(--brand-accent)', color: '#000'}}>Proceed to Preview</button>
+              <div style={{
+                position: 'sticky',
+                bottom: 0,
+                zIndex: 1000,
+                background: '#ffffff',
+                padding: '16px 24px',
+                marginTop: '24px',
+                borderTop: '2px solid #002147',
+                boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.15)',
+                borderRadius: '0 0 12px 12px',
+                display: 'flex',
+                gap: '12px'
+              }}>
+                <button type="button" className="btn-secondary" onClick={() => setStep(3)} style={{ padding: '12px 24px' }}>Back</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, backgroundColor: 'var(--brand-accent)', color: '#000', fontSize: '1rem', fontWeight: 800, padding: '12px' }}>Proceed to Preview Application ➔</button>
               </div>
             </>
           )}

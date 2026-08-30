@@ -829,16 +829,30 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
           alignItems: 'center', 
           background: '#f8fafc'
         }}>
-          <button 
-            onClick={runAiEvaluation}
-            disabled={aiLoading}
-            style={{ 
-              display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 22px', 
-              background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', color: 'white', border: 'none', borderRadius: '8px', 
-              fontWeight: '800', fontSize: '14px', cursor: aiLoading ? 'wait' : 'pointer', boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)'
-            }}>
-            <Award size={18} /> {aiLoading ? 'Running Groq AI Crew...' : '🤖 Run AI Evaluation'}
-          </button>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button 
+              onClick={runAiEvaluation}
+              disabled={aiLoading}
+              style={{ 
+                display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 22px', 
+                background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', color: 'white', border: 'none', borderRadius: '8px', 
+                fontWeight: '800', fontSize: '14px', cursor: aiLoading ? 'wait' : 'pointer', boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)'
+              }}>
+              <Award size={18} /> {aiLoading ? 'Running Groq AI Crew...' : '🤖 Run AI Evaluation'}
+            </button>
+
+            {aiEval && (
+              <button 
+                onClick={() => window.open(`${API}/applications/${candidateId}/executive_dossier/download?token=${localStorage.getItem('hr_token') || ''}`, '_blank')}
+                style={{ 
+                  display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', 
+                  background: '#059669', color: 'white', border: 'none', borderRadius: '8px', 
+                  fontWeight: '800', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
+                }}>
+                <Download size={18} /> 📄 Download Executive Dossier Report
+              </button>
+            )}
+          </div>
 
           <button onClick={onClose} style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', background: '#002147', color: 'white', cursor: 'pointer', fontWeight: '700' }}>OK</button>
         </div>
