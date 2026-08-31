@@ -982,7 +982,7 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
     postgrad = [e for e in candidate.higher_education if e.level == 'postgrad']
     phd = [e for e in candidate.higher_education if e.level == 'phd']
 
-    return {
+    res_profile = {
         "id": candidate.id,
         "full_name": candidate.full_name,
         "email": candidate.email,
@@ -1028,24 +1028,18 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
         } for app in candidate.applications]
     }
 
-    # Automatically compute/attach qualitative AI selection brief
-    try:
-        from services.ai_evaluator import evaluate_candidate_qualitative
-        c_job = candidate.applications[0].job if (candidate.applications and candidate.applications[0].job) else None
-        j_title = c_job.title if c_job else "General Research Role"
-        j_reqs = c_job.requirements if c_job else "PhD/Masters, Policy experience"
-        cand_summary_dict = {
-            "full_name": candidate.full_name,
-            "years_of_experience": candidate.years_of_experience,
-            "degrees": [f"{e.level.upper()}: {e.degree_name} ({e.university})" for e in grad + postgrad + phd],
-            "publications": [f"{p.pub_type.upper()}: {p.title}" for p in candidate.publications],
-            "work_experiences": [f"{w.role} at {w.company_name}" for w in candidate.work_experiences],
-            "sop": candidate.links_about.sop if candidate.links_about else "",
-            "about": candidate.links_about.about if candidate.links_about else ""
-        }
-        res_profile["ai_evaluation"] = evaluate_candidate_qualitative(j_title, j_reqs, cand_summary_dict)
-    except Exception as ex:
-        print(f"⚠️ [Full Profile AI Evaluation Auto-Attach Warning]: {ex}")
+    # Fetch stored AI evaluation from CandidateResumePayload
+    import json
+    payload = db.query(models.CandidateResumePayload).filter(
+        models.CandidateResumePayload.candidate_id == candidate_id
+    ).first()
+    
+    if payload and payload.ai_evaluation_json:
+        try:
+            res_profile["ai_evaluation"] = json.loads(payload.ai_evaluation_json)
+        except json.JSONDecodeError:
+            res_profile["ai_evaluation"] = None
+    else:
         res_profile["ai_evaluation"] = None
 
     return res_profile
