@@ -1704,18 +1704,17 @@ export default function ApplicationForm() {
 
             <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', marginBottom: '12px' }}>Terms and Conditions</h2>
             <div style={{ 
-              maxHeight: '180px', 
-              overflowY: 'auto', 
-              padding: '16px', 
+              padding: '20px', 
               background: '#ffffff', 
               border: '1px solid #cbd5e1', 
-              borderRadius: '8px', 
-              fontSize: '13px', 
+              borderRadius: '10px', 
+              fontSize: '13.5px', 
               color: '#334155', 
-              lineHeight: '1.6',
-              marginBottom: '24px'
+              lineHeight: '1.65',
+              marginBottom: '20px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
             }}>
-              <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px', margin: 0 }}>
+              <ul style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '10px', margin: 0 }}>
                 <li>The engagement is purely contractual and does not confer any right to regular appointment to the selected candidate.</li>
                 <li>Selected candidates will have to join duty immediately upon receipt of the offer letter.</li>
                 <li>Fulfilment of conditions of educational qualification and experience shall not necessarily entitle any applicant to be called for further process of recruitment.</li>
@@ -1723,7 +1722,7 @@ export default function ApplicationForm() {
                 <li>RIS reserves the right to fill or not to fill the post advertised. No correspondence whatsoever will be entertained from the candidates regarding postal delays, the conduct of the result of the interview and the reason for not being called for an interview.</li>
                 <li>The decision of the committee w.r.t. shortlisting and selection will be final and binding. No query whatsoever will be dealt w.r.t. the same.</li>
               </ul>
-              <p style={{ marginTop: '12px', marginBottom: 0, fontWeight: '700' }}>Interested candidates having the above qualifications and experience should only apply Online.</p>
+              <p style={{ marginTop: '14px', marginBottom: 0, fontWeight: '700', color: '#002147' }}>Interested candidates having the above qualifications and experience should only apply Online.</p>
             </div>
             
             <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '14px 18px', marginBottom: '24px', fontSize: '0.88rem', color: '#1e293b' }}>
