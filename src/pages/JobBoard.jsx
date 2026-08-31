@@ -37,8 +37,15 @@ export default function JobBoard() {
   const safeJobs = Array.isArray(jobs) ? jobs : [];
   const divisions = ['ALL', ...Array.from(new Set(safeJobs.map(j => j?.division).filter(Boolean)))];
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
   const filteredJobs = safeJobs.filter(job => {
     if (!job) return false;
+    if (job.status && job.status !== 'open') return false;
+    if (job.deadline) {
+      const dl = job.deadline.substring(0, 10);
+      if (dl < todayStr) return false;
+    }
     const matchesSearch = (job.title && job.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
                           (job.division && job.division.toLowerCase().includes(searchTerm.toLowerCase())) ||
                           (job.position && job.position.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -46,6 +53,7 @@ export default function JobBoard() {
     const matchesDivision = selectedDivision === 'ALL' || job.division === selectedDivision;
     return matchesSearch && matchesDivision;
   });
+
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>

@@ -147,6 +147,21 @@ export default function CreateJobModal({ job, onClose, onSave }) {
       pay_level:      isContractual ? null : form.pay_level,
     };
 
+    if (isEdit && job) {
+      if (job.status === 'closed' && payload.deadline) {
+        const dlDate = new Date(payload.deadline);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (dlDate >= today) {
+          payload.status = 'open';
+        } else {
+          payload.status = 'closed';
+        }
+      } else if (job.status === 'open' || job.status === 'closed' || job.status === 'archived') {
+        payload.status = job.status;
+      }
+    }
+
     try {
       let res;
       if (isEdit) {
@@ -157,6 +172,7 @@ export default function CreateJobModal({ job, onClose, onSave }) {
         });
       } else {
         res = await fetch(`${API}/jobs`, {
+
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),

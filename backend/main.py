@@ -683,12 +683,27 @@ def seed_candidates(db: Session = Depends(get_db)):
 @app.get("/public/jobs")
 def get_public_jobs(db: Session = Depends(get_db)):
     """
-    Returns only 'open' jobs for the candidate landing page.
-    Hides internal metadata.
+    Returns only 'open' jobs whose deadline has not passed.
+    Automatically marks expired jobs as 'closed'.
     """
+    today = datetime.date.today()
+
+    # Auto-close any open jobs whose deadline has passed
+    expired_jobs = db.query(models.JobPosting).filter(
+        models.JobPosting.status == 'open',
+        models.JobPosting.deadline != None,
+        models.JobPosting.deadline < today,
+        models.JobPosting.is_deleted == False
+    ).all()
+    if expired_jobs:
+        for ej in expired_jobs:
+            ej.status = 'closed'
+        db.commit()
+
     jobs = db.query(models.JobPosting).filter(
         models.JobPosting.status == 'open',
-        models.JobPosting.is_deleted == False
+        models.JobPosting.is_deleted == False,
+        or_(models.JobPosting.deadline == None, models.JobPosting.deadline >= today)
     ).order_by(models.JobPosting.deadline.asc()).all()
     
     return [{
@@ -711,16 +726,23 @@ def get_public_jobs(db: Session = Depends(get_db)):
 @app.get("/api/v1/public/jobs/{job_id}")
 def get_public_job_detail(job_id: str, db: Session = Depends(get_db)):
     """
-    Returns full public details for a specific job if it is open.
+    Returns full public details for a specific job if it is open and deadline is valid.
     """
+    today = datetime.date.today()
     job = db.query(models.JobPosting).filter(
         models.JobPosting.id == job_id,
-        models.JobPosting.status == 'open',
         models.JobPosting.is_deleted == False
     ).first()
     
     if not job:
-        raise HTTPException(status_code=404, detail="Job not found or closed")
+        raise HTTPException(status_code=404, detail="Job posting not found")
+
+    if job.status == 'open' and job.deadline and job.deadline < today:
+        job.status = 'closed'
+        db.commit()
+
+    if job.status != 'open' or (job.deadline and job.deadline < today):
+        raise HTTPException(status_code=400, detail="This job vacancy is closed or no longer accepting applications.")
         
     return {
         "id": job.id,
@@ -737,6 +759,7 @@ def get_public_job_detail(job_id: str, db: Session = Depends(get_db)):
         "contract_period": job.contract_period,
         "job_mode": job.job_mode
     }
+
 
 def async_score_candidate_bg(candidate_id: str, app_tracking_id: str, job_id: Optional[str]):
     db = SessionLocal()
@@ -765,17 +788,24 @@ def async_score_candidate_bg(candidate_id: str, app_tracking_id: str, job_id: Op
     status_code=status.HTTP_201_CREATED
 )
 def create_application(payload: schemas.CandidateCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    # Validate that the job is open and accepts applications
+    # Validate that the job is open and deadline has not passed
     if payload.job_id:
+        today = datetime.date.today()
         job = db.query(models.JobPosting).filter(
             models.JobPosting.id == payload.job_id,
             models.JobPosting.is_deleted == False
         ).first()
-        if not job or job.status != 'open':
+
+        if job and job.status == 'open' and job.deadline and job.deadline < today:
+            job.status = 'closed'
+            db.commit()
+
+        if not job or job.status != 'open' or (job.deadline and job.deadline < today):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This job posting is closed or no longer accepting applications."
+                detail="This job vacancy is closed and is no longer accepting applications."
             )
+
 
     try:
         # Check if candidate email already exists (Error prevention & hassle-free submission)
@@ -2502,6 +2532,20 @@ def get_job_candidates(job_id: str, db: Session = Depends(get_db)):
 # ─────────────────────────────────────────────
 @app.get("/api/v1/jobs", dependencies=[Depends(get_current_admin)])
 def list_jobs(db: Session = Depends(get_db)):
+    today = datetime.date.today()
+
+    # Auto-close open jobs whose deadline has passed
+    expired_jobs = db.query(models.JobPosting).filter(
+        models.JobPosting.status == 'open',
+        models.JobPosting.deadline != None,
+        models.JobPosting.deadline < today,
+        models.JobPosting.is_deleted == False
+    ).all()
+    if expired_jobs:
+        for ej in expired_jobs:
+            ej.status = 'closed'
+        db.commit()
+
     jobs = db.query(models.JobPosting).filter(
         models.JobPosting.is_deleted == False
     ).order_by(models.JobPosting.created_at.desc()).all()
@@ -2568,8 +2612,18 @@ def update_job(job_id: str, payload: schemas.JobPostingCreate, db: Session = Dep
     ).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(job, key, value)
+
+    # Auto transition status based on deadline when updated
+    today = datetime.date.today()
+    if job.deadline:
+        if job.deadline >= today and job.status == 'closed':
+            job.status = 'open'
+        elif job.deadline < today and job.status == 'open':
+            job.status = 'closed'
+
     job.updated_at = datetime.datetime.utcnow()
     try:
         db.commit()
@@ -2578,6 +2632,7 @@ def update_job(job_id: str, payload: schemas.JobPostingCreate, db: Session = Dep
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
+
 
 
 # ─────────────────────────────────────────────

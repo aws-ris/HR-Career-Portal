@@ -202,8 +202,10 @@ export default function JobPostings() {
                         </>)}
                         {job.status === 'closed' && (<>
                           <button className="hr-action" disabled={busy} onClick={() => setViewingJob(job)}>View</button>
+                          <button className="hr-action" disabled={busy} onClick={() => handleEdit(job)}>Edit</button>
                           <button className="hr-action" disabled={busy} onClick={() => doAction(`/jobs/${job.id}/archive`)}>Archive</button>
                         </>)}
+
                         {job.status === 'archived' && (
                           <button className="hr-action" disabled={busy} onClick={() => setViewingJob(job)}>View</button>
                         )}

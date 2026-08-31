@@ -640,24 +640,48 @@ export default function ApplicationForm() {
   const [hasWork, setHasWork] = useState(true);
   const [workExps, setWorkExps] = useState(() => savedDraft.workExps || [{ company_name: '', start_date: '', end_date: '', role: '' }]);
 
+  const [isJobClosed, setIsJobClosed] = useState(false);
+  const [jobClosedMsg, setJobClosedMsg] = useState('');
+
   // Fetch Job details if ID is present
   useEffect(() => {
     document.title = "Apply | RIS Recruitment Portal";
     if (jobId) {
       fetch(`${API}/public/jobs/${jobId}`)
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) {
+            setIsJobClosed(true);
+            setJobClosedMsg("This job vacancy is closed or no longer accepting applications.");
+            throw new Error("Job is closed or not found");
+          }
+          return res.json();
+        })
         .then(data => {
-          if (data.id) {
+          if (data && data.id) {
+            if (data.deadline) {
+              const deadlineDate = new Date(data.deadline);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              if (deadlineDate < today) {
+                setIsJobClosed(true);
+                setJobClosedMsg("The application deadline for this job vacancy has passed.");
+                return;
+              }
+            }
             setJobDetail(data);
             document.title = `Apply: ${data.title} | RIS Careers`;
             if (savedDraft.position_applied === undefined) {
-              setPosition(data.position);
+              setPosition(data.position || data.title);
             }
+          } else {
+            setIsJobClosed(true);
+            setJobClosedMsg("This job vacancy is closed or no longer accepting applications.");
           }
         })
         .catch(err => console.error("Error fetching job:", err));
     }
   }, [jobId]);
+
 
   // Sync to localStorage
   useEffect(() => {
@@ -1545,9 +1569,44 @@ export default function ApplicationForm() {
     }, 100);
   };
 
-  const dividerStyle = { border: '0', borderTop: '1px solid var(--border-color)', margin: '2rem 0' };
+  if (isJobClosed) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '4rem 1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '3rem 2rem', maxWidth: '520px', width: '100%', textAlign: 'center', boxShadow: '0 10px 30px -5px rgba(0,0,0,0.08)' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#fee2e2', color: '#dc2626', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+            <span style={{ fontSize: '28px' }}>🔒</span>
+          </div>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.75rem' }}>Job Vacancy Closed</h2>
+          <p style={{ color: '#64748b', fontSize: '1rem', lineHeight: '1.6', marginBottom: '2rem' }}>
+            {jobClosedMsg || "This job posting is closed or no longer accepting applications."}
+          </p>
+          <button 
+            onClick={() => navigate('/hr')}
+            style={{
+              width: '100%',
+              padding: '0.85rem 1.5rem',
+              background: '#002147',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: 600,
+              fontSize: '0.95rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+          >
+            ← View All Active Openings
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
+
     <div className="app-container">
       <header className="app-header">
         <img src="/logo.jpg" alt="RIS Logo" className="header-logo" />
