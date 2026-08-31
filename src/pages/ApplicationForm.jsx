@@ -2703,6 +2703,7 @@ export default function ApplicationForm() {
                       handleResumeSelection(e.dataTransfer.files[0]);
                     }
                   }}
+                  className={`resume-dropzone ${(triedSubmit && !resumeFile) ? 'faulty-input' : ''}`}
                   style={{
                     border: '2px dashed',
                     borderRadius: '8px',
@@ -2742,6 +2743,11 @@ export default function ApplicationForm() {
                     </div>
                   )}
                 </div>
+                {triedSubmit && !resumeFile && (
+                  <div className="error-text" style={{ fontSize: '0.82rem', color: '#ef4444', marginTop: '8px', fontWeight: '700' }}>
+                    ⚠️ Resume / CV upload (PDF or DOCX, max 5MB) is required.
+                  </div>
+                )}
               </div>
 
               <div className="form-group" style={{ marginBottom: '24px' }}>
@@ -4133,14 +4139,13 @@ export default function ApplicationForm() {
               }}>
                 <div><strong>👤 Candidate:</strong> {submittedData?.candidateName}</div>
                 <div><strong>💼 Position:</strong> {submittedData?.jobTitle}</div>
-                <div><strong>🔖 Application Ref ID:</strong> <span style={{ color: '#002147', fontWeight: 800 }}>{submittedData?.applicationRef}</span></div>
                 <div><strong>🕒 Submitted At:</strong> {submittedData?.timestamp}</div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button
                   type="button"
-                  onClick={handleSaveAsPdf}
+                  onClick={() => navigate('/')}
                   style={{
                     width: '100%',
                     padding: '14px 20px',
@@ -4154,25 +4159,7 @@ export default function ApplicationForm() {
                     boxShadow: '0 4px 14px rgba(0, 33, 71, 0.3)'
                   }}
                 >
-                  📥 Download Copy of Application (PDF)
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => navigate('/')}
-                  style={{
-                    width: '100%',
-                    padding: '12px 20px',
-                    background: '#f1f5f9',
-                    color: '#1e293b',
-                    border: '1.5px solid #cbd5e1',
-                    borderRadius: '8px',
-                    fontSize: '0.92rem',
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                >
-                  🏠 Return to Job Board
+                  Back to Job Postings
                 </button>
               </div>
             </div>
