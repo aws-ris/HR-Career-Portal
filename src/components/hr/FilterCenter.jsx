@@ -23,14 +23,14 @@ export default function FilterCenter({ job_id, onFilterChange }) {
 
     ug_uni: '',
     min_ug_score: null,
-    ug_score_type: 'Percentage',
+    ug_score_type: null,
     pg_uni: '',
     pg_min_score: null,
-    pg_score_type: 'Percentage',
+    pg_score_type: null,
     phd_uni: '',
     phd_thesis: '',
     phd_min_score: null,
-    phd_score_type: 'Percentage',
+    phd_score_type: null,
     min_experience_years: 0,
     min_papers: 0,
     min_books: 0,
@@ -38,9 +38,9 @@ export default function FilterCenter({ job_id, onFilterChange }) {
     min_age: 18,
     max_age: 65,
     min_x_score: null,
-    x_score_type: 'Percentage',
+    x_score_type: null,
     min_xii_score: null,
-    xii_score_type: 'Percentage',
+    xii_score_type: null,
     role_keyword: '',
     company_keyword: ''
   });
@@ -115,10 +115,10 @@ export default function FilterCenter({ job_id, onFilterChange }) {
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button onClick={() => {
-             const reset = { states: [], genders: [], ug_uni: '', min_ug_score: null, pg_uni: '', pg_min_score: null, phd_uni: '', phd_thesis: '', phd_min_score: null, min_experience_years: 0, min_papers: 0, min_books: 0, min_chapters: 0, min_reports: 0, min_policy_briefs: 0, min_age: 18, max_age: 65, min_x_score: null, x_score_type: 'Percentage', min_xii_score: null, xii_score_type: 'Percentage', role_keyword: '', company_keyword: '' };
+             const reset = { states: [], genders: [], ug_uni: '', min_ug_score: null, ug_score_type: null, pg_uni: '', pg_min_score: null, pg_score_type: null, phd_uni: '', phd_thesis: '', phd_min_score: null, phd_score_type: null, min_experience_years: 0, min_papers: 0, min_books: 0, min_chapters: 0, min_reports: 0, min_policy_briefs: 0, min_age: 18, max_age: 65, min_x_score: null, x_score_type: null, min_xii_score: null, xii_score_type: null, role_keyword: '', company_keyword: '' };
              setFilters(reset);
              onFilterChange(reset);
-          }} style={{ fontSize: '12px', color: '#94a3b8', background: 'none', border: 'none', fontWeight: '700', cursor: 'pointer' }}>
+          }} style={{ fontSize: '12px', color: '#94a3b8', background: 'none', border: 'none', fontWeight: '700', cursor: 'cursor' }}>
             Clear Filters
           </button>
           <button 
@@ -238,21 +238,21 @@ export default function FilterCenter({ job_id, onFilterChange }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <div style={{ fontSize: '10px', fontWeight: '900', color: '#10b981', marginBottom: '10px', textTransform: 'uppercase' }}>Class X Details</div>
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-                  {['Percentage', 'CGPA'].map(t => (
-                    <button key={t} onClick={() => updateFilter('x_score_type', filters.x_score_type === t ? null : t)} style={{ flex: 1, padding: '4px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.x_score_type === t ? '#10b981' : '#e2e8f0', background: filters.x_score_type === t ? '#ecfdf5' : 'white', color: filters.x_score_type === t ? '#059669' : '#94a3b8', cursor: 'pointer' }}>{t}</button>
+                <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+                  {[{ label: '%', val: 'Percentage' }, { label: 'CGPA (10)', val: 'CGPA (Out of 10)' }, { label: 'CGPA (4)', val: 'CGPA (Out of 4)' }].map(t => (
+                    <button key={t.val} onClick={() => updateFilter('x_score_type', filters.x_score_type === t.val ? null : t.val)} style={{ flex: 1, padding: '4px 2px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.x_score_type === t.val ? '#10b981' : '#e2e8f0', background: filters.x_score_type === t.val ? '#ecfdf5' : 'white', color: filters.x_score_type === t.val ? '#059669' : '#94a3b8', cursor: 'pointer' }}>{t.label}</button>
                   ))}
                 </div>
-                <input type="number" placeholder={`Min Score (${filters.x_score_type === 'CGPA' ? '≤10' : '≤100'})`} value={filters.min_x_score || ''} onChange={(e) => updateFilter('min_x_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
+                <input type="number" placeholder={`Min Score (${filters.x_score_type?.includes('4') ? '≤4' : filters.x_score_type?.includes('10') ? '≤10' : 'Score'})`} value={filters.min_x_score || ''} onChange={(e) => updateFilter('min_x_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
               </div>
               <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <div style={{ fontSize: '10px', fontWeight: '900', color: '#002147', marginBottom: '10px', textTransform: 'uppercase' }}>Class XII Details</div>
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-                  {['Percentage', 'CGPA'].map(t => (
-                    <button key={t} onClick={() => updateFilter('xii_score_type', filters.xii_score_type === t ? null : t)} style={{ flex: 1, padding: '4px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.xii_score_type === t ? '#002147' : '#e2e8f0', background: filters.xii_score_type === t ? '#eff6ff' : 'white', color: filters.xii_score_type === t ? '#002147' : '#94a3b8', cursor: 'pointer' }}>{t}</button>
+                <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+                  {[{ label: '%', val: 'Percentage' }, { label: 'CGPA (10)', val: 'CGPA (Out of 10)' }, { label: 'CGPA (4)', val: 'CGPA (Out of 4)' }].map(t => (
+                    <button key={t.val} onClick={() => updateFilter('xii_score_type', filters.xii_score_type === t.val ? null : t.val)} style={{ flex: 1, padding: '4px 2px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.xii_score_type === t.val ? '#002147' : '#e2e8f0', background: filters.xii_score_type === t.val ? '#eff6ff' : 'white', color: filters.xii_score_type === t.val ? '#002147' : '#94a3b8', cursor: 'pointer' }}>{t.label}</button>
                   ))}
                 </div>
-                <input type="number" placeholder={`Min Score (${filters.xii_score_type === 'CGPA' ? '≤10' : '≤100'})`} value={filters.min_xii_score || ''} onChange={(e) => updateFilter('min_xii_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
+                <input type="number" placeholder={`Min Score (${filters.xii_score_type?.includes('4') ? '≤4' : filters.xii_score_type?.includes('10') ? '≤10' : 'Score'})`} value={filters.min_xii_score || ''} onChange={(e) => updateFilter('min_xii_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
               </div>
             </div>
           )}
@@ -260,7 +260,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
           {activeCategory === 'higher_edu' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
               <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '10px', fontWeight: '900', color: '#10b981', marginBottom: '10px', textTransform: 'uppercase' }}>Bachelors</div>
+                <div style={{ fontSize: '10px', fontWeight: '900', color: '#10b981', marginBottom: '10px', textTransform: 'uppercase' }}>Bachelors (UG)</div>
                 <div style={{ position: 'relative', marginBottom: '10px' }}>
                   <input type="text" placeholder="University..." value={filters.ug_uni} onChange={(e) => { updateFilter('ug_uni', e.target.value); fetchSuggestions('university', e.target.value); }} onFocus={() => fetchSuggestions('university', filters.ug_uni)} onBlur={() => setTimeout(() => setSuggestions(p => ({...p, university: []})), 200)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
                   {suggestions.university?.length > 0 && (
@@ -269,26 +269,32 @@ export default function FilterCenter({ job_id, onFilterChange }) {
                     </div>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-                  {['Percentage', 'CGPA'].map(t => <button key={t} onClick={() => updateFilter('ug_score_type', t)} style={{ flex: 1, padding: '4px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.ug_score_type === t ? '#10b981' : '#e2e8f0', background: filters.ug_score_type === t ? '#ecfdf5' : 'white', color: filters.ug_score_type === t ? '#059669' : '#94a3b8', cursor: 'pointer' }}>{t}</button>)}
+                <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
+                  {[{ label: '%', val: 'Percentage' }, { label: 'CGPA (10)', val: 'CGPA (Out of 10)' }, { label: 'CGPA (4)', val: 'CGPA (Out of 4)' }].map(t => (
+                    <button key={t.val} onClick={() => updateFilter('ug_score_type', filters.ug_score_type === t.val ? null : t.val)} style={{ flex: 1, padding: '4px 2px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.ug_score_type === t.val ? '#10b981' : '#e2e8f0', background: filters.ug_score_type === t.val ? '#ecfdf5' : 'white', color: filters.ug_score_type === t.val ? '#059669' : '#94a3b8', cursor: 'pointer' }}>{t.label}</button>
+                  ))}
                 </div>
-                <input type="number" placeholder={`Min Score (${filters.ug_score_type === 'CGPA' ? '≤10' : '≤100'})`} value={filters.min_ug_score || ''} onChange={(e) => updateFilter('min_ug_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
+                <input type="number" placeholder={`Min Score (${filters.ug_score_type?.includes('4') ? '≤4' : filters.ug_score_type?.includes('10') ? '≤10' : 'Score'})`} value={filters.min_ug_score || ''} onChange={(e) => updateFilter('min_ug_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
               </div>
               <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '10px', fontWeight: '900', color: '#002147', marginBottom: '10px', textTransform: 'uppercase' }}>Masters</div>
+                <div style={{ fontSize: '10px', fontWeight: '900', color: '#002147', marginBottom: '10px', textTransform: 'uppercase' }}>Masters (PG)</div>
                 <input type="text" placeholder="University..." value={filters.pg_uni} onChange={(e) => { updateFilter('pg_uni', e.target.value); fetchSuggestions('university', e.target.value); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', marginBottom: '10px', fontSize: '12px' }} />
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-                  {['Percentage', 'CGPA'].map(t => <button key={t} onClick={() => updateFilter('pg_score_type', t)} style={{ flex: 1, padding: '4px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.pg_score_type === t ? '#002147' : '#e2e8f0', background: filters.pg_score_type === t ? '#eff6ff' : 'white', color: filters.pg_score_type === t ? '#002147' : '#94a3b8', cursor: 'pointer' }}>{t}</button>)}
+                <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
+                  {[{ label: '%', val: 'Percentage' }, { label: 'CGPA (10)', val: 'CGPA (Out of 10)' }, { label: 'CGPA (4)', val: 'CGPA (Out of 4)' }].map(t => (
+                    <button key={t.val} onClick={() => updateFilter('pg_score_type', filters.pg_score_type === t.val ? null : t.val)} style={{ flex: 1, padding: '4px 2px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.pg_score_type === t.val ? '#002147' : '#e2e8f0', background: filters.pg_score_type === t.val ? '#eff6ff' : 'white', color: filters.pg_score_type === t.val ? '#002147' : '#94a3b8', cursor: 'pointer' }}>{t.label}</button>
+                  ))}
                 </div>
-                <input type="number" placeholder={`Min Score (${filters.pg_score_type === 'CGPA' ? '≤10' : '≤100'})`} value={filters.pg_min_score || ''} onChange={(e) => updateFilter('pg_min_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
+                <input type="number" placeholder={`Min Score (${filters.pg_score_type?.includes('4') ? '≤4' : filters.pg_score_type?.includes('10') ? '≤10' : 'Score'})`} value={filters.pg_min_score || ''} onChange={(e) => updateFilter('pg_min_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
               </div>
               <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '10px', fontWeight: '900', color: '#8b5cf6', marginBottom: '10px', textTransform: 'uppercase' }}>Doctorate</div>
+                <div style={{ fontSize: '10px', fontWeight: '900', color: '#8b5cf6', marginBottom: '10px', textTransform: 'uppercase' }}>Doctorate (PhD)</div>
                 <input type="text" placeholder="University..." value={filters.phd_uni} onChange={(e) => { updateFilter('phd_uni', e.target.value); fetchSuggestions('university', e.target.value); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', marginBottom: '10px', fontSize: '12px' }} />
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-                  {['Percentage', 'CGPA'].map(t => <button key={t} onClick={() => updateFilter('phd_score_type', t)} style={{ flex: 1, padding: '4px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.phd_score_type === t ? '#8b5cf6' : '#e2e8f0', background: filters.phd_score_type === t ? '#f5f3ff' : 'white', color: filters.phd_score_type === t ? '#7c3aed' : '#94a3b8', cursor: 'pointer' }}>{t}</button>)}
+                <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
+                  {[{ label: '%', val: 'Percentage' }, { label: 'CGPA (10)', val: 'CGPA (Out of 10)' }, { label: 'CGPA (4)', val: 'CGPA (Out of 4)' }].map(t => (
+                    <button key={t.val} onClick={() => updateFilter('phd_score_type', filters.phd_score_type === t.val ? null : t.val)} style={{ flex: 1, padding: '4px 2px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.phd_score_type === t.val ? '#8b5cf6' : '#e2e8f0', background: filters.phd_score_type === t.val ? '#f5f3ff' : 'white', color: filters.phd_score_type === t.val ? '#7c3aed' : '#94a3b8', cursor: 'pointer' }}>{t.label}</button>
+                  ))}
                 </div>
-                <input type="number" placeholder={`Min Score (${filters.phd_score_type === 'CGPA' ? '≤10' : '≤100'})`} value={filters.phd_min_score || ''} onChange={(e) => updateFilter('phd_min_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
+                <input type="number" placeholder={`Min Score (${filters.phd_score_type?.includes('4') ? '≤4' : filters.phd_score_type?.includes('10') ? '≤10' : 'Score'})`} value={filters.phd_min_score || ''} onChange={(e) => updateFilter('phd_min_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
               </div>
             </div>
           )}

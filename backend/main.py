@@ -1388,22 +1388,27 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         def format_score(value, score_type):
-            if not value:
+            if value is None or value == "":
                 return ""
-            stype = str(score_type).strip().lower() if score_type else ""
-            if "percent" in stype:
-                if value == int(value):
-                    return f"{int(value)}%"
-                return f"{value}%"
-            elif "cgpa" in stype:
-                if value == int(value):
-                    return f"{int(value)} CGPA"
-                return f"{value} CGPA"
+            try:
+                val_num = float(value)
+                val_str = f"{int(val_num)}" if val_num == int(val_num) else f"{val_num}"
+            except Exception:
+                val_str = str(value)
+
+            stype = str(score_type or "").strip()
+            stype_lower = stype.lower()
+            
+            if "percent" in stype_lower:
+                return f"{val_str}%"
+            elif "4" in stype:
+                return f"{val_str} CGPA (Out of 4)"
+            elif "10" in stype:
+                return f"{val_str} CGPA (Out of 10)"
+            elif "cgpa" in stype_lower:
+                return f"{val_str} CGPA"
             else:
-                suffix = f" {score_type}" if score_type else ""
-                if value == int(value):
-                    return f"{int(value)}{suffix}"
-                return f"{value}{suffix}"
+                return f"{val_str} {stype}".strip()
 
         def format_schooling_score(schooling, level):
             if not schooling:
@@ -1415,14 +1420,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 val = getattr(schooling, 'class_xii_score_value', None)
                 stype = getattr(schooling, 'class_xii_score_type', '')
                 
-            if val is None:
-                return ""
-            val_str = f"{int(val)}" if val == int(val) else f"{val}"
-            if stype == 'Percentage':
-                return f"{val_str}%"
-            elif stype == 'CGPA':
-                return f"{val_str} CGPA"
-            return val_str
+            return format_score(val, stype)
 
         def calculate_age(dob):
             if not dob:
@@ -1930,6 +1928,21 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
         if filters.max_age is not None:
             id_query = id_query.filter(models.CandidateMetadata.age <= filters.max_age)
 
+        def apply_score_type_filter(query_obj, db_column, target_score_type):
+            if not target_score_type or str(target_score_type).strip() == "":
+                return query_obj
+            stype = str(target_score_type).strip().lower()
+            if "percent" in stype:
+                return query_obj.filter(db_column.ilike('%percent%'))
+            elif "4" in stype:
+                return query_obj.filter(or_(db_column.ilike('%4%'), db_column == 'CGPA (Out of 4)', db_column == 'CGPA_4'))
+            elif "10" in stype:
+                return query_obj.filter(or_(db_column.ilike('%10%'), db_column == 'CGPA (Out of 10)', db_column == 'CGPA_10'))
+            elif "cgpa" in stype:
+                return query_obj.filter(db_column.ilike('%cgpa%'))
+            else:
+                return query_obj.filter(db_column.ilike(f"%{target_score_type}%"))
+
         # Higher Education filters (UG/PG/PhD)
         if filters.ug_uni:
             sub = db.query(models.CandidateHigherEducation.candidate_id).filter(
@@ -1944,7 +1957,7 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
                 models.CandidateHigherEducation.score_value >= float(filters.min_ug_score)
             )
             if filters.ug_score_type:
-                sub = sub.filter(models.CandidateHigherEducation.score_type == filters.ug_score_type)
+                sub = apply_score_type_filter(sub, models.CandidateHigherEducation.score_type, filters.ug_score_type)
             id_query = id_query.filter(models.CandidateMetadata.id.in_(sub.subquery()))
 
         if filters.pg_uni:
@@ -1960,7 +1973,7 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
                 models.CandidateHigherEducation.score_value >= float(filters.pg_min_score)
             )
             if filters.pg_score_type:
-                sub = sub.filter(models.CandidateHigherEducation.score_type == filters.pg_score_type)
+                sub = apply_score_type_filter(sub, models.CandidateHigherEducation.score_type, filters.pg_score_type)
             id_query = id_query.filter(models.CandidateMetadata.id.in_(sub.subquery()))
 
         if filters.phd_uni:
@@ -1983,7 +1996,7 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
                 models.CandidateHigherEducation.score_value >= float(filters.phd_min_score)
             )
             if filters.phd_score_type:
-                sub = sub.filter(models.CandidateHigherEducation.score_type == filters.phd_score_type)
+                sub = apply_score_type_filter(sub, models.CandidateHigherEducation.score_type, filters.phd_score_type)
             id_query = id_query.filter(models.CandidateMetadata.id.in_(sub.subquery()))
 
         # Academic Schooling Filters
@@ -1992,7 +2005,7 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
                 models.CandidateSchooling.class_x_score_value >= float(filters.min_x_score)
             )
             if filters.x_score_type:
-                sub = sub.filter(models.CandidateSchooling.class_x_score_type == filters.x_score_type)
+                sub = apply_score_type_filter(sub, models.CandidateSchooling.class_x_score_type, filters.x_score_type)
             id_query = id_query.filter(models.CandidateMetadata.id.in_(sub.subquery()))
 
         if filters.min_xii_score is not None:
@@ -2000,7 +2013,7 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
                 models.CandidateSchooling.class_xii_score_value >= float(filters.min_xii_score)
             )
             if filters.xii_score_type:
-                sub = sub.filter(models.CandidateSchooling.class_xii_score_type == filters.xii_score_type)
+                sub = apply_score_type_filter(sub, models.CandidateSchooling.class_xii_score_type, filters.xii_score_type)
             id_query = id_query.filter(models.CandidateMetadata.id.in_(sub.subquery()))
 
         # Work Experience Filters
