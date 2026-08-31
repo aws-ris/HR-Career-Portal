@@ -447,20 +447,18 @@ export default function ApplicationForm() {
   const { jobId } = useParams();
   const navigate = useNavigate();
 
-  // Load draft safely from localStorage (Error prevention / Autosave)
-  const savedDraft = (() => {
+  // Always clear any leftover application drafts from localStorage on component mount
+  useEffect(() => {
     try {
-      const draft = JSON.parse(localStorage.getItem('hr_application_draft') || '{}');
-      if (draft.jobId === jobId) {
-        return draft;
-      }
+      localStorage.removeItem('hr_application_draft');
+      localStorage.removeItem('application_draft');
     } catch (e) {
-      console.error("Error loading application draft:", e);
+      console.error("Error clearing application draft:", e);
     }
-    return {};
-  })();
+  }, []);
 
-  const [step, setStep] = useState(() => savedDraft.step !== undefined ? savedDraft.step : (jobId ? 0 : 1));
+  // Always start at Step 0 (Terms and Conditions) when opening an application form
+  const [step, setStep] = useState(0);
   const [submitError, setSubmitError] = useState('');
   const [jobDetail, setJobDetail] = useState(null);
   const [triedSubmit, setTriedSubmit] = useState(false);
@@ -473,95 +471,67 @@ export default function ApplicationForm() {
   const [editWork, setEditWork] = useState(false);
 
   // Step 1
-  const [position_applied, setPosition] = useState(() => savedDraft.position_applied || 'Professor');
-  const [admin_department, setAdminDept] = useState(() => savedDraft.admin_department || 'IT');
-  const [full_name, setFullName] = useState(() => savedDraft.full_name || '');
-  const [email, setEmail] = useState(() => savedDraft.email || '');
-  const [countryCode, setCountryCode] = useState(() => savedDraft.countryCode || '');
-  const [mobile_number, setMobile] = useState(() => savedDraft.mobile_number || '');
-  const [dob, setDob] = useState(() => savedDraft.dob || '');
-  const [gender, setGender] = useState(() => savedDraft.gender || '');
-  const [candidateState, setCandidateState] = useState(() => savedDraft.candidateState || '');
-  const [city, setCity] = useState(() => savedDraft.city || '');
-  const [pincode, setPincode] = useState(() => savedDraft.pincode || '');
-  const [sop, setSop] = useState(() => savedDraft.sop || '');
+  const [position_applied, setPosition] = useState('Professor');
+  const [admin_department, setAdminDept] = useState('IT');
+  const [full_name, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [countryCode, setCountryCode] = useState('');
+  const [mobile_number, setMobile] = useState('');
+  const [dob, setDob] = useState('');
+  const [gender, setGender] = useState('');
+  const [candidateState, setCandidateState] = useState('');
+  const [city, setCity] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [sop, setSop] = useState('');
   const [dobError, setDobError] = useState('');
 
   // Step 2
-  const [classXSchool, setClassXSchool] = useState(() => savedDraft.classXSchool || '');
-  const [classXBoard, setClassXBoard] = useState(() => savedDraft.classXBoard || 'CBSE');
-  const [classXBoardState, setClassXBoardState] = useState(() => savedDraft.classXBoardState || '');
-  const [classXBoardOther, setClassXBoardOther] = useState(() => savedDraft.classXBoardOther || '');
-  const [classXScoreType, setClassXScoreType] = useState(() => savedDraft.classXScoreType || 'Percentage');
-  const [classXScoreValue, setClassXScoreValue] = useState(() => savedDraft.classXScoreValue || savedDraft.classX || '');
+  const [classXSchool, setClassXSchool] = useState('');
+  const [classXBoard, setClassXBoard] = useState('CBSE');
+  const [classXBoardState, setClassXBoardState] = useState('');
+  const [classXBoardOther, setClassXBoardOther] = useState('');
+  const [classXScoreType, setClassXScoreType] = useState('Percentage');
+  const [classXScoreValue, setClassXScoreValue] = useState('');
 
-  const [classXIISchool, setClassXIISchool] = useState(() => savedDraft.classXIISchool || '');
-  const [classXIIBoard, setClassXIIBoard] = useState(() => savedDraft.classXIIBoard || 'CBSE');
-  const [classXIIBoardState, setClassXIIBoardState] = useState(() => savedDraft.classXIIBoardState || '');
-  const [classXIIBoardOther, setClassXIIBoardOther] = useState(() => savedDraft.classXIIBoardOther || '');
-  const [classXIIScoreType, setClassXIIScoreType] = useState(() => savedDraft.classXIIScoreType || 'Percentage');
-  const [classXIIScoreValue, setClassXIIScoreValue] = useState(() => savedDraft.classXIIScoreValue || savedDraft.classXII || '');
-  const [grads, setGrads] = useState(() => {
-    const raw = savedDraft.grads || [{ university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' }];
-    return raw.map(g => {
-      if (g.degree_select !== undefined) return g;
-      const parsed = parseDegree(g.degree_name || '', 'Bachelors');
-      return {
-        ...g,
-        degree_select: parsed.type,
-        degree_custom: parsed.custom,
-        degree_spec: parsed.spec
-      };
-    });
-  });
-  const [postGrads, setPostGrads] = useState(() => {
-    const raw = savedDraft.postGrads || [{ university: '', degree_name: '', score_type: 'Percentage', score_value: '', grad_year: '' }];
-    return raw.map(g => {
-      if (g.degree_select !== undefined) return g;
-      const parsed = parseDegree(g.degree_name || '', 'Masters');
-      return {
-        ...g,
-        degree_select: parsed.type,
-        degree_custom: parsed.custom,
-        degree_spec: parsed.spec
-      };
-    });
-  });
+  const [classXIISchool, setClassXIISchool] = useState('');
+  const [classXIIBoard, setClassXIIBoard] = useState('CBSE');
+  const [classXIIBoardState, setClassXIIBoardState] = useState('');
+  const [classXIIBoardOther, setClassXIIBoardOther] = useState('');
+  const [classXIIScoreType, setClassXIIScoreType] = useState('Percentage');
+  const [classXIIScoreValue, setClassXIIScoreValue] = useState('');
+  const [grads, setGrads] = useState([
+    { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', score_type: 'Percentage', score_value: '', grad_year: '' }
+  ]);
+  const [postGrads, setPostGrads] = useState([
+    { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', score_type: 'Percentage', score_value: '', grad_year: '' }
+  ]);
 
-  const [doctorates, setDoctorates] = useState(() => savedDraft.doctorates || [{ university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '', is_pursuing: false }]);
-  const [diplomas, setDiplomas] = useState(() => savedDraft.diplomas || [{ university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', is_pursuing: false, score_type: 'Percentage', score_value: '', grad_year: '' }]);
+  const [doctorates, setDoctorates] = useState([
+    { university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '', is_pursuing: false }
+  ]);
+  const [diplomas, setDiplomas] = useState([
+    { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', is_pursuing: false, score_type: 'Percentage', score_value: '', grad_year: '' }
+  ]);
 
-  const [showPostGrad, setShowPostGrad] = useState(() => savedDraft.postGrads && (savedDraft.postGrads.length > 1 || !!(savedDraft.postGrads[0] && savedDraft.postGrads[0].university)));
-  const [showDoctorate, setShowDoctorate] = useState(() => savedDraft.doctorates && (savedDraft.doctorates.length > 1 || !!(savedDraft.doctorates[0] && savedDraft.doctorates[0].university)));
-  const [showDiploma, setShowDiploma] = useState(() => savedDraft.diplomas && (savedDraft.diplomas.length > 1 || !!(savedDraft.diplomas[0] && savedDraft.diplomas[0].university)));
+  const [showPostGrad, setShowPostGrad] = useState(false);
+  const [showDoctorate, setShowDoctorate] = useState(false);
+  const [showDiploma, setShowDiploma] = useState(false);
 
   // Step 2 & 3 custom states
-  const [classXYear, setClassXYear] = useState(() => savedDraft.classXYear || '');
-  const [classXIIYear, setClassXIIYear] = useState(() => savedDraft.classXIIYear || '');
-  const [linkedin, setLinkedin] = useState(() => savedDraft.linkedin || '');
+  const [classXYear, setClassXYear] = useState('');
+  const [classXIIYear, setClassXIIYear] = useState('');
+  const [linkedin, setLinkedin] = useState('');
 
   // Step 3 Publication Counts
-  const [pubBooks, setPubBooks] = useState(() => savedDraft.pubBooks !== undefined ? savedDraft.pubBooks : 0);
-  const [pubPapers, setPubPapers] = useState(() => savedDraft.pubPapers !== undefined ? savedDraft.pubPapers : 0);
-  const [pubChapters, setPubChapters] = useState(() => savedDraft.pubChapters !== undefined ? savedDraft.pubChapters : 0);
-  const [pubReports, setPubReports] = useState(() => savedDraft.pubReports !== undefined ? savedDraft.pubReports : 0);
-  const [pubPolicyBriefs, setPubPolicyBriefs] = useState(() => savedDraft.pubPolicyBriefs !== undefined ? savedDraft.pubPolicyBriefs : 0);
+  const [pubBooks, setPubBooks] = useState(0);
+  const [pubPapers, setPubPapers] = useState(0);
+  const [pubChapters, setPubChapters] = useState(0);
+  const [pubReports, setPubReports] = useState(0);
+  const [pubPolicyBriefs, setPubPolicyBriefs] = useState(0);
 
-  const [pubEntries, setPubEntries] = useState(() => {
-    if (savedDraft.pubEntries && Array.isArray(savedDraft.pubEntries) && savedDraft.pubEntries.length > 0) {
-      return savedDraft.pubEntries;
-    }
-    const list = [];
-    if (savedDraft.pubPapers) list.push({ category: 'Peer-Reviewed Journal Papers', count: savedDraft.pubPapers, link: '' });
-    if (savedDraft.pubBooks) list.push({ category: 'Books & Book Chapters', count: savedDraft.pubBooks, link: '' });
-    if (savedDraft.pubChapters) list.push({ category: 'Working Papers & Preprints', count: savedDraft.pubChapters, link: '' });
-    if (savedDraft.pubReports) list.push({ category: 'Research Reports & Policy Briefs', count: savedDraft.pubReports, link: '' });
-    if (savedDraft.pubPolicyBriefs) list.push({ category: 'Newspaper Articles & Public Commentary', count: savedDraft.pubPolicyBriefs, link: '' });
-    if (list.length === 0) {
-      list.push({ category: 'Peer-Reviewed Journal Papers', count: 0, link: '' });
-    }
-    return list;
-  });
+  const [pubEntries, setPubEntries] = useState([
+    { category: 'Peer-Reviewed Journal Papers', count: 0, link: '' }
+  ]);
 
   const syncPubCounts = (entries) => {
     let books = 0, papers = 0, chapters = 0, reports = 0, briefs = 0;
@@ -603,10 +573,10 @@ export default function ApplicationForm() {
     syncPubCounts(fresh);
   };
 
-  const [scholarLink, setScholarLink] = useState(() => savedDraft.scholarLink || '');
-  const [expYears, setExpYears] = useState(() => savedDraft.expYears || '');
-  const [expMonths, setExpMonths] = useState(() => savedDraft.expMonths || '');
-  const [lastSalary, setLastSalary] = useState(() => savedDraft.lastSalary || '');
+  const [scholarLink, setScholarLink] = useState('');
+  const [expYears, setExpYears] = useState('');
+  const [expMonths, setExpMonths] = useState('');
+  const [lastSalary, setLastSalary] = useState('');
   const [resumeFile, setResumeFile] = useState(null);
   const MAX_RESUME_FILE_SIZE_BYTES = 5 * 1024 * 1024;
   const RESUME_ACCEPT = ".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -634,12 +604,12 @@ export default function ApplicationForm() {
   };
 
   // How did you hear about us states
-  const [howHeard, setHowHeard] = useState(() => savedDraft.howHeard || '');
-  const [howHeardDetails, setHowHeardDetails] = useState(() => savedDraft.howHeardDetails || '');
+  const [howHeard, setHowHeard] = useState('');
+  const [howHeardDetails, setHowHeardDetails] = useState('');
 
   // Step 4
   const [hasWork, setHasWork] = useState(true);
-  const [workExps, setWorkExps] = useState(() => savedDraft.workExps || [{ company_name: '', start_date: '', end_date: '', role: '' }]);
+  const [workExps, setWorkExps] = useState([{ company_name: '', start_date: '', end_date: '', role: '' }]);
 
   const [isJobClosed, setIsJobClosed] = useState(false);
   const [jobClosedMsg, setJobClosedMsg] = useState('');
@@ -671,7 +641,7 @@ export default function ApplicationForm() {
             }
             setJobDetail(data);
             document.title = `Apply: ${data.title} | RIS Careers`;
-            if (savedDraft.position_applied === undefined) {
+            if (data.position || data.title) {
               setPosition(data.position || data.title);
             }
           } else {
@@ -684,61 +654,7 @@ export default function ApplicationForm() {
   }, [jobId]);
 
 
-  // Sync to localStorage
-  useEffect(() => {
-    const draft = {
-      jobId,
-      position_applied,
-      admin_department,
-      full_name,
-      email,
-      countryCode,
-      mobile_number,
-      dob,
-      gender,
-      candidateState,
-      city,
-      pincode,
-      sop,
-      classXSchool,
-      classXBoard,
-      classXBoardState,
-      classXBoardOther,
-      classXScoreType,
-      classXScoreValue,
-      classXYear,
-      classXIISchool,
-      classXIIBoard,
-      classXIIBoardState,
-      classXIIBoardOther,
-      classXIIScoreType,
-      classXIIScoreValue,
-      classXIIYear,
-      linkedin,
-      pubBooks,
-      pubPapers,
-      pubChapters,
-      pubReports,
-      pubPolicyBriefs,
-      grads,
-      postGrads,
-      doctorates,
-      scholarLink,
-      expYears,
-      expMonths,
-      hasWork,
-      workExps,
-      step
-    };
-    localStorage.setItem('hr_application_draft', JSON.stringify(draft));
-  }, [
-    position_applied, admin_department, full_name, email, countryCode, mobile_number, dob, gender,
-    candidateState, city, pincode, sop, grads, postGrads, doctorates, 
-    scholarLink, expYears, expMonths, hasWork, workExps, step, jobId,
-    classXSchool, classXBoard, classXBoardState, classXBoardOther, classXScoreType, classXScoreValue, classXYear,
-    classXIISchool, classXIIBoard, classXIIBoardState, classXIIBoardOther, classXIIScoreType, classXIIScoreValue, classXIIYear,
-    linkedin, pubBooks, pubPapers, pubChapters, pubReports, pubPolicyBriefs
-  ]);
+
 
   // Scroll to top on step change
   useEffect(() => {
