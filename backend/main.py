@@ -99,6 +99,24 @@ except Exception as _e:
 
 app = FastAPI(title="RIS Hiring Portal API", version="2.0.0")
 
+import logging
+from fastapi.responses import JSONResponse
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("ris_portal")
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc: Exception):
+    logger.error(f"Unhandled server exception on {request.method} {request.url}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "message": "An internal processing issue occurred. For assistance, email parmod.kumar@ris.org.in.",
+            "detail": "Internal Processing Error"
+        }
+    )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

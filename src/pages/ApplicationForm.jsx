@@ -479,6 +479,35 @@ export default function ApplicationForm() {
   const [triedSubmit, setTriedSubmit] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
+  // Online / Network Status & Solid Modal Cards
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [submittedData, setSubmittedData] = useState(null);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const scrollToFirstError = () => {
+    setTimeout(() => {
+      const firstFaulty = document.querySelector('.faulty-input, .error-text');
+      if (firstFaulty) {
+        firstFaulty.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (firstFaulty.focus && typeof firstFaulty.focus === 'function') {
+          firstFaulty.focus();
+        }
+      }
+    }, 100);
+  };
+
   // Edit states for Step 5 Preview
   const [editPersonal, setEditPersonal] = useState(false);
   const [editEducation, setEditEducation] = useState(false);
@@ -1206,53 +1235,66 @@ export default function ApplicationForm() {
       // DOB Validation
       const dobParts = dob.split('/');
       if (dobParts.length !== 3 || dobParts[0].length !== 2 || dobParts[1].length !== 2 || dobParts[2].length !== 4) {
-        return alert("Please enter Date of Birth in DD/MM/YYYY format.");
+        setDobError("Please enter Date of Birth in DD/MM/YYYY format.");
+        scrollToFirstError();
+        return;
       }
       const dobErr = validateDob(dob);
       if (dobErr) {
         setDobError(dobErr);
-        return alert(dobErr);
+        scrollToFirstError();
+        return;
       }
       const day = parseInt(dobParts[0], 10);
       const month = parseInt(dobParts[1], 10);
       const year = parseInt(dobParts[2], 10);
       
       if (isNaN(day) || day < 1 || day > 31) {
-        return alert("Day (DD) must be between 01 and 31.");
+        setDobError("Day (DD) must be between 01 and 31.");
+        scrollToFirstError();
+        return;
       }
       if (isNaN(month) || month < 1 || month > 12) {
-        return alert("Month (MM) must be between 01 and 12.");
+        setDobError("Month (MM) must be between 01 and 12.");
+        scrollToFirstError();
+        return;
       }
       const currentYear = new Date().getFullYear();
       if (isNaN(year) || year < 1900 || year > currentYear) {
-        return alert(`Year (YYYY) must be between 1900 and ${currentYear}.`);
+        setDobError(`Year (YYYY) must be between 1900 and ${currentYear}.`);
+        scrollToFirstError();
+        return;
       }
       const maxDays = new Date(year, month, 0).getDate();
       if (day > maxDays) {
-        return alert("Please enter a valid Date of Birth for the given month.");
+        setDobError("Please enter a valid Date of Birth for the given month.");
+        scrollToFirstError();
+        return;
       }
       const formattedDob = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       if (new Date(formattedDob) > new Date()) {
-        return alert("Date of Birth cannot be in the future.");
+        setDobError("Date of Birth cannot be in the future.");
+        scrollToFirstError();
+        return;
       }
 
       // Pincode validation
       if (!/^\d{6}$/.test(pincode)) {
-        return alert("Pincode must be exactly 6 digits.");
+        scrollToFirstError();
+        return;
       }
 
       // City validation (min 2 chars, letters and spaces only)
       if (!/^[a-zA-Z\s]{2,100}$/.test(city.trim())) {
-        return alert("City must be at least 2 characters and contain only letters.");
+        scrollToFirstError();
+        return;
       }
-
-
     }
 
-    // Step 2 Validation: Class X Schooling is compulsory; Class XII & Post-schooling (UG/PG/PhD/Diploma) are optional
+    // Step 2 Validation: Class X Schooling is compulsory
     if (step === 2) {
       if (!classXSchool.trim() || !classXScoreValue || !classXYear) {
-        alert("Please complete mandatory Class X schooling details.");
+        scrollToFirstError();
         return;
       }
 
@@ -1262,7 +1304,7 @@ export default function ApplicationForm() {
         if (entry.is_pursuing && entry.grad_year) {
           const yr = parseInt(entry.grad_year, 10);
           if (!isNaN(yr) && yr < currentYr) {
-            alert(`Expected completion year for currently pursuing degree (${entry.degree_select || entry.degree_name || 'Degree'}) cannot be less than current year (${currentYr}).`);
+            scrollToFirstError();
             return;
           }
         }
@@ -1272,52 +1314,31 @@ export default function ApplicationForm() {
     // Check required fields for Step 3
     if (step === 3) {
       const sopWords = sop.trim() ? sop.trim().split(/\s+/).length : 0;
-      if (!sop.trim()) {
-        alert("Please enter your Statement of Purpose (SOP).");
-        return;
-      }
-      if (sopWords > 300) {
-        alert("Statement of Purpose cannot exceed 300 words.");
-        return;
-      }
-      if (!resumeFile) {
-        alert("Please upload your Resume (PDF or DOCX) first.");
-        return;
-      }
-      if (expYears === '' && expMonths === '') {
-        alert("Please specify your professional experience in years/months (enter 0 Years 0 Months if fresher).");
+      if (!sop.trim() || sopWords > 300 || !resumeFile || (expYears === '' && expMonths === '')) {
+        scrollToFirstError();
         return;
       }
       const yrs = parseInt(expYears) || 0;
       const mths = parseInt(expMonths) || 0;
       if (yrs < 0 || mths < 0 || mths > 11) {
-        alert("Please enter valid Experience Years (>=0) and Months (0-11).");
+        scrollToFirstError();
         return;
       }
 
       if (workedAtRis) {
-        if (!risDesignation.trim()) {
-          alert("Please specify your Designation / Position at RIS.");
-          return;
-        }
-        if (!risStartDate) {
-          alert("Please select your Start Date at RIS.");
-          return;
-        }
-        if (!risIsCurrent && !risEndDate) {
-          alert("Please select your End Date at RIS (or check 'Currently Working at RIS').");
+        if (!risDesignation.trim() || !risStartDate || (!risIsCurrent && !risEndDate)) {
+          scrollToFirstError();
           return;
         }
       }
 
-      // Only validate detailed work entries if candidate has prior experience or typed work details
       const hasTypedWorkDetails = workExps.some(w => w.company_name && w.company_name.trim() !== '');
       if (yrs > 0 || mths > 0 || hasTypedWorkDetails) {
         for (let i = 0; i < workExps.length; i++) {
           const w = workExps[i];
           if (hasTypedWorkDetails || (i === 0 && (yrs > 0 || mths > 0))) {
             if (!w.company_name || !w.role || !w.start_date) {
-              alert(`Please fill in required fields (Organization, Designation, Start Date) for Work Entry #${i + 1}.`);
+              scrollToFirstError();
               return;
             }
           }
@@ -1325,13 +1346,13 @@ export default function ApplicationForm() {
       }
     }
 
-    // Step 4 Validation: If publication count > 0, validation link / identifier is required
+    // Step 4 Validation
     if (step === 4) {
       for (let pe of pubEntries) {
         const cnt = parseInt(pe.count, 10) || 0;
         if (cnt > 0) {
           if (!pe.link || !pe.link.trim()) {
-            alert(`Please provide the validation link / identifier (DOI, ISBN, URL, Handle, etc.) for "${pe.category}" as the publication count is set to ${cnt}.`);
+            scrollToFirstError();
             return;
           }
         }
@@ -1346,12 +1367,11 @@ export default function ApplicationForm() {
     if (e) e.preventDefault();
     setTriedSubmit(true);
 
-    // Validate Step 4 before proceeding to preview
     for (let pe of pubEntries) {
       const cnt = parseInt(pe.count, 10) || 0;
       if (cnt > 0) {
         if (!pe.link || !pe.link.trim()) {
-          alert(`Please provide the validation link / identifier (DOI, ISBN, URL, Handle, etc.) for "${pe.category}" as the publication count is set to ${cnt}.`);
+          scrollToFirstError();
           return;
         }
       }
@@ -1391,10 +1411,7 @@ export default function ApplicationForm() {
       workExps.forEach(w => { if(w.company_name) works.push({...w, entry_order: workOrder++}) });
     }
 
-    // Convert Years/Months to Float
     const totalYrs = (parseFloat(expYears) || 0) + ((parseFloat(expMonths) || 0) / 12);
-
-    // Convert DD/MM/YYYY to YYYY-MM-DD
     const dobParts = dob.split('/');
     const formattedDob = `${dobParts[2]}-${dobParts[1].padStart(2, '0')}-${dobParts[0].padStart(2, '0')}`;
 
@@ -1501,9 +1518,16 @@ export default function ApplicationForm() {
             });
           } catch(err) { console.error("Resume upload failed:", err); }
         }
-        alert("Application Successfully Submitted!");
+
+        setSubmittedData({
+          candidateName: full_name,
+          jobTitle: jobDetail?.title || position_applied,
+          jobId: jobId || 'N/A',
+          applicationRef: data.id || `RIS-${Date.now()}`,
+          timestamp: new Date().toLocaleString('en-GB')
+        });
+        setShowSuccessModal(true);
         localStorage.removeItem('hr_application_draft');
-        navigate("/");
       } else {
         let errMessage = "Unknown Error";
         try {
@@ -1517,15 +1541,16 @@ export default function ApplicationForm() {
           errMessage = `Status ${res.status}: ${res.statusText || 'Internal Server Error'}`;
         }
         setSubmitError("Database Rejection: " + errMessage);
+        setShowErrorModal(true);
       }
     } catch (err) {
       console.error("Submission crash:", err);
-      alert("A critical error occurred while submitting: " + err.message);
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         setSubmitError("Could not connect to Backend. Ensure uvicorn is running on port 8000.");
       } else {
         setSubmitError("Could not connect to the server. Please check your internet connection or try again later.");
       }
+      setShowErrorModal(true);
     }
   };
 
@@ -4006,16 +4031,8 @@ export default function ApplicationForm() {
                 className="btn-primary" 
                 onClick={() => {
                   setTriedSubmit(true);
-                  if (!howHeard) {
-                    alert("Please select where you heard about this vacancy / opportunity.");
-                    return;
-                  }
-                  if ((howHeard === 'Friend / Colleague' || howHeard === 'Others') && !howHeardDetails.trim()) {
-                    alert(`Please specify details for "${howHeard}".`);
-                    return;
-                  }
-                  if (!declarationAccepted) {
-                    alert("Please check and accept the mandatory declaration certifying that all your details and publication links are accurate and true.");
+                  if (!howHeard || ((howHeard === 'Friend / Colleague' || howHeard === 'Others') && !howHeardDetails.trim()) || !declarationAccepted) {
+                    scrollToFirstError();
                     return;
                   }
                   executeFinalSubmit();
@@ -4024,6 +4041,250 @@ export default function ApplicationForm() {
               >
                 Submit Application
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Offline Network Toast Banner */}
+        {!isOnline && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 10000,
+            background: '#c62828',
+            color: '#ffffff',
+            padding: '12px 20px',
+            textAlign: 'center',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            boxShadow: '0 4px 14px rgba(198, 40, 40, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}>
+            ⚠️ You are currently offline. Please check your internet connection before submitting.
+          </div>
+        )}
+
+        {/* Solid Success Modal Card */}
+        {showSuccessModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 10000,
+            background: 'rgba(0, 33, 71, 0.82)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}>
+            <div style={{
+              background: '#ffffff',
+              border: '3px solid #002147',
+              borderRadius: '16px',
+              maxWidth: '540px',
+              width: '100%',
+              padding: '36px 28px',
+              boxShadow: '0 20px 50px rgba(0, 33, 71, 0.4)',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                width: '72px',
+                height: '72px',
+                background: '#002147',
+                color: '#d97706',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '2.2rem',
+                fontWeight: 'bold',
+                margin: '0 auto 20px auto',
+                border: '3px solid #d97706'
+              }}>
+                ✓
+              </div>
+
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#002147', margin: '0 0 8px 0' }}>
+                Application Successfully Submitted!
+              </h2>
+
+              <p style={{ fontSize: '0.92rem', color: '#475569', margin: '0 0 24px 0', lineHeight: 1.5 }}>
+                Thank you for submitting your application to the Research and Information System for Developing Countries (RIS).
+              </p>
+
+              <div style={{
+                background: '#f8fafc',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '10px',
+                padding: '16px 20px',
+                textAlign: 'left',
+                marginBottom: '24px',
+                fontSize: '0.88rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div><strong>👤 Candidate:</strong> {submittedData?.candidateName}</div>
+                <div><strong>💼 Position:</strong> {submittedData?.jobTitle}</div>
+                <div><strong>🔖 Application Ref ID:</strong> <span style={{ color: '#002147', fontWeight: 800 }}>{submittedData?.applicationRef}</span></div>
+                <div><strong>🕒 Submitted At:</strong> {submittedData?.timestamp}</div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={handleSaveAsPdf}
+                  style={{
+                    width: '100%',
+                    padding: '14px 20px',
+                    background: '#002147',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '0.98rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(0, 33, 71, 0.3)'
+                  }}
+                >
+                  📥 Download Copy of Application (PDF)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/')}
+                  style={{
+                    width: '100%',
+                    padding: '12px 20px',
+                    background: '#f1f5f9',
+                    color: '#1e293b',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontSize: '0.92rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  🏠 Return to Job Board
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Solid Error Modal Card */}
+        {showErrorModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 10000,
+            background: 'rgba(0, 33, 71, 0.82)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}>
+            <div style={{
+              background: '#ffffff',
+              border: '3px solid #c62828',
+              borderRadius: '16px',
+              maxWidth: '540px',
+              width: '100%',
+              padding: '32px 28px',
+              boxShadow: '0 20px 50px rgba(198, 40, 40, 0.3)',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                width: '64px',
+                height: '64px',
+                background: '#fef2f2',
+                color: '#c62828',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '2rem',
+                fontWeight: 'bold',
+                margin: '0 auto 20px auto',
+                border: '2px solid #c62828'
+              }}>
+                ⚠️
+              </div>
+
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#991b1b', margin: '0 0 10px 0' }}>
+                Submission Could Not Be Completed
+              </h2>
+
+              <p style={{ fontSize: '0.9rem', color: '#475569', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+                {submitError || "A network or server connectivity issue prevented final submission."}
+              </p>
+
+              <div style={{
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '8px',
+                padding: '14px',
+                fontSize: '0.85rem',
+                color: '#7f1d1d',
+                marginBottom: '24px',
+                textAlign: 'left'
+              }}>
+                <strong>📧 Support Assistance:</strong> For any recruitment queries or technical assistance, please email Mr. Parmod Kumar at{' '}
+                <a
+                  href="mailto:parmod.kumar@ris.org.in?subject=RIS%20Application%20Submission%20Retry"
+                  style={{ color: '#7f1d1d', fontWeight: 800, textDecoration: 'underline' }}
+                >
+                  parmod.kumar@ris.org.in
+                </a>.
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => { setShowErrorModal(false); executeFinalSubmit(); }}
+                  style={{
+                    flex: 1,
+                    padding: '12px 20px',
+                    background: '#c62828',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '0.92rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(198, 40, 40, 0.3)'
+                  }}
+                >
+                  🔄 Retry Submission
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowErrorModal(false)}
+                  style={{
+                    padding: '12px 20px',
+                    background: '#f1f5f9',
+                    color: '#1e293b',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontSize: '0.92rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Close & Review
+                </button>
+              </div>
             </div>
           </div>
         )}
