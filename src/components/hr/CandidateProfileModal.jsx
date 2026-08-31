@@ -574,8 +574,9 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                   <Globe size={16} style={{ color: '#6366f1' }} /> <strong>Nationality:</strong> {data.nationality || 'Indian'}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px' }}>
-                  <MapPin size={16} style={{ color: '#ef4444' }} /> <strong>Location:</strong> {data.city ? `${data.city}, ` : ''}{data.state}{data.pincode ? ` - ${data.pincode}` : ''}
+                  <MapPin size={16} style={{ color: '#ef4444' }} /> <strong>Location:</strong> {(data.is_international_address || data.international_address) ? `🌍 ${data.international_address || 'International Address'}` : `${data.city ? `${data.city}, ` : ''}${data.state}${data.pincode ? ` - ${data.pincode}` : ''}`}
                 </div>
+
 
               </div>
 

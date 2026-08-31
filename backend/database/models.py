@@ -93,8 +93,11 @@ class CandidateMetadata(Base):
     city                 = Column(String(100), nullable=True)
     state                = Column(String(100), nullable=True)
     pincode              = Column(String(20),  nullable=True)
+    is_international_address = Column(Boolean, nullable=False, default=False)
+    international_address    = Column(Text,        nullable=True)
     years_of_experience  = Column(Float,       nullable=True)
     last_salary          = Column(Float,       nullable=True)
+
 
     @validates('dob')
     def update_age(self, key, dob_value):

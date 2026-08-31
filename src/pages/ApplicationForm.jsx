@@ -484,8 +484,11 @@ export default function ApplicationForm() {
   const [candidateState, setCandidateState] = useState('');
   const [city, setCity] = useState('');
   const [pincode, setPincode] = useState('');
+  const [isInternationalAddress, setIsInternationalAddress] = useState(false);
+  const [internationalAddress, setInternationalAddress] = useState('');
   const [sop, setSop] = useState('');
   const [dobError, setDobError] = useState('');
+
 
   // Step 2
   const [classXSchool, setClassXSchool] = useState('');
@@ -1009,11 +1012,16 @@ export default function ApplicationForm() {
     }
     if (!gender) errors.push("Gender is required.");
     if (!nationality) errors.push("Nationality is required.");
-    if (!candidateState) errors.push("State/Union Territory is required.");
-    if (!city.trim() || !/^[a-zA-Z\s]{2,100}$/.test(city.trim())) {
-      errors.push("City must be at least 2 characters and contain only letters.");
+    if (isInternationalAddress) {
+      if (!internationalAddress.trim()) errors.push("Full International Address is required.");
+    } else {
+      if (!candidateState) errors.push("State/Union Territory is required.");
+      if (!city.trim() || !/^[a-zA-Z\s]{2,100}$/.test(city.trim())) {
+        errors.push("City must be at least 2 characters and contain only letters.");
+      }
+      if (!pincode || !/^\d{6}$/.test(pincode)) errors.push("Pincode must be exactly 6 digits.");
     }
-    if (!pincode || !/^\d{6}$/.test(pincode)) errors.push("Pincode must be exactly 6 digits.");
+
 
 
     // Education (Step 2)
@@ -1164,9 +1172,16 @@ export default function ApplicationForm() {
     
     // Check required fields for Step 1
     if (step === 1) {
-      if (!full_name || !email || !countryCode || !mobile_number || !dob || !gender || !candidateState || !city || !pincode) {
-         return; // Let CSS handle the red borders
+      if (isInternationalAddress) {
+        if (!full_name || !email || !countryCode || !mobile_number || !dob || !gender || !internationalAddress.trim()) {
+          return;
+        }
+      } else {
+        if (!full_name || !email || !countryCode || !mobile_number || !dob || !gender || !candidateState || !city || !pincode) {
+          return;
+        }
       }
+
       
       // DOB Validation
       const dobParts = dob.split('/');
@@ -1356,11 +1371,14 @@ export default function ApplicationForm() {
       pub_reports: pubReports,
       pub_policy_briefs: pubPolicyBriefs,
       gender: gender || null,
-      state: candidateState || null,
-      city: city || null,
-      pincode: pincode || null,
+      state: isInternationalAddress ? 'International' : (candidateState || null),
+      city: isInternationalAddress ? 'Overseas' : (city || null),
+      pincode: isInternationalAddress ? '000000' : (pincode || null),
+      is_international_address: isInternationalAddress,
+      international_address: isInternationalAddress ? internationalAddress.trim() : null,
       years_of_experience: totalYrs,
       last_salary: lastSalary ? parseFloat(lastSalary) : null,
+
       position_applied, 
       admin_department: position_applied === 'Admin' ? admin_department : null,
       schooling: {
@@ -1799,12 +1817,64 @@ export default function ApplicationForm() {
                   />
                 </div>
 
-                {/* Row 3 */}
-                <div className="form-group col-4">
-                  <label className="form-label">State / Union Territory</label>
+                {/* Row 3 - Address Header & Checkbox */}
+                <div className="form-group col-12" style={{ marginTop: '0.75rem', marginBottom: '0.5rem' }}>
+                  <label style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '10px', 
+                    fontSize: '0.88rem', 
+                    fontWeight: 700, 
+                    color: '#002147', 
+                    cursor: 'pointer', 
+                    background: isInternationalAddress ? '#e0f2fe' : '#f8fafc', 
+                    padding: '10px 16px', 
+                    borderRadius: '8px', 
+                    border: isInternationalAddress ? '1.5px solid #0284c7' : '1px solid #cbd5e1',
+                    transition: 'all 0.2s ease'
+                  }}>
+                    <input 
+                      type="checkbox" 
+                      checked={isInternationalAddress} 
+                      onChange={e => {
+                        const checked = e.target.checked;
+                        setIsInternationalAddress(checked);
+                        if (checked) {
+                          setCandidateState('International');
+                          setCity('Overseas');
+                          setPincode('000000');
+                        } else {
+                          setCandidateState('');
+                          setCity('');
+                          setPincode('');
+                        }
+                      }}
+                      style={{ width: '18px', height: '18px', accentColor: '#002147', cursor: 'pointer' }}
+                    />
+                    🌍 International / Overseas Address (Residing Outside India)
+                  </label>
+                </div>
+
+                {isInternationalAddress && (
+                  <div className="form-group col-12" style={{ marginBottom: '0.75rem' }}>
+                    <label className="form-label">Full Overseas / International Address <span style={{ color: '#ef4444' }}>*</span></label>
+                    <textarea 
+                      rows={3} 
+                      required={isInternationalAddress}
+                      className={`form-input ${(triedSubmit && isInternationalAddress && !internationalAddress.trim()) ? 'faulty-input' : ''}`} 
+                      value={internationalAddress} 
+                      onChange={e => setInternationalAddress(e.target.value)} 
+                      placeholder="Enter street address, city, state/province, postal code, and country"
+                    />
+                  </div>
+                )}
+
+                <div className="form-group col-4" style={isInternationalAddress ? { opacity: 0.45, pointerEvents: 'none' } : {}}>
+                  <label className="form-label">State / Union Territory {!isInternationalAddress && <span style={{ color: '#ef4444' }}>*</span>}</label>
                   <select 
-                    required 
-                    className={`form-input ${(triedSubmit && !candidateState) ? 'faulty-input' : ''}`} 
+                    required={!isInternationalAddress}
+                    disabled={isInternationalAddress}
+                    className={`form-input ${(triedSubmit && !isInternationalAddress && !candidateState) ? 'faulty-input' : ''}`} 
                     value={candidateState} 
                     onChange={e => setCandidateState(e.target.value)}
                   >
@@ -1814,26 +1884,29 @@ export default function ApplicationForm() {
                     ))}
                   </select>
                 </div>
-                <div className="form-group col-4">
-                  <label className="form-label">City</label>
+                <div className="form-group col-4" style={isInternationalAddress ? { opacity: 0.45, pointerEvents: 'none' } : {}}>
+                  <label className="form-label">City {!isInternationalAddress && <span style={{ color: '#ef4444' }}>*</span>}</label>
                   <input 
-                    required 
-                    className={`form-input ${(triedSubmit && !city) ? 'faulty-input' : ''}`} 
+                    required={!isInternationalAddress}
+                    disabled={isInternationalAddress}
+                    className={`form-input ${(triedSubmit && !isInternationalAddress && !city) ? 'faulty-input' : ''}`} 
                     value={city} 
                     onChange={e => setCity(e.target.value)} 
                     placeholder="e.g. New Delhi"
                   />
                 </div>
-                <div className="form-group col-4">
-                  <label className="form-label">Pin Code</label>
+                <div className="form-group col-4" style={isInternationalAddress ? { opacity: 0.45, pointerEvents: 'none' } : {}}>
+                  <label className="form-label">Pin Code {!isInternationalAddress && <span style={{ color: '#ef4444' }}>*</span>}</label>
                   <input 
-                    required 
-                    className={`form-input ${(triedSubmit && !pincode) ? 'faulty-input' : ''}`} 
+                    required={!isInternationalAddress}
+                    disabled={isInternationalAddress}
+                    className={`form-input ${(triedSubmit && !isInternationalAddress && !pincode) ? 'faulty-input' : ''}`} 
                     value={pincode} 
                     onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     placeholder="e.g. 110001"
                   />
                 </div>
+
               </div>
 
               <div style={{
@@ -2956,7 +3029,8 @@ export default function ApplicationForm() {
                     <div className="resume-contact-info">
                       <span className="resume-contact-item">📧 {email}</span>
                       <span className="resume-contact-item">📱 {countryCode} {mobile_number}</span>
-                      <span className="resume-contact-item">📍 {city}, {candidateState} - {pincode}</span>
+                      <span className="resume-contact-item">📍 {isInternationalAddress ? `🌍 ${internationalAddress || 'International Address'}` : `${city}, ${candidateState} - ${pincode}`}</span>
+
                       <span className="resume-contact-item">🎂 {dob}</span>
                       <span className="resume-contact-item">👤 {gender}</span>
                       <span className="resume-contact-item">🌐 {nationality}</span>

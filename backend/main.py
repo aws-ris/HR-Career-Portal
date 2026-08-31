@@ -219,9 +219,12 @@ def startup_migration():
             ("candidate_metadata", "country_code", "VARCHAR(10)"),
             ("candidate_metadata", "nationality", "VARCHAR(100) DEFAULT 'Indian'"),
             ("candidate_metadata", "pincode", "VARCHAR(20)"),
+            ("candidate_metadata", "is_international_address", "BOOLEAN DEFAULT FALSE"),
+            ("candidate_metadata", "international_address", "TEXT"),
             ("candidate_metadata", "age", "INTEGER"),
             ("candidate_metadata", "city", "VARCHAR(100)"),
             ("candidate_metadata", "last_salary", "FLOAT"),
+
             
             ("candidate_links_about", "about", "TEXT"),
             ("candidate_links_about", "sop", "TEXT"),
@@ -472,6 +475,8 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
             candidate.city = payload.city
             candidate.state = payload.state
             candidate.pincode = payload.pincode
+            candidate.is_international_address = getattr(payload, 'is_international_address', False) or False
+            candidate.international_address = getattr(payload, 'international_address', None)
             candidate.years_of_experience = payload.years_of_experience
             candidate.last_salary = payload.last_salary
             
@@ -499,9 +504,12 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
                 city                = payload.city,
                 state               = payload.state,
                 pincode             = payload.pincode,
+                is_international_address = getattr(payload, 'is_international_address', False) or False,
+                international_address = getattr(payload, 'international_address', None),
                 years_of_experience = payload.years_of_experience,
                 last_salary         = payload.last_salary
             )
+
             db.add(candidate)
             db.flush()
 
@@ -983,6 +991,9 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
         "state": candidate.state,
         "city": candidate.city,
         "pincode": candidate.pincode,
+        "is_international_address": getattr(candidate, "is_international_address", False) or False,
+        "international_address": getattr(candidate, "international_address", None),
+
         "age": candidate.age or (
             (datetime.date.today().year - candidate.dob.year - ((datetime.date.today().month, datetime.date.today().day) < (candidate.dob.month, candidate.dob.day)))
             if candidate.dob else None

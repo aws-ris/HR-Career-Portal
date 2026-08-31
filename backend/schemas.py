@@ -187,13 +187,12 @@ class WorkExperienceCreate(BaseModel):
 
     @model_validator(mode='after')
     def validate_dates(self):
-        if not self.is_current and self.end_date is None:
-            raise ValueError('end_date is required when is_current is False')
         if self.is_current:
             self.end_date = None
         if self.end_date and self.start_date and self.end_date < self.start_date:
             raise ValueError('end_date must be after start_date')
         return self
+
 
 class WorkExperienceResponse(WorkExperienceCreate):
     id: str
@@ -272,9 +271,12 @@ class CandidateCreate(BaseModel):
     gender:              Optional[GenderType] = None
     city:                Optional[str]        = None
     state:               Optional[str]        = None
-    pincode:             Optional[str]        = Field(None, pattern=r'^\d{6}$')
+    pincode:             Optional[str]        = None
+    is_international_address: Optional[bool]  = False
+    international_address:    Optional[str]   = None
     years_of_experience: Optional[float]      = Field(None, ge=0)
     last_salary:         Optional[float]      = Field(None, ge=0)
+
 
     # Links & about (goes to candidate_links_about)
     about:          Optional[str] = Field(None, max_length=3000)
