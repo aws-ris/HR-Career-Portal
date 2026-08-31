@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { API_BASE as API } from '../api';
 import { CheckCircle2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import COUNTRY_CODES from '../data/countryCodes.json';
+import nationalities from '../data/nationalities.json';
 
 const UG_DEGREES = [
   'B.A.', 'B.Sc.', 'B.Com', 'B.Tech', 'B.E.', 'B.B.A.', 'B.C.A.', 'LL.B.', 'MBBS', 'B.Arch', 'B.Ed.',
@@ -475,6 +476,7 @@ export default function ApplicationForm() {
   const [admin_department, setAdminDept] = useState('IT');
   const [full_name, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [nationality, setNationality] = useState('Indian');
   const [countryCode, setCountryCode] = useState('');
   const [mobile_number, setMobile] = useState('');
   const [dob, setDob] = useState('');
@@ -796,6 +798,7 @@ export default function ApplicationForm() {
         if (dobErr) errors.push(dobErr);
       }
       if (!gender) errors.push("Gender is required.");
+      if (!nationality) errors.push("Nationality is required.");
       if (!candidateState) errors.push("State/Union Territory is required.");
       if (!city.trim() || !/^[a-zA-Z\s]{2,100}$/.test(city.trim())) {
         errors.push("City must be at least 2 characters and contain only letters.");
@@ -1005,6 +1008,7 @@ export default function ApplicationForm() {
       if (dobErr) errors.push(dobErr);
     }
     if (!gender) errors.push("Gender is required.");
+    if (!nationality) errors.push("Nationality is required.");
     if (!candidateState) errors.push("State/Union Territory is required.");
     if (!city.trim() || !/^[a-zA-Z\s]{2,100}$/.test(city.trim())) {
       errors.push("City must be at least 2 characters and contain only letters.");
@@ -1336,6 +1340,7 @@ export default function ApplicationForm() {
       full_name, 
       dob: formattedDob, 
       email, 
+      nationality: nationality || 'Indian',
       country_code: countryCode,
       mobile_no: mobile_number, 
       about: null,
@@ -1722,7 +1727,7 @@ export default function ApplicationForm() {
                     onChange={e => setFullName(e.target.value)} 
                   />
                 </div>
-                <div className="form-group col-5">
+                <div className="form-group col-3">
                   <label className="form-label">Email ID</label>
                   <input 
                     required 
@@ -1732,7 +1737,7 @@ export default function ApplicationForm() {
                     onChange={e => setEmail(e.target.value)} 
                   />
                 </div>
-                <div className="form-group col-3">
+                <div className="form-group col-2">
                   <label className="form-label">Gender</label>
                   <select 
                     required 
@@ -1747,9 +1752,34 @@ export default function ApplicationForm() {
                     <option>Prefer not to say</option>
                   </select>
                 </div>
+                <div className="form-group col-3">
+                  <label className="form-label">Date of Birth (DD/MM/YYYY)</label>
+                  <input 
+                    required 
+                    placeholder="DD/MM/YYYY"
+                    className={`form-input ${(triedSubmit && (!dob || dobError)) ? 'faulty-input' : ''}`} 
+                    value={dob} 
+                    onChange={handleDobChange} 
+                  />
+                  {dobError && <div className="error-text">{dobError}</div>}
+                </div>
 
                 {/* Row 2 */}
                 <div className="form-group col-3">
+                  <label className="form-label">Nationality</label>
+                  <select 
+                    required 
+                    className={`form-input ${(triedSubmit && !nationality) ? 'faulty-input' : ''}`} 
+                    value={nationality} 
+                    onChange={e => setNationality(e.target.value)}
+                  >
+                    <option value="">Select Nationality</option>
+                    {nationalities.map(n => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group col-2">
                   <label className="form-label">Country Code</label>
                   <SearchableCountryCodeInput 
                     value={countryCode} 
@@ -1768,34 +1798,24 @@ export default function ApplicationForm() {
                     onChange={e => setMobile(e.target.value)} 
                   />
                 </div>
-                <div className="form-group col-5">
-                  <label className="form-label">Date of Birth (DD/MM/YYYY)</label>
-                  <input 
+                <div className="form-group col-3">
+                  <label className="form-label">State / Union Territory</label>
+                  <select 
                     required 
-                    placeholder="DD/MM/YYYY"
-                    className={`form-input ${(triedSubmit && (!dob || dobError)) ? 'faulty-input' : ''}`} 
-                    value={dob} 
-                    onChange={handleDobChange} 
-                  />
-                  {dobError && <div className="error-text">{dobError}</div>}
+                    className={`form-input ${(triedSubmit && !candidateState) ? 'faulty-input' : ''}`} 
+                    value={candidateState} 
+                    onChange={e => setCandidateState(e.target.value)}
+                  >
+                    <option value="">Select State / UT</option>
+                    {['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry'].map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                 </div>
-                  {/* Row 3 */}
-                  <div className="form-group col-4">
-                    <label className="form-label">State / Union Territory</label>
-                    <select 
-                      required 
-                      className={`form-input ${(triedSubmit && !candidateState) ? 'faulty-input' : ''}`} 
-                      value={candidateState} 
-                      onChange={e => setCandidateState(e.target.value)}
-                    >
-                      <option value="">Select State / UT</option>
-                      {['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry'].map(s => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group col-4">
-                    <label className="form-label">City</label>
+
+                {/* Row 3 */}
+                <div className="form-group col-6">
+                  <label className="form-label">City</label>
                   <input 
                     required 
                     className={`form-input ${(triedSubmit && !city) ? 'faulty-input' : ''}`} 
@@ -1804,7 +1824,7 @@ export default function ApplicationForm() {
                     placeholder="e.g. New Delhi"
                   />
                 </div>
-                <div className="form-group col-4">
+                <div className="form-group col-6">
                   <label className="form-label">Pincode (6 Digits)</label>
                   <input 
                     required 
@@ -2885,6 +2905,19 @@ export default function ApplicationForm() {
                       </select>
                     </div>
                     <div className="resume-inline-group">
+                      <label className="resume-inline-label">Nationality</label>
+                      <select 
+                        className="resume-inline-input"
+                        value={nationality}
+                        onChange={e => setNationality(e.target.value)}
+                      >
+                        <option value="">Select Nationality</option>
+                        {nationalities.map(n => (
+                          <option key={n} value={n}>{n}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="resume-inline-group">
                       <label className="resume-inline-label">State / UT</label>
                       <select 
                         className="resume-inline-input"
@@ -2926,6 +2959,7 @@ export default function ApplicationForm() {
                       <span className="resume-contact-item">📍 {city}, {candidateState} - {pincode}</span>
                       <span className="resume-contact-item">🎂 {dob}</span>
                       <span className="resume-contact-item">👤 {gender}</span>
+                      <span className="resume-contact-item">🌐 {nationality}</span>
 
                     </div>
                   </>

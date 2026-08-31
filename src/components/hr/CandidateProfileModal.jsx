@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Mail, Phone, MapPin, Calendar, GraduationCap, Briefcase, BookOpen, FileText, ExternalLink, Download, ArrowUpRight, Award } from 'lucide-react';
+import { X, Mail, Phone, MapPin, Calendar, GraduationCap, Briefcase, BookOpen, FileText, ExternalLink, Download, ArrowUpRight, Award, Globe } from 'lucide-react';
 
 import { API_BASE as API } from '../../api';
 
@@ -569,6 +569,9 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px' }}>
                   <Phone size={16} style={{ color: '#10b981' }} /> <strong>Mobile:</strong> {data.country_code || ''} {data.mobile_no}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px' }}>
+                  <Globe size={16} style={{ color: '#6366f1' }} /> <strong>Nationality:</strong> {data.nationality || 'Indian'}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '14px' }}>
                   <MapPin size={16} style={{ color: '#ef4444' }} /> <strong>Location:</strong> {data.city ? `${data.city}, ` : ''}{data.state}{data.pincode ? ` - ${data.pincode}` : ''}

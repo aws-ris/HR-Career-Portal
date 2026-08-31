@@ -217,6 +217,7 @@ def startup_migration():
             ("job_postings", "pay_level", "VARCHAR(50)"),
             
             ("candidate_metadata", "country_code", "VARCHAR(10)"),
+            ("candidate_metadata", "nationality", "VARCHAR(100) DEFAULT 'Indian'"),
             ("candidate_metadata", "pincode", "VARCHAR(20)"),
             ("candidate_metadata", "age", "INTEGER"),
             ("candidate_metadata", "city", "VARCHAR(100)"),
@@ -817,6 +818,7 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
         if candidate:
             # Update existing candidate details
             candidate.full_name = payload.full_name
+            candidate.nationality = getattr(payload, 'nationality', None) or 'Indian'
             candidate.country_code = payload.country_code
             candidate.mobile_no = payload.mobile_no
             candidate.dob = payload.dob
@@ -843,6 +845,7 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
             candidate = models.CandidateMetadata(
                 full_name           = payload.full_name,
                 email               = payload.email,
+                nationality         = getattr(payload, 'nationality', None) or 'Indian',
                 country_code        = payload.country_code,
                 mobile_no           = payload.mobile_no,
                 dob                 = payload.dob,
@@ -1326,6 +1329,8 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
         "id": candidate.id,
         "full_name": candidate.full_name,
         "email": candidate.email,
+        "nationality": getattr(candidate, "nationality", None) or "Indian",
+        "country_code": candidate.country_code,
         "mobile_no": candidate.mobile_no,
         "dob": candidate.dob.isoformat() if candidate.dob else None,
         "gender": candidate.gender,
