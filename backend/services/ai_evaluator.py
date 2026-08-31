@@ -82,9 +82,24 @@ def evaluate_candidate_qualitative(job_title: str, job_requirements: str, candid
         }
 
     try:
-        import groq
-        groq_client = groq.Groq(api_key=groq_api_key)
-        MODEL_NAME = "openai/gpt-oss-20b"
+        import boto3
+        bedrock = boto3.client('bedrock-runtime', region_name=os.getenv("AWS_REGION", "ap-south-1"))
+        MODEL_NAME = "meta.llama3-8b-instruct-v1:0"
+
+        def call_bedrock(prompt, temperature):
+            try:
+                response = bedrock.converse(
+                    modelId=MODEL_NAME,
+                    messages=[{
+                        "role": "user",
+                        "content": [{"text": prompt}]
+                    }],
+                    inferenceConfig={"temperature": temperature}
+                )
+                return response['output']['message']['content'][0]['text']
+            except Exception as e:
+                print(f"Bedrock Error: {e}")
+                return "{}"
 
         # 🤖 Agent 1: Academic & Research Specialist
         academic_prompt = f"""
@@ -98,12 +113,7 @@ def evaluate_candidate_qualitative(job_title: str, job_requirements: str, candid
             "verification_badges": ["Badge 1", "Badge 2"]
         }}
         """
-        ac_res = groq_client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": academic_prompt}],
-            temperature=0.1
-        )
-        academic_eval = parse_groq_json(ac_res.choices[0].message.content)
+        academic_eval = parse_groq_json(call_bedrock(academic_prompt, 0.1))
 
         # 🤖 Agent 2: Work Experience Specialist
         exp_prompt = f"""
@@ -118,12 +128,7 @@ def evaluate_candidate_qualitative(job_title: str, job_requirements: str, candid
             "experience_level": "Senior Specialist" or "Mid-level Specialist" or "Junior Specialist"
         }}
         """
-        exp_res = groq_client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": exp_prompt}],
-            temperature=0.1
-        )
-        exp_eval = parse_groq_json(exp_res.choices[0].message.content)
+        exp_eval = parse_groq_json(call_bedrock(exp_prompt, 0.1))
 
         # 🤖 Agent 3: SOP & AI Detector Agent
         detector_prompt = f"""
@@ -138,12 +143,7 @@ def evaluate_candidate_qualitative(job_title: str, job_requirements: str, candid
             "semantic_vision_summary": "1 sentence summary of candidate vision"
         }}
         """
-        ai_res = groq_client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": detector_prompt}],
-            temperature=0.0
-        )
-        sop_eval = parse_groq_json(ai_res.choices[0].message.content)
+        sop_eval = parse_groq_json(call_bedrock(detector_prompt, 0.0))
 
         # ⚖️ Agent 4: Selection Committee Synthesis
         consensus_prompt = f"""
@@ -161,12 +161,7 @@ def evaluate_candidate_qualitative(job_title: str, job_requirements: str, candid
             "tailored_interview_questions": ["question 1", "question 2", "question 3"]
         }}
         """
-        chair_res = groq_client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": consensus_prompt}],
-            temperature=0.2
-        )
-        final_eval = parse_groq_json(chair_res.choices[0].message.content)
+        final_eval = parse_groq_json(call_bedrock(consensus_prompt, 0.2))
 
         ac_tags = academic_eval.get("academic_tags") or dynamic_academic_tags
         ex_tags = exp_eval.get("experience_tags") or dynamic_exp_tags
@@ -211,34 +206,4 @@ def evaluate_candidate_qualitative(job_title: str, job_requirements: str, candid
 
     except Exception as e:
         print(f"❌ [Qualitative AI Evaluation Exception]: {e}")
-        return {
-            "status": "partial_fallback",
-            "semantic_alignment": "High Alignment",
-            "matched_skill_tags": dynamic_academic_tags + dynamic_exp_tags,
-            "verification_badges": [f"{d.split(':')[0]} Verified" for d in degrees] if degrees else ["Credentials Listed"],
-            "agent1_academic": {
-                "academic_tags": dynamic_academic_tags,
-                "verification_badges": ["Degree Verified"],
-                "summary": f"Agent 1 processed degrees for {cand_name}."
-            },
-            "agent2_experience": {
-                "experience_tags": dynamic_exp_tags,
-                "experience_level": f"{candidate_data.get('years_of_experience', 0)} Years Specialist",
-                "summary": f"Agent 2 processed experience for {cand_name}."
-            },
-            "agent3_sop_ai": {
-                "ai_classification": "Likely Human Writing",
-                "detected_cliches": [],
-                "vision_summary": f"Candidate {cand_name} submitted SOP."
-            },
-            "agent4_consensus": {
-                "semantic_alignment": "High Alignment",
-                "key_strengths": [f"Candidate possesses relevant training in {dynamic_academic_tags[0]}" if dynamic_academic_tags else "Relevant qualifications"],
-                "potential_flags": [],
-                "tailored_interview_questions": [f"Can you summarize your research experience for the {job_title} role?"]
-            },
-            "ai_detector": {"ai_classification": "Likely Human Writing", "detected_cliches": [], "vision_summary": "SOP text received."},
-            "key_strengths": [f"Qualifications for {job_title}"],
-            "potential_flags": [],
-            "tailored_interview_questions": [f"What motivates you to apply for {job_title}?"]
-        }
+        raise ValueError(f"AI Evaluation failed to process via AWS Bedrock: {e}")
