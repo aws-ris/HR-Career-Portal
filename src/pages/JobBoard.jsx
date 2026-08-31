@@ -289,10 +289,12 @@ export default function JobBoard() {
             </a>
           </div>
 
-          <div style={{ display: 'flex', gap: '16px', color: '#cbd5e1', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '16px', color: '#cbd5e1', alignItems: 'center', flexWrap: 'wrap' }}>
             <a href="https://www.ris.org.in" target="_blank" rel="noopener noreferrer" style={{ color: '#cbd5e1', textDecoration: 'none' }}>Official Website</a>
             <span>|</span>
             <a href="https://ris.org.in/en/contact-us" target="_blank" rel="noopener noreferrer" style={{ color: '#cbd5e1', textDecoration: 'none' }}>Contact Us</a>
+            <span>|</span>
+            <a href="mailto:parmod.kumar@ris.org.in?subject=RIS%20Recruitment%20Query" style={{ color: '#cbd5e1', textDecoration: 'none' }}>HR Support: parmod.kumar@ris.org.in</a>
           </div>
         </div>
       </footer>

@@ -1612,6 +1612,11 @@ export default function ApplicationForm() {
         ) : (
           <p className="header-subtitle">Thank you for showing interest in joining our institution.</p>
         )}
+
+        {/* Persistent Uniform HR Support Banner */}
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 16px', marginTop: '12px', textAlign: 'center', fontSize: '0.84rem', color: '#334155' }}>
+          📧 For any recruitment queries or technical assistance, please email Mr. Parmod Kumar at <a href="mailto:parmod.kumar@ris.org.in?subject=RIS%20Recruitment%20Query" style={{ color: '#002147', fontWeight: 800, textDecoration: 'underline' }}>parmod.kumar@ris.org.in</a>.
+        </div>
       </header>
 
       <main className="main-container">
@@ -1649,7 +1654,15 @@ export default function ApplicationForm() {
           </div>
         </div>
 
-        {submitError && <div style={{background: '#fef2f2', color: '#ef4444', padding: '1rem', borderRadius: '8px', marginBottom: '1rem'}}>{submitError}</div>}
+        {submitError && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem' }}>
+            <div style={{ fontWeight: 700, marginBottom: '4px' }}>Submission Error</div>
+            <div>{submitError}</div>
+            <div style={{ marginTop: '8px', fontSize: '0.82rem', color: '#7f1d1d' }}>
+              For any recruitment queries or technical assistance, please email Mr. Parmod Kumar at <a href="mailto:parmod.kumar@ris.org.in?subject=RIS%20Application%20Submission%20Issue" style={{ color: '#7f1d1d', fontWeight: 700, textDecoration: 'underline' }}>parmod.kumar@ris.org.in</a>.
+            </div>
+          </div>
+        )}
 
         {jobDetail && step === 0 && (
           <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '24px', marginBottom: '32px' }}>
@@ -1711,6 +1724,10 @@ export default function ApplicationForm() {
                 <li>The decision of the committee w.r.t. shortlisting and selection will be final and binding. No query whatsoever will be dealt w.r.t. the same.</li>
               </ul>
               <p style={{ marginTop: '12px', marginBottom: 0, fontWeight: '700' }}>Interested candidates having the above qualifications and experience should only apply Online.</p>
+            </div>
+            
+            <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '14px 18px', marginBottom: '24px', fontSize: '0.88rem', color: '#1e293b' }}>
+              <strong>📧 Support & Enquiries:</strong> For any recruitment queries or technical assistance, please email Mr. Parmod Kumar at <a href="mailto:parmod.kumar@ris.org.in?subject=RIS%20Recruitment%20Query" style={{ color: '#002147', fontWeight: '700', textDecoration: 'underline' }}>parmod.kumar@ris.org.in</a>.
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
