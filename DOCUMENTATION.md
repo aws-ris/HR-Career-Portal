@@ -2,8 +2,8 @@
 
 > **Research and Information System for Developing Countries (RIS)**  
 > **System Version:** 2.0.0 (High-Concurrency Non-Blocking Edition)  
-> **Environment:** Production EC2 (`13.205.216.81`) & Local Development  
-> **Last Updated:** August 30, 2026  
+> **Environment:** Production EC2 (`13.205.216.81`) & Custom Domain (`careers.ris.org.in`)  
+> **Last Updated:** August 31, 2026  
 
 ---
 
@@ -12,6 +12,7 @@
 2. [User Manual (Candidates & HR Admins)](#2-user-manual-candidates--hr-admins)
    - [For Job Candidates](#for-job-candidates)
    - [For HR Administrators](#for-hr-administrators)
+   - [Job Lifecycle & Deadline Automation](#job-lifecycle--deadline-automation)
 3. [Developer Guide (Full-Stack Engineering)](#3-developer-guide-full-stack-engineering)
    - [Technology Stack](#technology-stack)
    - [Project Directory Layout](#project-directory-layout)
@@ -20,6 +21,7 @@
    - [Local Setup & Management CLI Utilities](#local-setup--management-cli-utilities)
 4. [System Architect & DevOps Guide](#4-system-architect--devops-guide)
    - [Production Infrastructure Topology](#production-infrastructure-topology)
+   - [Custom Domain & SSL Setup (`careers.ris.org.in`)](#custom-domain--ssl-setup-careersrisorgin)
    - [High-Concurrency Tuning Specifications](#high-concurrency-tuning-specifications)
    - [EC2 File System & Directory Standards](#ec2-file-system--directory-standards)
    - [Systemd & Nginx Configuration](#systemd--nginx-configuration)
@@ -30,11 +32,11 @@
 
 ## 1. Executive System Overview
 
-The **RIS HR Career Portal** is an enterprise-grade recruitment and candidate management platform designed for high-concurrency recruitment drives (1,000+ simultaneous candidate submissions). It features non-blocking application processing, automated profile scoring, database-backed authentication, multi-job candidate linkage, and n8n daily health automation.
+The **RIS HR Career Portal** is an enterprise-grade recruitment and candidate management platform designed for high-concurrency recruitment drives (1,000+ simultaneous candidate submissions). It features non-blocking application processing, automated profile scoring, database-backed authentication, multi-job candidate linkage, automatic job deadline expiration, and n8n daily health automation.
 
 ```mermaid
 graph TD
-    A["👤 Candidates (1,000+ Concurrent)"] -->|Public Job Board & Applications| B["🌐 Nginx Reverse Proxy (Port 80/443)"]
+    A["👤 Candidates (1,000+ Concurrent)"] -->|Public Job Board & Applications| B["🌐 Nginx Reverse Proxy (careers.ris.org.in / Port 80/443)"]
     B -->|FastAPI Proxy (Port 8005)| C["⚡ Gunicorn / FastAPI Backend (8 Workers)"]
     
     C -->|Fast Metadata Writes| D[("🗄️ PostgreSQL Database (300 Conns)")]
@@ -51,7 +53,7 @@ graph TD
 ### For Job Candidates
 
 1. **Browsing Open Vacancies:**
-   - Visit the **Public Job Board** at `http://13.205.216.81/hr`.
+   - Visit the **Public Job Board** at `https://careers.ris.org.in` (or `http://13.205.216.81/hr`).
    - Explore active job postings, minimum experience requirements, pay scales, and application deadlines.
 
 2. **Submitting an Application:**
@@ -63,35 +65,50 @@ graph TD
      4. **Work Experience & Publications:** Employer details, designation, publication counts, validation DOI/URLs.
      5. **Preview & Submission:** Review candidate dossier, download PDF copy, select outreach source (*"Where did you hear about this vacancy?"*), and click **Submit Application**.
 
-3. **Built-in Resilience:**
-   - The application form features an **automatic 3-attempt background retry loop**. If your mobile data lags during submission, the browser automatically retries in the background without displaying an error page.
+3. **Built-in Resilience & Closed Vacancy Safeguards:**
+   - The application form features an **automatic 3-attempt background retry loop** for network resilience.
+   - **Closed Job Protection:** If a candidate opens a saved application link (`/hr/apply/:jobId`) for a job whose deadline has passed or status is `closed`, the 5-step form is automatically hidden and a **"Job Vacancy Closed"** notification screen is rendered.
 
 ---
 
 ### For HR Administrators
 
 1. **Accessing the HR Admin Portal:**
-   - Navigate to `http://13.205.216.81/hr/login`.
+   - Navigate to `https://careers.ris.org.in/hr/login` (or `http://13.205.216.81/hr/login`).
    - Enter your credentials:
      - **Username:** `hr_ris`
      - **Password:** `ris@1234`
 
 2. **Managing Vacancies & Applicants:**
-   - **Job Postings Tab:** Create new job vacancies, update deadlines, or mark postings as closed.
+   - **Job Postings Tab:** Create new job vacancies, update deadlines, publish drafts, or edit existing/closed postings.
    - **Applicant Roster:** Click on any vacancy to open the candidate table. Filter candidates by education level, score, status, or search by candidate name/email.
 
-3. **Viewing Candidate Dossiers & Application History:**
-   - Click the blue **"Dossier"** button on any candidate row.
-   - The Candidate Dossier displays:
-     - Full persona info, age, score breakdown, education, and work experience.
-     - Resume download link.
-     - **`📂 Application History & Previous Vacancies`**: Shows every previous job vacancy applied for by this candidate across the portal, along with submission dates and status history.
+3. **Extending Deadlines on Closed Postings:**
+   - Closed jobs remain visible in the HR Admin **Job Postings** tab under the **Closed** filter.
+   - Click **"Edit"** on any closed job, update the deadline date to a future date (`deadline >= today`), and save changes.
+   - The backend automatically transitions the job status back to `open`, making the vacancy immediately active for candidates again.
 
-4. **Account Settings & Password Updates:**
+4. **Viewing Candidate Dossiers & Application History:**
+   - Click the blue **"Dossier"** button on any candidate row.
+   - The Candidate Dossier displays full persona info, age, score breakdown, education, work experience, resume download link, and full multi-vacancy application history.
+
+5. **Account Settings & Password Updates:**
    - Click **"Settings"** in the sidebar navigation (`/hr/settings`).
    - Enter your **Current Password**, **New Password** (min 6 characters), and **Confirm New Password**.
    - Click **Confirm & Update Password** to save changes securely.
-   - **Forgot Password Notice:** In case a user forgets their password, a prominent notice directs them to contact the IT Department at `it-support@ris.org.in` or Extension `402`.
+   - **Forgot Password Notice:** Directs users to contact the IT Department at `it-support@ris.org.in` or Extension `402`.
+
+---
+
+### Job Lifecycle & Deadline Automation
+
+| Event / Action | System Behavior | Candidate Visibility | HR Admin Controls |
+|---|---|---|---|
+| **Job Created (Draft)** | Status = `draft`. Stored in DB. | Hidden from Public Board | Editable, Previewable, Publishable |
+| **Job Published** | Status = `open`. Active applications open. | Visible on `careers.ris.org.in` | Editable, Archivable, Closeable |
+| **Deadline Reached (`deadline < today`)** | Status auto-transitions to `closed` on backend. | Hidden from Public Board. Direct links show "Job Closed" screen. | Editable in "Closed" tab. |
+| **Deadline Extended (`deadline >= today`)** | Status auto-transitions back to `open`. | Immediately restored to Public Job Board & Application Form | Fully active in "Open" tab |
+
 
 ---
 
@@ -404,24 +421,50 @@ WantedBy=multi-user.target
 ```nginx
 server {
     listen 80;
-    server_name 13.205.216.81;
+    server_name 13.205.216.81 careers.ris.org.in careers.ris-tms.org;
 
     # Frontend React SPA
-    location /hr/ {
-        alias /var/www/HR_RIS/dist/;
-        try_files $uri $uri/ /hr/index.html;
+    location / {
+        root /var/www/HR_RIS/dist;
+        index index.html;
+        try_files $uri $uri/ /index.html;
     }
 
     # Backend API Proxy to Port 8005
     location /api/ {
         proxy_pass http://127.0.0.1:8005;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Max file upload size (15MB for resume PDFs & DOCX)
+        client_max_body_size 15M;
     }
 }
 ```
+
+---
+
+### Custom Domain & SSL Operations (`careers.ris.org.in`)
+
+1. **DNS Architecture (ClouDNS):**
+   * **Domain Zone:** `ris.org.in` (Managed via ClouDNS `pns51.cloudns.net` - `pns54.cloudns.net`).
+   * **Record Type:** `A`
+   * **Host:** `careers`
+   * **Target IPv4 Address:** `13.205.216.81`
+   * **TTL:** `300`
+
+2. **Certbot SSL Certificate Installation (HTTPS):**
+   Once the ClouDNS `A` record propagates, execute the Certbot command on EC2 to activate SSL:
+   ```bash
+   sudo certbot --nginx -d careers.ris.org.in --non-interactive --agree-tos -m it-support@ris.org.in
+   sudo systemctl reload nginx
+   ```
+
 
 ---
 
