@@ -1765,7 +1765,7 @@ export default function ApplicationForm() {
                 </div>
 
                 {/* Row 2 */}
-                <div className="form-group col-3">
+                <div className="form-group col-4">
                   <label className="form-label">Nationality</label>
                   <select 
                     required 
@@ -1779,7 +1779,7 @@ export default function ApplicationForm() {
                     ))}
                   </select>
                 </div>
-                <div className="form-group col-2">
+                <div className="form-group col-3">
                   <label className="form-label">Country Code</label>
                   <SearchableCountryCodeInput 
                     value={countryCode} 
@@ -1788,7 +1788,7 @@ export default function ApplicationForm() {
                     className={`form-input ${(triedSubmit && !countryCode) ? 'faulty-input' : ''}`}
                   />
                 </div>
-                <div className="form-group col-4">
+                <div className="form-group col-5">
                   <label className="form-label">Mobile Number</label>
                   <input 
                     required 
@@ -1798,7 +1798,9 @@ export default function ApplicationForm() {
                     onChange={e => setMobile(e.target.value)} 
                   />
                 </div>
-                <div className="form-group col-3">
+
+                {/* Row 3 */}
+                <div className="form-group col-4">
                   <label className="form-label">State / Union Territory</label>
                   <select 
                     required 
@@ -1812,9 +1814,7 @@ export default function ApplicationForm() {
                     ))}
                   </select>
                 </div>
-
-                {/* Row 3 */}
-                <div className="form-group col-6">
+                <div className="form-group col-4">
                   <label className="form-label">City</label>
                   <input 
                     required 
@@ -1824,8 +1824,8 @@ export default function ApplicationForm() {
                     placeholder="e.g. New Delhi"
                   />
                 </div>
-                <div className="form-group col-6">
-                  <label className="form-label">Pincode (6 Digits)</label>
+                <div className="form-group col-4">
+                  <label className="form-label">Pin Code</label>
                   <input 
                     required 
                     className={`form-input ${(triedSubmit && !pincode) ? 'faulty-input' : ''}`} 
@@ -2939,7 +2939,7 @@ export default function ApplicationForm() {
                       />
                     </div>
                     <div className="resume-inline-group">
-                      <label className="resume-inline-label">Pincode</label>
+                      <label className="resume-inline-label">Pin Code</label>
                       <input 
                         className="resume-inline-input"
                         value={pincode}
