@@ -1361,6 +1361,7 @@ async def upload_resume(candidate_id: str, job_id: Optional[str] = None, file: U
 class CandidateFilter(BaseModel):
 
     states: Optional[List[str]] = None
+    nationalities: Optional[List[str]] = None
     genders: Optional[List[str]] = None
     ug_uni: Optional[str] = None
     min_ug_score: Optional[float] = None
@@ -1963,6 +1964,10 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
             id_filters = [models.CandidateMetadata.state.ilike(f"%{s}%") for s in filters.states]
             id_query = id_query.filter(or_(*id_filters))
         
+        if filters.nationalities and len(filters.nationalities) > 0:
+            nat_filters = [models.CandidateMetadata.nationality.ilike(f"%{n}%") for n in filters.nationalities]
+            id_query = id_query.filter(or_(*nat_filters))
+
         if filters.genders and len(filters.genders) > 0:
             id_query = id_query.filter(models.CandidateMetadata.gender.in_(filters.genders))
 

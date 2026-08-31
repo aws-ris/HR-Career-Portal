@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE } from '../../api';
 import { Search, ChevronDown, User, GraduationCap, Briefcase, BookOpen, X, SlidersHorizontal, CheckCircle2, Circle, Filter, Sparkles, Brain } from 'lucide-react';
+import NATIONALITIES_LIST from '../../data/nationalities.json';
 
 const INDIAN_STATES = [
   'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
@@ -16,9 +17,31 @@ export default function FilterCenter({ job_id, onFilterChange }) {
   const [options, setOptions] = useState({ states: [], universities: [], genders: [] });
   const [stateSearch, setStateSearch] = useState('');
   const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
+  const [nationalitySearch, setNationalitySearch] = useState('');
+  const [nationalityDropdownOpen, setNationalityDropdownOpen] = useState(false);
   const [suggestions, setSuggestions] = useState({});
+
+  const stateRef = useRef(null);
+  const nationalityRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (stateRef.current && !stateRef.current.contains(event.target)) {
+        setStateDropdownOpen(false);
+      }
+      if (nationalityRef.current && !nationalityRef.current.contains(event.target)) {
+        setNationalityDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const [filters, setFilters] = useState({
     states: [],
+    nationalities: [],
     genders: [],
 
     ug_uni: '',
@@ -44,7 +67,6 @@ export default function FilterCenter({ job_id, onFilterChange }) {
     role_keyword: '',
     company_keyword: ''
   });
-  // API is now managed via centralization
 
   useEffect(() => {
     if (job_id) {
@@ -65,7 +87,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
 
   const getActiveCount = (catId) => {
     switch(catId) {
-      case 'bio': return filters.states.length + filters.genders.length + (filters.min_age > 18 || filters.max_age < 65 ? 1 : 0);
+      case 'bio': return filters.states.length + (filters.nationalities ? filters.nationalities.length : 0) + filters.genders.length + (filters.min_age > 18 || filters.max_age < 65 ? 1 : 0);
       case 'schooling': return (filters.min_x_score ? 1 : 0) + (filters.min_xii_score ? 1 : 0);
       case 'higher_edu': return (filters.ug_uni ? 1 : 0) + (filters.min_ug_score ? 1 : 0) + (filters.pg_uni ? 1 : 0) + (filters.pg_min_score ? 1 : 0) + (filters.phd_uni ? 1 : 0) + (filters.phd_domain ? 1 : 0) + (filters.phd_thesis ? 1 : 0);
       case 'professional': return (filters.min_experience_years > 0 ? 1 : 0) + (filters.role_keyword ? 1 : 0) + (filters.company_keyword ? 1 : 0) + (filters.worked_at_ris ? 1 : 0);
@@ -115,10 +137,10 @@ export default function FilterCenter({ job_id, onFilterChange }) {
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <button onClick={() => {
-             const reset = { states: [], genders: [], ug_uni: '', min_ug_score: null, ug_score_type: null, pg_uni: '', pg_min_score: null, pg_score_type: null, phd_uni: '', phd_thesis: '', phd_min_score: null, phd_score_type: null, min_experience_years: 0, min_papers: 0, min_books: 0, min_chapters: 0, min_reports: 0, min_policy_briefs: 0, min_age: 18, max_age: 65, min_x_score: null, x_score_type: null, min_xii_score: null, xii_score_type: null, role_keyword: '', company_keyword: '' };
+             const reset = { states: [], nationalities: [], genders: [], ug_uni: '', min_ug_score: null, ug_score_type: null, pg_uni: '', pg_min_score: null, pg_score_type: null, phd_uni: '', phd_thesis: '', phd_min_score: null, phd_score_type: null, min_experience_years: 0, min_papers: 0, min_books: 0, min_chapters: 0, min_reports: 0, min_policy_briefs: 0, min_age: 18, max_age: 65, min_x_score: null, x_score_type: null, min_xii_score: null, xii_score_type: null, role_keyword: '', company_keyword: '' };
              setFilters(reset);
              onFilterChange(reset);
-          }} style={{ fontSize: '12px', color: '#94a3b8', background: 'none', border: 'none', fontWeight: '700', cursor: 'cursor' }}>
+          }} style={{ fontSize: '12px', color: '#94a3b8', background: 'none', border: 'none', fontWeight: '700', cursor: 'pointer' }}>
             Clear Filters
           </button>
           <button 
@@ -133,7 +155,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
         {categories.map(cat => {
           const Icon = cat.icon;
           const isActive = activeCategory === cat.id;
@@ -182,8 +204,8 @@ export default function FilterCenter({ job_id, onFilterChange }) {
         }}>
 
           {activeCategory === 'bio' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '30px' }}>
-              <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+              <div ref={stateRef}>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '12px', textTransform: 'uppercase' }}>State / UT Filter {filters.states.length > 0 && <span style={{color: '#0f172a'}}>({filters.states.length} selected)</span>}</label>
                 <div style={{ position: 'relative' }}>
                   <input
@@ -209,6 +231,38 @@ export default function FilterCenter({ job_id, onFilterChange }) {
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '8px' }}>
                     {filters.states.map(s => (
                       <span key={s} onClick={() => updateFilter('states', filters.states.filter(x => x !== s))} style={{ padding: '3px 8px', background: '#0f172a', color: 'white', borderRadius: '4px', fontSize: '10px', fontWeight: '700', cursor: 'pointer' }}>{s} ×</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div ref={nationalityRef}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '12px', textTransform: 'uppercase' }}>Nationality Filter {filters.nationalities && filters.nationalities.length > 0 && <span style={{color: '#0f172a'}}>({filters.nationalities.length} selected)</span>}</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text" placeholder="Search nationalities..." value={nationalitySearch}
+                    onChange={e => { setNationalitySearch(e.target.value); setNationalityDropdownOpen(true); }}
+                    onFocus={() => setNationalityDropdownOpen(true)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', outline: 'none' }}
+                  />
+                  {nationalityDropdownOpen && (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, maxHeight: '200px', overflowY: 'auto', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', marginTop: '4px', zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                      {NATIONALITIES_LIST.filter(n => n.toLowerCase().includes(nationalitySearch.toLowerCase())).map(n => (
+                        <div key={n} onClick={() => {
+                          const currentNats = filters.nationalities || [];
+                          updateFilter('nationalities', currentNats.includes(n) ? currentNats.filter(x => x !== n) : [...currentNats, n]);
+                        }} style={{ padding: '8px 12px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px', background: (filters.nationalities || []).includes(n) ? '#f1f5f9' : 'white' }}>
+                          <span style={{ width: '16px', height: '16px', borderRadius: '4px', border: '2px solid', borderColor: (filters.nationalities || []).includes(n) ? '#0f172a' : '#cbd5e1', background: (filters.nationalities || []).includes(n) ? '#0f172a' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '10px' }}>{(filters.nationalities || []).includes(n) ? '✓' : ''}</span>
+                          {n}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {filters.nationalities && filters.nationalities.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '8px' }}>
+                    {filters.nationalities.map(n => (
+                      <span key={n} onClick={() => updateFilter('nationalities', filters.nationalities.filter(x => x !== n))} style={{ padding: '3px 8px', background: '#002147', color: 'white', borderRadius: '4px', fontSize: '10px', fontWeight: '700', cursor: 'pointer' }}>{n} ×</span>
                     ))}
                   </div>
                 )}
@@ -393,6 +447,7 @@ export default function FilterCenter({ job_id, onFilterChange }) {
         }}>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {filters.states.map(s => <span key={s} style={{ padding: '4px 10px', background: '#fff7ed', color: '#c2410c', borderRadius: '6px', fontSize: '10px', fontWeight: '700' }}>{s}</span>)}
+            {filters.nationalities && filters.nationalities.map(n => <span key={n} style={{ padding: '4px 10px', background: '#e0f2fe', color: '#0369a1', borderRadius: '6px', fontSize: '10px', fontWeight: '700' }}>🌐 {n}</span>)}
             {filters.ug_uni && <span style={{ padding: '4px 10px', background: '#ecfdf5', color: '#047857', borderRadius: '6px', fontSize: '10px', fontWeight: '700' }}>UG: {filters.ug_uni}</span>}
             {filters.pg_uni && <span style={{ padding: '4px 10px', background: '#eff6ff', color: '#002147', borderRadius: '6px', fontSize: '10px', fontWeight: '700' }}>PG: {filters.pg_uni}</span>}
             {filters.phd_uni && <span style={{ padding: '4px 10px', background: '#f5f3ff', color: '#6d28d9', borderRadius: '6px', fontSize: '10px', fontWeight: '700' }}>PhD: {filters.phd_uni}</span>}
