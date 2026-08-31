@@ -89,8 +89,8 @@ export default function JobBoard() {
               ← Back to Main Website (ris.org.in) <ExternalLink size={14} />
             </a>
 
-            {/* HR Login Button */}
-            <button 
+            {/* HR Login Button (Hidden) */}
+            {/* <button 
               onClick={() => navigate('/hr')}
               style={{
                 fontSize: '0.85rem',
@@ -105,7 +105,7 @@ export default function JobBoard() {
               }}
             >
               HR Login
-            </button>
+            </button> */}
           </div>
 
         </div>
@@ -115,17 +115,7 @@ export default function JobBoard() {
       <header style={{ background: 'linear-gradient(135deg, #002147 0%, #001630 100%)', padding: '56px 5% 48px 5%', textAlign: 'center', color: 'white', position: 'relative', overflow: 'hidden' }}>
         <div style={{ maxWidth: '960px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
           
-          {/* Social Media Handles */}
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Follow RIS:</span>
-            <a href="https://x.com/RIS_NewDelhi" target="_blank" rel="noopener noreferrer" title="Follow on X" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>𝕏</a>
-            <a href="https://www.facebook.com/RISNewDelhi" target="_blank" rel="noopener noreferrer" title="Follow on Facebook" style={{ background: '#1877f2', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>f</a>
-            <a href="https://www.linkedin.com/company/research-and-information-system-for-developing-countries" target="_blank" rel="noopener noreferrer" title="Follow on LinkedIn" style={{ background: '#0a66c2', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>in</a>
-            <a href="https://www.youtube.com/user/RISNewDelhi" target="_blank" rel="noopener noreferrer" title="Subscribe on YouTube" style={{ background: '#ff0000', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>▶</a>
-            <a href="https://www.instagram.com/ris_newdelhi" target="_blank" rel="noopener noreferrer" title="Follow on Instagram" style={{ width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', transition: 'all 0.2s', overflow: 'hidden' }}>
-              <img src="/instagram_icon.png" alt="Instagram" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            </a>
-          </div>
+
 
           <h2 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '16px', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
             RIS Careers
@@ -270,12 +260,23 @@ export default function JobBoard() {
             <p style={{ margin: 0, fontWeight: 700 }}>© {new Date().getFullYear()} Research and Information System for Developing Countries (RIS)</p>
             <p style={{ margin: '4px 0 0 0', color: '#cbd5e1', fontSize: '0.8rem' }}>Core IV-B, Fourth Floor, India Habitat Centre, Lodhi Road, New Delhi-110 003, India</p>
           </div>
-          <div style={{ display: 'flex', gap: '16px', color: '#cbd5e1' }}>
+
+          {/* Social Media Handles */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Follow RIS:</span>
+            <a href="https://x.com/RIS_NewDelhi" target="_blank" rel="noopener noreferrer" title="Follow on X" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>𝕏</a>
+            <a href="https://www.facebook.com/RISNewDelhi" target="_blank" rel="noopener noreferrer" title="Follow on Facebook" style={{ background: '#1877f2', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>f</a>
+            <a href="https://www.linkedin.com/company/research-and-information-system-for-developing-countries" target="_blank" rel="noopener noreferrer" title="Follow on LinkedIn" style={{ background: '#0a66c2', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>in</a>
+            <a href="https://www.youtube.com/@RISNewDelhi" target="_blank" rel="noopener noreferrer" title="Subscribe on YouTube" style={{ background: '#ff0000', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>▶</a>
+            <a href="https://www.instagram.com/ris_newdelhi" target="_blank" rel="noopener noreferrer" title="Follow on Instagram" style={{ width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', transition: 'all 0.2s', overflow: 'hidden' }}>
+              <img src="/instagram_icon.png" alt="Instagram" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </a>
+          </div>
+
+          <div style={{ display: 'flex', gap: '16px', color: '#cbd5e1', alignItems: 'center' }}>
             <a href="https://www.ris.org.in" target="_blank" rel="noopener noreferrer" style={{ color: '#cbd5e1', textDecoration: 'none' }}>Official Website</a>
             <span>|</span>
-            <span>Privacy Policy</span>
-            <span>|</span>
-            <span>Technical Support</span>
+            <a href="https://ris.org.in/en/contact-us" target="_blank" rel="noopener noreferrer" style={{ color: '#cbd5e1', textDecoration: 'none' }}>Contact Us</a>
           </div>
         </div>
       </footer>
