@@ -276,16 +276,16 @@ export default function JobBoard() {
               <img src="/x_icon.jpg" alt="X (Twitter)" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </a>
             <a href="https://www.facebook.com/RISNewDelhi" target="_blank" rel="noopener noreferrer" title="Follow on Facebook" style={{ width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', transition: 'all 0.2s', overflow: 'hidden' }}>
-              <img src="/facebook_icon.png" alt="Facebook" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src="/facebook_icon.png" alt="Facebook" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </a>
             <a href="https://www.linkedin.com/company/research-and-information-system-for-developing-countries" target="_blank" rel="noopener noreferrer" title="Follow on LinkedIn" style={{ width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', transition: 'all 0.2s', overflow: 'hidden' }}>
-              <img src="/linkedin_icon.png" alt="LinkedIn" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src="/linkedin_icon.png" alt="LinkedIn" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </a>
             <a href="https://www.youtube.com/@RISNewDelhi" target="_blank" rel="noopener noreferrer" title="Subscribe on YouTube" style={{ width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', transition: 'all 0.2s', overflow: 'hidden' }}>
-              <img src="/youtube_icon.png" alt="YouTube" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src="/youtube_icon.png" alt="YouTube" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </a>
             <a href="https://www.instagram.com/risdelhi" target="_blank" rel="noopener noreferrer" title="Follow on Instagram" style={{ width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', transition: 'all 0.2s', overflow: 'hidden' }}>
-              <img src="/instagram_icon.png" alt="Instagram" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src="/instagram_icon.png" alt="Instagram" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </a>
           </div>
 
