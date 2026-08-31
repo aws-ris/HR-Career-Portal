@@ -1,8 +1,11 @@
+import os
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, Response
+
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, extract, or_
-from database.database import engine, Base, get_db
+from database.database import engine, Base, get_db, SessionLocal
+
 from database import models
 import schemas
 import datetime
@@ -1435,11 +1438,15 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             except Exception:
                 return ""
 
-        # 2. Build Headers and Rows based on report type
+        # 2. Fetch job if applicable
+        job_obj = db.query(models.JobPosting).filter(models.JobPosting.id == job_id).first() if job_id != 'all' else None
+
+        # 3. Build Headers and Rows based on report type
         if req.report_type == 'standardized':
             headers = [
-                "Full Name", "Date of Birth", "Age", "Email", "Mobile No", "Gender", "City / State",
-                "Position Applied", "Admin Department", "Current Status", "Source",
+                "Full Name", "Date of Birth", "Age", "Email", "Mobile No", "Gender", "Nationality",
+                "Is International Address?", "International Address", "City / State / Pin",
+                "Position Applied", "Division / Department", "Current Status", "Submitted Date", "Source",
                 "LinkedIn Link", "Class X Score", "Class X Year", "Class XII Score", "Class XII Year", 
                 "Bachelors (UG)", "Bachelors Score", "Bachelors Year",
                 "Masters (PG)", "Masters Score", "Masters Year",
@@ -1462,26 +1469,40 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 if full_c.work_experiences:
                     latest_work = max(full_c.work_experiences, key=lambda x: x.start_date)
                 
-                ug_text = ""
-                if ug:
-                    ug_text = f"{ug.degree_name} ({ug.university})" if ug.university else ug.degree_name
+                ug_text = f"{ug.degree_name} ({ug.university})" if (ug and ug.university) else (ug.degree_name if ug else "")
+                pg_text = f"{pg.degree_name} ({pg.university})" if (pg and pg.university) else (pg.degree_name if pg else "")
+                phd_text = f"{phd.degree_name} ({phd.university})" if (phd and phd.university) else (phd.degree_name if phd else "")
                 
-                pg_text = ""
-                if pg:
-                    pg_text = f"{pg.degree_name} ({pg.university})" if pg.university else pg.degree_name
-                
-                phd_text = ""
-                if phd:
-                    phd_text = f"{phd.degree_name} ({phd.university})" if phd.university else phd.degree_name
-                
-                latest_work_text = ""
-                if latest_work:
-                    latest_work_text = f"{latest_work.role} ({latest_work.company_name})"
+                latest_work_text = f"{latest_work.role} ({latest_work.company_name})" if latest_work else ""
                 
                 latest_app = full_c.applications[-1] if getattr(full_c, 'applications', None) else None
+                app_job = latest_app.job if (latest_app and hasattr(latest_app, 'job') and latest_app.job) else None
+
                 pos_applied = (latest_app.position_applied if latest_app else None) or c.get('position_applied', '') or ""
                 admin_dept = (latest_app.admin_department if latest_app else None) or c.get('admin_department', '') or ""
                 current_stat = (latest_app.current_status if latest_app else None) or c.get('current_status', 'received')
+                sub_date = (str(latest_app.submitted_at)[:10] if (latest_app and latest_app.submitted_at) else "") or (str(c.get('submitted_at', ''))[:10] if c.get('submitted_at') else "")
+
+                # Derive Division / Department matching DB consistency
+                if app_job and app_job.division:
+                    div_dept = app_job.division
+                elif job_obj and job_obj.division:
+                    div_dept = job_obj.division
+                elif pos_applied == 'Admin' and admin_dept:
+                    div_dept = f"Admin - {admin_dept}"
+                elif admin_dept:
+                    div_dept = f"Admin - {admin_dept}"
+                else:
+                    div_dept = pos_applied
+
+                is_intl = "Yes" if getattr(full_c, 'is_international_address', False) else "No"
+                intl_addr = getattr(full_c, 'international_address', None) or ""
+                
+                if full_c.is_international_address or intl_addr:
+                    location_str = intl_addr or "International Address"
+                else:
+                    parts = [p for p in [full_c.city, full_c.state, full_c.pincode] if p]
+                    location_str = " - ".join(parts) if parts else ""
 
                 row = [
                     full_c.full_name,
@@ -1490,10 +1511,14 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     full_c.email,
                     f"{full_c.country_code or ''} {full_c.mobile_no}".strip(),
                     full_c.gender or "",
-                    f"{full_c.city or ''} / {full_c.state or ''}".strip(" /"),
+                    getattr(full_c, 'nationality', None) or "Indian",
+                    is_intl,
+                    intl_addr,
+                    location_str,
                     pos_applied,
-                    admin_dept,
+                    div_dept,
                     current_stat,
+                    sub_date,
                     (full_c.links_about.how_heard if full_c.links_about else "") or "",
                     (full_c.links_about.linkedin if full_c.links_about else "") or "",
                     format_schooling_score(full_c.schooling, "x"),
@@ -1518,34 +1543,37 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             candidate_groups = []
             single_line_rows = []
         else:
-            # Detailed Report (Grouped Roster with Complete Input Fields & Booleans)
+            # Detailed Report (Grouped Roster with Complete Input Fields, Booleans & Reorganized Publications)
             headers = [
-                # Personal & Contact (1-10)
-                "Full Name", "Email", "Country Code", "Mobile No", "Date of Birth", "Age", "Gender", "State", "City", "Pincode",
-                # Application & Source (11-15)
-                "Position Applied", "Admin Department", "Current Status", "Submitted Date", "Source (Where heard)",
-                # Profiles & SOP (16-18)
+                # Personal & Contact (1-13)
+                "Full Name", "Email", "Country Code", "Mobile No", "Date of Birth", "Age", "Gender", 
+                "Nationality", "Is International Address?", "International Address", "State", "City", "Pincode",
+                # Application & Source (14-18)
+                "Position Applied", "Division / Department", "Current Status", "Submitted Date", "Source (Where heard)",
+                # Profiles & SOP (19-21)
                 "Statement of Purpose (SOP)", "Google Scholar Link", "LinkedIn Link",
-                # Boolean Indicator Flags (19-27)
+                # Boolean Indicator Flags (22-30)
                 "Has Work Experience", "Currently Working", "Has Higher Education", "Currently Pursuing Degree", 
                 "Has Doctorate (PhD)", "Has Master Degree (PG)", "Has Bachelor Degree (UG)", "Has Diploma", "Has Publications",
-                # Schooling Class X & XII (28-35)
+                # Schooling Class X & XII (31-38)
                 "Class X School", "Class X Board", "Class X Score", "Class X Year",
                 "Class XII School", "Class XII Board", "Class XII Score", "Class XII Year",
-                # Graduation (36-40)
+                # Graduation (39-43)
                 "Graduation Univ", "Graduation Degree", "Graduation Score", "Graduation Year", "Graduation Pursuing",
-                # Postgrad (41-45)
+                # Postgrad (44-48)
                 "Postgrad Univ", "Postgrad Degree", "Postgrad Score", "Postgrad Year", "Postgrad Pursuing",
-                # PhD (46-50)
+                # PhD (49-53)
                 "PhD Univ", "PhD Thesis / Spec", "PhD Score", "PhD Year", "PhD Pursuing",
-                # Diploma (51-55)
+                # Diploma (54-58)
                 "Diploma Institute", "Diploma Degree / Type", "Diploma Score", "Diploma Year", "Diploma Pursuing",
-                # Experience & Salary (56-61)
+                # Experience & Salary (59-64)
                 "Total Exp (Yrs)", "Last Salary (LPA)", "Work Organization", "Work Designation", "Work Start Date", "Work End Date",
-                # Publications (62-67)
-                "Books Count", "Peer-Reviewed Papers Count", "Preprints / Chapters Count", "Research Reports Count", "Policy Briefs Count", "Publication Validation Links",
-                # AI Selection Brief (68-70)
-                "AI Semantic Alignment", "AI SOP Authenticity", "AI Matched Skill Tags"
+                # Publications Reorganized Count -> Links (65-74)
+                "Books & Book Chapters Count", "Books & Book Chapters Validation Links",
+                "Peer-Reviewed Papers Count", "Peer-Reviewed Papers Validation Links",
+                "Preprints & Chapters Count", "Preprints & Chapters Validation Links",
+                "Research Reports Count", "Research Reports Validation Links",
+                "Policy Briefs & Public Commentary Count", "Policy Briefs & Public Commentary Validation Links"
             ]
             
             rows_to_write = []
@@ -1554,6 +1582,11 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             single_line_rows = []
             current_r = 2 # Row 1 is headers
             
+            def extract_pub_links(pubs, match_types):
+                if not pubs: return ""
+                matched = [p.title.strip() for p in pubs if (p.pub_type and str(p.pub_type).lower() in match_types and p.title and p.title.strip())]
+                return "; ".join(matched)
+
             for c in candidates_data:
                 full_c = db.query(models.CandidateMetadata).filter(models.CandidateMetadata.id == c['id']).first()
                 if not full_c: continue
@@ -1572,38 +1605,41 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     single_line_rows.append(current_r)
                 
                 if max_rows > 1:
-                    # Merge candidate static metadata columns (1 to 35) and overall publication/AI columns (62 to 70)
-                    for col in list(range(1, 36)) + list(range(62, 71)):
+                    # Merge candidate static metadata columns (1 to 38) and publication columns (65 to 74)
+                    for col in list(range(1, 39)) + list(range(65, 75)):
                         merge_ranges.append((current_r, current_r + max_rows - 1, col))
-                
-                val_links = []
-                if full_c.publications:
-                    for p in full_c.publications:
-                        if p.title and p.title.strip():
-                            val_links.append(f"{p.pub_type}: {p.title}")
-                val_links_text = "; ".join(val_links) if val_links else ""
 
                 latest_app = full_c.applications[-1] if getattr(full_c, 'applications', None) else None
+                app_job = latest_app.job if (latest_app and hasattr(latest_app, 'job') and latest_app.job) else None
+
                 pos_applied = (latest_app.position_applied if latest_app else None) or c.get('position_applied', '') or ""
                 admin_dept = (latest_app.admin_department if latest_app else None) or c.get('admin_department', '') or ""
                 current_stat = (latest_app.current_status if latest_app else None) or c.get('current_status', 'received')
                 sub_date = (str(latest_app.submitted_at)[:10] if (latest_app and latest_app.submitted_at) else "") or (str(c.get('submitted_at', ''))[:10] if c.get('submitted_at') else "")
 
-                # Parse AI Evaluation Data if present in PostgreSQL
-                ai_align, ai_auth, ai_tags_str = "", "", ""
-                if full_c.resume_payload and full_c.resume_payload.ai_evaluation_json:
-                    try:
-                        ai_eval_obj = json.loads(full_c.resume_payload.ai_evaluation_json)
-                        ai_align = ai_eval_obj.get("semantic_alignment", "")
-                        ai_auth = ai_eval_obj.get("ai_detector", {}).get("ai_classification", "")
-                        ai_tags_str = ", ".join(ai_eval_obj.get("matched_skill_tags", []))
-                    except Exception:
-                        pass
+                # Derive Division / Department
+                if app_job and app_job.division:
+                    div_dept = app_job.division
+                elif job_obj and job_obj.division:
+                    div_dept = job_obj.division
+                elif pos_applied == 'Admin' and admin_dept:
+                    div_dept = f"Admin - {admin_dept}"
+                elif admin_dept:
+                    div_dept = f"Admin - {admin_dept}"
+                else:
+                    div_dept = pos_applied
+
+                # Publication category links extraction
+                books_links = extract_pub_links(full_c.publications, ['book'])
+                papers_links = extract_pub_links(full_c.publications, ['paper', 'journal', 'article'])
+                chapters_links = extract_pub_links(full_c.publications, ['chapter', 'thesis'])
+                reports_links = extract_pub_links(full_c.publications, ['reports', 'report'])
+                briefs_links = extract_pub_links(full_c.publications, ['policy_briefs', 'policy_brief', 'brief'])
 
                 for i in range(max_rows):
                     row = [""] * len(headers)
                     if i == 0:
-                        # Personal & Contact
+                        # Personal & Contact (0-12 index)
                         row[0] = full_c.full_name
                         row[1] = full_c.email
                         row[2] = full_c.country_code or "+91"
@@ -1611,99 +1647,101 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[4] = str(full_c.dob) if full_c.dob else ""
                         row[5] = calculate_age(full_c.dob) if full_c.dob else (full_c.age or "")
                         row[6] = full_c.gender or ""
-                        row[7] = full_c.state or ""
-                        row[8] = full_c.city or ""
-                        row[9] = full_c.pincode or ""
+                        row[7] = getattr(full_c, 'nationality', None) or "Indian"
+                        row[8] = "Yes" if getattr(full_c, 'is_international_address', False) else "No"
+                        row[9] = getattr(full_c, 'international_address', None) or ""
+                        row[10] = full_c.state or ""
+                        row[11] = full_c.city or ""
+                        row[12] = full_c.pincode or ""
                         
-                        # Application & Source
-                        row[10] = pos_applied
-                        row[11] = admin_dept
-                        row[12] = current_stat
-                        row[13] = sub_date
-                        row[14] = (full_c.links_about.how_heard if full_c.links_about else "") or ""
+                        # Application & Source (13-17 index)
+                        row[13] = pos_applied
+                        row[14] = div_dept
+                        row[15] = current_stat
+                        row[16] = sub_date
+                        row[17] = (full_c.links_about.how_heard if full_c.links_about else "") or ""
                         
-                        # Profiles & SOP
-                        row[15] = (full_c.links_about.sop if full_c.links_about else "") or ""
-                        row[16] = (full_c.links_about.google_scholar if full_c.links_about else "") or ""
-                        row[17] = (full_c.links_about.linkedin if full_c.links_about else "") or ""
+                        # Profiles & SOP (18-20 index)
+                        row[18] = (full_c.links_about.sop if full_c.links_about else "") or ""
+                        row[19] = (full_c.links_about.google_scholar if full_c.links_about else "") or ""
+                        row[20] = (full_c.links_about.linkedin if full_c.links_about else "") or ""
 
-                        # Boolean Indicator Flags
-                        row[18] = "Yes" if works else "No"
-                        row[19] = "Yes" if any(w.is_current or not w.end_date for w in works) else "No"
-                        row[20] = "Yes" if full_c.higher_education else "No"
-                        row[21] = "Yes" if any(e.is_pursuing for e in full_c.higher_education) else "No"
-                        row[22] = "Yes" if phds else "No"
-                        row[23] = "Yes" if postgrads else "No"
-                        row[24] = "Yes" if undergrads else "No"
-                        row[25] = "Yes" if diplomas else "No"
-                        row[26] = "Yes" if (full_c.publications or (full_c.links_about and (full_c.links_about.pub_books or full_c.links_about.pub_papers or full_c.links_about.pub_chapters or full_c.links_about.pub_reports or full_c.links_about.pub_policy_briefs))) else "No"
+                        # Boolean Indicator Flags (21-29 index)
+                        row[21] = "Yes" if works else "No"
+                        row[22] = "Yes" if any(w.is_current or not w.end_date for w in works) else "No"
+                        row[23] = "Yes" if full_c.higher_education else "No"
+                        row[24] = "Yes" if any(e.is_pursuing for e in full_c.higher_education) else "No"
+                        row[25] = "Yes" if phds else "No"
+                        row[26] = "Yes" if postgrads else "No"
+                        row[27] = "Yes" if undergrads else "No"
+                        row[28] = "Yes" if diplomas else "No"
+                        row[29] = "Yes" if (full_c.publications or (full_c.links_about and (full_c.links_about.pub_books or full_c.links_about.pub_papers or full_c.links_about.pub_chapters or full_c.links_about.pub_reports or full_c.links_about.pub_policy_briefs))) else "No"
 
-                        # Schooling Class X & XII
-                        row[27] = full_c.schooling.class_x_school if full_c.schooling else ""
-                        row[28] = full_c.schooling.class_x_board if full_c.schooling else ""
-                        row[29] = format_schooling_score(full_c.schooling, "x")
-                        row[30] = full_c.schooling.class_x_year if (full_c.schooling and full_c.schooling.class_x_year) else ""
+                        # Schooling Class X & XII (30-37 index)
+                        row[30] = full_c.schooling.class_x_school if full_c.schooling else ""
+                        row[31] = full_c.schooling.class_x_board if full_c.schooling else ""
+                        row[32] = format_schooling_score(full_c.schooling, "x")
+                        row[33] = full_c.schooling.class_x_year if (full_c.schooling and full_c.schooling.class_x_year) else ""
 
-                        row[31] = full_c.schooling.class_xii_school if full_c.schooling else ""
-                        row[32] = full_c.schooling.class_xii_board if full_c.schooling else ""
-                        row[33] = format_schooling_score(full_c.schooling, "xii")
-                        row[34] = full_c.schooling.class_xii_year if (full_c.schooling and full_c.schooling.class_xii_year) else ""
+                        row[34] = full_c.schooling.class_xii_school if full_c.schooling else ""
+                        row[35] = full_c.schooling.class_xii_board if full_c.schooling else ""
+                        row[36] = format_schooling_score(full_c.schooling, "xii")
+                        row[37] = full_c.schooling.class_xii_year if (full_c.schooling and full_c.schooling.class_xii_year) else ""
 
-                        # Experience & Salary (Static Summary)
-                        row[55] = full_c.years_of_experience if full_c.years_of_experience is not None else 0.0
-                        row[56] = full_c.last_salary if full_c.last_salary is not None else ""
+                        # Experience & Salary Summary (58-59 index)
+                        row[58] = full_c.years_of_experience if full_c.years_of_experience is not None else 0.0
+                        row[59] = full_c.last_salary if full_c.last_salary is not None else ""
 
-                        # Publications Summary
-                        row[61] = (full_c.links_about.pub_books if full_c.links_about else 0) or 0
-                        row[62] = (full_c.links_about.pub_papers if full_c.links_about else 0) or 0
-                        row[63] = (full_c.links_about.pub_chapters if full_c.links_about else 0) or 0
-                        row[64] = (full_c.links_about.pub_reports if full_c.links_about else 0) or 0
-                        row[65] = (full_c.links_about.pub_policy_briefs if full_c.links_about else 0) or 0
-                        row[66] = val_links_text
-
-                        # AI Evaluation Columns
-                        row[67] = ai_align
-                        row[68] = ai_auth
-                        row[69] = ai_tags_str
+                        # Publications Reorganized Count -> Links (64-73 index)
+                        row[64] = (full_c.links_about.pub_books if full_c.links_about else 0) or 0
+                        row[65] = books_links
+                        row[66] = (full_c.links_about.pub_papers if full_c.links_about else 0) or 0
+                        row[67] = papers_links
+                        row[68] = (full_c.links_about.pub_chapters if full_c.links_about else 0) or 0
+                        row[69] = chapters_links
+                        row[70] = (full_c.links_about.pub_reports if full_c.links_about else 0) or 0
+                        row[71] = reports_links
+                        row[72] = (full_c.links_about.pub_policy_briefs if full_c.links_about else 0) or 0
+                        row[73] = briefs_links
                     
-                    # Graduation details (Cols 35-39 index)
+                    # Graduation details (38-42 index)
                     if i < len(undergrads):
-                        row[35] = undergrads[i].university or ""
-                        row[36] = undergrads[i].degree_name or ""
-                        row[37] = format_score(undergrads[i].score_value, undergrads[i].score_type) if undergrads[i].score_value else ""
-                        row[38] = undergrads[i].grad_year or ""
-                        row[39] = "Yes" if undergrads[i].is_pursuing else "No"
+                        row[38] = undergrads[i].university or ""
+                        row[39] = undergrads[i].degree_name or ""
+                        row[40] = format_score(undergrads[i].score_value, undergrads[i].score_type) if undergrads[i].score_value else ""
+                        row[41] = undergrads[i].grad_year or ""
+                        row[42] = "Yes" if undergrads[i].is_pursuing else "No"
                     
-                    # Postgrad details (Cols 40-44 index)
+                    # Postgrad details (43-47 index)
                     if i < len(postgrads):
-                        row[40] = postgrads[i].university or ""
-                        row[41] = postgrads[i].degree_name or ""
-                        row[42] = format_score(postgrads[i].score_value, postgrads[i].score_type) if postgrads[i].score_value else ""
-                        row[43] = postgrads[i].grad_year or ""
-                        row[44] = "Yes" if postgrads[i].is_pursuing else "No"
+                        row[43] = postgrads[i].university or ""
+                        row[44] = postgrads[i].degree_name or ""
+                        row[45] = format_score(postgrads[i].score_value, postgrads[i].score_type) if postgrads[i].score_value else ""
+                        row[46] = postgrads[i].grad_year or ""
+                        row[47] = "Yes" if postgrads[i].is_pursuing else "No"
                     
-                    # PhD details (Cols 45-49 index)
+                    # PhD details (48-52 index)
                     if i < len(phds):
-                        row[45] = phds[i].university or ""
-                        row[46] = phds[i].degree_name or ""
-                        row[47] = format_score(phds[i].score_value, phds[i].score_type) if phds[i].score_value else ""
-                        row[48] = phds[i].grad_year or ""
-                        row[49] = "Yes" if phds[i].is_pursuing else "No"
+                        row[48] = phds[i].university or ""
+                        row[49] = phds[i].degree_name or ""
+                        row[50] = format_score(phds[i].score_value, phds[i].score_type) if phds[i].score_value else ""
+                        row[51] = phds[i].grad_year or ""
+                        row[52] = "Yes" if phds[i].is_pursuing else "No"
 
-                    # Diploma details (Cols 50-54 index)
+                    # Diploma details (53-57 index)
                     if i < len(diplomas):
-                        row[50] = diplomas[i].university or ""
-                        row[51] = diplomas[i].degree_name or ""
-                        row[52] = format_score(diplomas[i].score_value, diplomas[i].score_type) if diplomas[i].score_value else ""
-                        row[53] = diplomas[i].grad_year or ""
-                        row[54] = "Yes" if diplomas[i].is_pursuing else "No"
+                        row[53] = diplomas[i].university or ""
+                        row[54] = diplomas[i].degree_name or ""
+                        row[55] = format_score(diplomas[i].score_value, diplomas[i].score_type) if diplomas[i].score_value else ""
+                        row[56] = diplomas[i].grad_year or ""
+                        row[57] = "Yes" if diplomas[i].is_pursuing else "No"
                     
-                    # Work Experience details (Cols 57-60 index)
+                    # Work Experience details (60-63 index)
                     if i < len(works):
-                        row[57] = works[i].company_name or ""
-                        row[58] = works[i].role or ""
-                        row[59] = str(works[i].start_date) if works[i].start_date else ""
-                        row[60] = str(works[i].end_date or "Present") if works[i].start_date else ""
+                        row[60] = works[i].company_name or ""
+                        row[61] = works[i].role or ""
+                        row[62] = str(works[i].start_date) if works[i].start_date else ""
+                        row[63] = str(works[i].end_date or "Present") if works[i].start_date else ""
                     
                     rows_to_write.append(row)
                     current_r += 1
@@ -1731,7 +1769,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             header_fill = PatternFill(start_color='1E3A8A', end_color='1E3A8A', fill_type='solid')
             header_font = Font(bold=True, color='FFFFFF')
             
-            divider_cols = [10, 15, 18, 27, 35, 40, 45, 50, 55, 61]
+            divider_cols = [13, 18, 21, 30, 38, 43, 48, 53, 58, 64]
 
             # Write Headers
             for col_idx, header in enumerate(headers, 1):
@@ -1771,13 +1809,13 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     
                     # Alignments
                     if req.report_type == 'standardized':
-                        if c_idx in [2, 3, 5, 6, 7, 10, 13, 14, 15, 16, 18, 19, 21, 22, 24, 25, 26]:
+                        if c_idx in [2, 3, 5, 6, 7, 8, 13, 14, 15, 17, 18, 20, 21, 23, 24, 26, 27, 29, 30]:
                             cell.alignment = Alignment(horizontal='center', vertical='center')
                         else:
                             cell.alignment = Alignment(horizontal='left', vertical='center')
                     else:
                         # Detailed aligns
-                        if c_idx in [3, 4, 5, 6, 7, 10, 13, 14, 19, 20, 21, 22, 23, 24, 25, 26, 27, 30, 31, 34, 35, 38, 39, 40, 43, 44, 45, 48, 49, 50, 53, 54, 55, 56, 57, 59, 60, 62, 63, 64, 65, 66]:
+                        if c_idx in [3, 4, 5, 6, 7, 8, 9, 13, 16, 17, 22, 23, 24, 25, 26, 27, 28, 29, 30, 33, 34, 37, 38, 41, 42, 43, 46, 47, 48, 51, 52, 53, 56, 57, 58, 59, 60, 62, 63, 65, 67, 69, 71, 73]:
                             cell.alignment = Alignment(horizontal='center', vertical='top', wrap_text=True)
                         else:
                             cell.alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
@@ -1786,7 +1824,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             if req.report_type == 'detailed':
                 for start_r, end_r, col in merge_ranges:
                     ws.merge_cells(start_row=start_r, start_column=col, end_row=end_r, end_column=col)
-                    h_align = 'center' if col in [3, 4, 5, 6, 7, 10, 13, 14, 19, 20, 21, 22, 23, 24, 25, 26, 27, 30, 31, 34, 35, 62, 63, 64, 65, 66] else 'left'
+                    h_align = 'center' if col in [3, 4, 5, 6, 7, 8, 9, 13, 16, 17, 22, 23, 24, 25, 26, 27, 28, 29, 30, 33, 34, 37, 38, 65, 67, 69, 71, 73] else 'left'
                     ws.cell(row=start_r, column=col).alignment = Alignment(vertical='top', horizontal=h_align, wrap_text=True)
 
                 # Set bottom boundaries borders for groups (preserving vertical dividers)
@@ -1806,20 +1844,16 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 for row_idx in single_line_rows:
                     ws.row_dimensions[row_idx].height = 26
 
-            # Auto-adjust column widths based on report type
+            # Auto-fit column widths based on maximum content length
             from openpyxl.utils import get_column_letter
-            for col_idx in range(1, len(headers) + 1):
-                col_letter = get_column_letter(col_idx)
-                header_name = headers[col_idx - 1]
-                
-                if "SOP" in header_name or "Statement" in header_name or "Validation" in header_name:
-                    ws.column_dimensions[col_letter].width = 40
-                elif "Univ" in header_name or "Degree" in header_name or "Title" in header_name or "Organization" in header_name or "Institute" in header_name:
-                    ws.column_dimensions[col_letter].width = 30
-                elif "Bachelors" in header_name or "Masters" in header_name or "Doctorate" in header_name or "Name" in header_name or "Email" in header_name or "Thesis" in header_name or "Source" in header_name or "Employment" in header_name or "Designation" in header_name:
-                    ws.column_dimensions[col_letter].width = 24
-                else:
-                    ws.column_dimensions[col_letter].width = 16
+            for col in ws.columns:
+                max_len = 0
+                col_letter = get_column_letter(col[0].column)
+                for cell in col:
+                    if cell.value:
+                        for line in str(cell.value).split('\n'):
+                            max_len = max(max_len, len(str(line)))
+                ws.column_dimensions[col_letter].width = min(max(max_len + 4, 14), 55)
 
             wb.save(output)
             output.seek(0)
@@ -1828,6 +1862,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 headers={"Content-Disposition": f"attachment; filename=applicants_{job_id}.xlsx"}
             )
+
 
     except Exception as e:
         import traceback
