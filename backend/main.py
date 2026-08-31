@@ -1082,7 +1082,10 @@ async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None,
     }
 
     import json
-    eval_result = evaluate_candidate_qualitative(job_title, job_requirements, candidate_dict)
+    try:
+        eval_result = evaluate_candidate_qualitative(job_title, job_requirements, candidate_dict)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     eval_result["candidate_id"] = candidate_id
 
     # 💾 Save / Upsert AI Evaluation JSON in PostgreSQL database (candidate_resume_payload)

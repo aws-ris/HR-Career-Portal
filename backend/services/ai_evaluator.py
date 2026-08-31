@@ -206,34 +206,4 @@ def evaluate_candidate_qualitative(job_title: str, job_requirements: str, candid
 
     except Exception as e:
         print(f"❌ [Qualitative AI Evaluation Exception]: {e}")
-        return {
-            "status": "partial_fallback",
-            "semantic_alignment": "High Alignment",
-            "matched_skill_tags": dynamic_academic_tags + dynamic_exp_tags,
-            "verification_badges": [f"{d.split(':')[0]} Verified" for d in degrees] if degrees else ["Credentials Listed"],
-            "agent1_academic": {
-                "academic_tags": dynamic_academic_tags,
-                "verification_badges": ["Degree Verified"],
-                "summary": f"Agent 1 processed degrees for {cand_name}."
-            },
-            "agent2_experience": {
-                "experience_tags": dynamic_exp_tags,
-                "experience_level": f"{candidate_data.get('years_of_experience', 0)} Years Specialist",
-                "summary": f"Agent 2 processed experience for {cand_name}."
-            },
-            "agent3_sop_ai": {
-                "ai_classification": "Likely Human Writing",
-                "detected_cliches": [],
-                "vision_summary": f"Candidate {cand_name} submitted SOP."
-            },
-            "agent4_consensus": {
-                "semantic_alignment": "High Alignment",
-                "key_strengths": [f"Candidate possesses relevant training in {dynamic_academic_tags[0]}" if dynamic_academic_tags else "Relevant qualifications"],
-                "potential_flags": [],
-                "tailored_interview_questions": [f"Can you summarize your research experience for the {job_title} role?"]
-            },
-            "ai_detector": {"ai_classification": "Likely Human Writing", "detected_cliches": [], "vision_summary": "SOP text received."},
-            "key_strengths": [f"Qualifications for {job_title}"],
-            "potential_flags": [],
-            "tailored_interview_questions": [f"What motivates you to apply for {job_title}?"]
-        }
+        raise ValueError(f"AI Evaluation failed to process via AWS Bedrock: {e}")
