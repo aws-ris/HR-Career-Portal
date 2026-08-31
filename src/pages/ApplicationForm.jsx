@@ -1979,15 +1979,9 @@ export default function ApplicationForm() {
               </div>
 
               <div style={{
-                position: 'sticky',
-                bottom: 0,
-                zIndex: 1000,
-                background: '#ffffff',
-                padding: '16px 24px',
+                padding: '24px 0 0 0',
                 marginTop: '24px',
-                borderTop: '2px solid #002147',
-                boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.15)',
-                borderRadius: '0 0 12px 12px'
+                borderTop: '1px solid #e2e8f0'
               }}>
                 <button 
                   type="submit" 
