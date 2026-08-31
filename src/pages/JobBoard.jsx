@@ -272,10 +272,18 @@ export default function JobBoard() {
           {/* Social Media Handles */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Follow RIS:</span>
-            <a href="https://x.com/RIS_NewDelhi" target="_blank" rel="noopener noreferrer" title="Follow on X" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>𝕏</a>
-            <a href="https://www.facebook.com/RISNewDelhi" target="_blank" rel="noopener noreferrer" title="Follow on Facebook" style={{ background: '#1877f2', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>f</a>
-            <a href="https://www.linkedin.com/company/research-and-information-system-for-developing-countries" target="_blank" rel="noopener noreferrer" title="Follow on LinkedIn" style={{ background: '#0a66c2', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>in</a>
-            <a href="https://www.youtube.com/@RISNewDelhi" target="_blank" rel="noopener noreferrer" title="Subscribe on YouTube" style={{ background: '#ff0000', color: 'white', width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold', transition: 'all 0.2s' }}>▶</a>
+            <a href="https://x.com/RIS_NewDelhi" target="_blank" rel="noopener noreferrer" title="Follow on X" style={{ width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', transition: 'all 0.2s', overflow: 'hidden' }}>
+              <img src="/x_icon.jpg" alt="X (Twitter)" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </a>
+            <a href="https://www.facebook.com/RISNewDelhi" target="_blank" rel="noopener noreferrer" title="Follow on Facebook" style={{ width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', transition: 'all 0.2s', overflow: 'hidden' }}>
+              <img src="/facebook_icon.png" alt="Facebook" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </a>
+            <a href="https://www.linkedin.com/company/research-and-information-system-for-developing-countries" target="_blank" rel="noopener noreferrer" title="Follow on LinkedIn" style={{ width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', transition: 'all 0.2s', overflow: 'hidden' }}>
+              <img src="/linkedin_icon.png" alt="LinkedIn" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </a>
+            <a href="https://www.youtube.com/@RISNewDelhi" target="_blank" rel="noopener noreferrer" title="Subscribe on YouTube" style={{ width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', transition: 'all 0.2s', overflow: 'hidden' }}>
+              <img src="/youtube_icon.png" alt="YouTube" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </a>
             <a href="https://www.instagram.com/risdelhi" target="_blank" rel="noopener noreferrer" title="Follow on Instagram" style={{ width: '30px', height: '30px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', transition: 'all 0.2s', overflow: 'hidden' }}>
               <img src="/instagram_icon.png" alt="Instagram" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </a>
