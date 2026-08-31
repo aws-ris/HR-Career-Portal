@@ -845,7 +845,7 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                 background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', color: 'white', border: 'none', borderRadius: '8px', 
                 fontWeight: '800', fontSize: '14px', cursor: aiLoading ? 'wait' : 'pointer', boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)'
               }}>
-              <Award size={18} /> {aiLoading ? 'Running Groq AI Crew...' : '🤖 Run AI Evaluation'}
+              <Award size={18} /> {aiLoading ? 'Running Bedrock AI...' : '🤖 Run AI Evaluation'}
             </button>
 
             {aiEval && (
