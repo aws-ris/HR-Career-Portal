@@ -872,29 +872,31 @@ def get_global_analytics(db: Session = Depends(get_db)):
         func.count(models.CandidateMetadata.id)
     ).group_by(models.CandidateMetadata.gender).all()
 
-
-
     state_stats = db.query(
         models.CandidateMetadata.state, 
         func.count(models.CandidateMetadata.id)
     ).group_by(models.CandidateMetadata.state).order_by(func.count(models.CandidateMetadata.id).desc()).limit(5).all()
 
-    # Education stats (count candidates having at least X level)
-    phd_count = db.query(models.CandidateHigherEducation.candidate_id).filter(models.CandidateHigherEducation.level == 'phd').distinct().count()
-    pg_count = db.query(models.CandidateHigherEducation.candidate_id).filter(
-        models.CandidateHigherEducation.level == 'postgrad',
-        ~models.CandidateHigherEducation.candidate_id.in_(
-            db.query(models.CandidateHigherEducation.candidate_id).filter(models.CandidateHigherEducation.level == 'phd')
-        )
-    ).distinct().count()
-    ug_count = db.query(models.CandidateMetadata.id).filter(
-        models.CandidateMetadata.id.in_(
-            db.query(models.CandidateHigherEducation.candidate_id).filter(models.CandidateHigherEducation.level == 'undergrad')
-        ),
-        ~models.CandidateMetadata.id.in_(
-            db.query(models.CandidateHigherEducation.candidate_id).filter(models.CandidateHigherEducation.level.in_(['phd', 'postgrad']))
-        )
-    ).distinct().count()
+    candidate_records = db.query(models.CandidateMetadata).options(
+        joinedload(models.CandidateMetadata.higher_education)
+    ).all()
+
+    phd_count = 0
+    pg_count = 0
+    ug_count = 0
+
+    PHD_LEVELS = {'phd', 'doctorate', 'ph.d', 'ph.d.', 'doctoral'}
+    PG_LEVELS = {'postgrad', 'masters', 'master', 'post-graduate', 'post graduate', 'pg', 'postgraduate'}
+    UG_LEVELS = {'undergrad', 'bachelors', 'bachelor', 'under-graduate', 'under graduate', 'ug', 'undergraduate'}
+
+    for cand in candidate_records:
+        levels = set(e.level.lower() for e in (cand.higher_education or []) if e.level)
+        if levels & PHD_LEVELS:
+            phd_count += 1
+        elif levels & PG_LEVELS:
+            pg_count += 1
+        elif levels & UG_LEVELS or (cand.higher_education and len(cand.higher_education) > 0):
+            ug_count += 1
 
     return {
         "gender": [{"name": g if g else "Other", "value": c} for g, c in gender_stats],
@@ -910,15 +912,12 @@ def get_global_analytics(db: Session = Depends(get_db)):
 def get_job_analytics(job_id: str, db: Session = Depends(get_db)):
     clean_id = str(job_id).strip()
 
-    # Join application_tracking
     gender_stats = db.query(
         models.CandidateMetadata.gender, 
         func.count(models.CandidateMetadata.id)
     ).join(models.ApplicationTracking).filter(
         models.ApplicationTracking.job_id == clean_id
     ).group_by(models.CandidateMetadata.gender).all()
-
-
 
     state_stats = db.query(
         models.CandidateMetadata.state, 
@@ -927,31 +926,28 @@ def get_job_analytics(job_id: str, db: Session = Depends(get_db)):
         models.ApplicationTracking.job_id == clean_id
     ).group_by(models.CandidateMetadata.state).order_by(func.count(models.CandidateMetadata.id).desc()).limit(5).all()
 
-    # Job-specific candidate IDs
-    cand_ids = db.query(models.ApplicationTracking.candidate_id).filter(models.ApplicationTracking.job_id == clean_id).subquery()
+    candidate_records = db.query(models.CandidateMetadata).options(
+        joinedload(models.CandidateMetadata.higher_education)
+    ).join(models.ApplicationTracking).filter(
+        models.ApplicationTracking.job_id == clean_id
+    ).all()
 
-    phd_count = db.query(models.CandidateHigherEducation.candidate_id).filter(
-        models.CandidateHigherEducation.level == 'phd',
-        models.CandidateHigherEducation.candidate_id.in_(cand_ids)
-    ).distinct().count()
+    phd_count = 0
+    pg_count = 0
+    ug_count = 0
 
-    pg_count = db.query(models.CandidateHigherEducation.candidate_id).filter(
-        models.CandidateHigherEducation.level == 'postgrad',
-        models.CandidateHigherEducation.candidate_id.in_(cand_ids),
-        ~models.CandidateHigherEducation.candidate_id.in_(
-            db.query(models.CandidateHigherEducation.candidate_id).filter(models.CandidateHigherEducation.level == 'phd')
-        )
-    ).distinct().count()
+    PHD_LEVELS = {'phd', 'doctorate', 'ph.d', 'ph.d.', 'doctoral'}
+    PG_LEVELS = {'postgrad', 'masters', 'master', 'post-graduate', 'post graduate', 'pg', 'postgraduate'}
+    UG_LEVELS = {'undergrad', 'bachelors', 'bachelor', 'under-graduate', 'under graduate', 'ug', 'undergraduate'}
 
-    ug_count = db.query(models.CandidateMetadata.id).filter(
-        models.CandidateMetadata.id.in_(cand_ids),
-        models.CandidateMetadata.id.in_(
-            db.query(models.CandidateHigherEducation.candidate_id).filter(models.CandidateHigherEducation.level == 'undergrad')
-        ),
-        ~models.CandidateMetadata.id.in_(
-            db.query(models.CandidateHigherEducation.candidate_id).filter(models.CandidateHigherEducation.level.in_(['phd', 'postgrad']))
-        )
-    ).distinct().count()
+    for cand in candidate_records:
+        levels = set(e.level.lower() for e in (cand.higher_education or []) if e.level)
+        if levels & PHD_LEVELS:
+            phd_count += 1
+        elif levels & PG_LEVELS:
+            pg_count += 1
+        elif levels & UG_LEVELS or (cand.higher_education and len(cand.higher_education) > 0):
+            ug_count += 1
 
     return {
         "gender": [{"name": g if g else "Other", "value": c} for g, c in gender_stats],

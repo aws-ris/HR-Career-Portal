@@ -258,10 +258,10 @@ export default function JobAnalytics() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stats.education}>
                 <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '10px' }} />
-                <YAxis hide />
+                <YAxis hide domain={[0, 'dataMax + 1']} />
                 <Tooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={24}>
-                  {stats.education.map((entry, index) => <Cell key={`e-${index}`} fill={COLORS.edu[entry.name]} />)}
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={28}>
+                  {stats.education.map((entry, index) => <Cell key={`e-${index}`} fill={COLORS.edu[entry.name] || '#002147'} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

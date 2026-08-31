@@ -141,11 +141,11 @@ export default function GlobalAnalytics() {
                   tickLine={false}
                   style={{ fontSize: '12px', fontWeight: 700, fill: '#1e293b' }}
                 />
-                <YAxis hide />
+                <YAxis hide domain={[0, 'dataMax + 1']} />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(241, 245, 249, 0.6)' }} />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={50}>
                   {data.education.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS.edu[entry.name]} />
+                    <Cell key={`cell-${index}`} fill={COLORS.edu[entry.name] || '#002147'} />
                   ))}
                 </Bar>
               </BarChart>
