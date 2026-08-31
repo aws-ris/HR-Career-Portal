@@ -1480,7 +1480,19 @@ export default function ApplicationForm() {
         duration_value: e.duration_value ? parseInt(e.duration_value, 10) : null,
         duration_unit: e.duration_unit || null
       })),
-      publications: [],
+      publications: pubEntries.filter(pe => (parseInt(pe.count, 10) || 0) > 0 && pe.link.trim()).map((pe, idx) => {
+        let pubType = 'book';
+        if (pe.category === 'Peer-Reviewed Journal Papers') pubType = 'paper';
+        else if (pe.category === 'Working Papers & Preprints') pubType = 'chapter';
+        else if (pe.category === 'Research Reports & Policy Briefs') pubType = 'report';
+        else if (pe.category === 'Newspaper Articles & Public Commentary') pubType = 'policy_brief';
+        return {
+          pub_type: pubType,
+          title: pe.link.trim(),
+          parent_book: pe.category,
+          entry_order: idx + 1
+        };
+      }),
       work_experiences: works.map(w => ({
         ...w,
         start_date: w.start_date,

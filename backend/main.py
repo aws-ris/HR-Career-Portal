@@ -1621,10 +1621,18 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             single_line_rows = []
             current_r = 2 # Row 1 is headers
             
-            def extract_pub_links(pubs, match_types):
-                if not pubs: return ""
-                matched = [p.title.strip() for p in pubs if (p.pub_type and str(p.pub_type).lower() in match_types and p.title and p.title.strip())]
-                return "; ".join(matched)
+            import re
+
+            def extract_pub_link_list(candidate_obj, match_types):
+                links = []
+                if candidate_obj.publications:
+                    for p in candidate_obj.publications:
+                        ptype = str(p.pub_type or "").lower().strip()
+                        if ptype in match_types and p.title and p.title.strip():
+                            raw = p.title.strip()
+                            parts = [x.strip() for x in re.split(r'[\r\n;,]+', raw) if x.strip()]
+                            links.extend(parts)
+                return links
 
             for c in candidates_data:
                 full_c = db.query(models.CandidateMetadata).filter(models.CandidateMetadata.id == c['id']).first()
@@ -1634,9 +1642,18 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 postgrads = [e for e in full_c.higher_education if e.level == 'postgrad']
                 phds = [e for e in full_c.higher_education if e.level == 'phd']
                 diplomas = [e for e in full_c.higher_education if e.level == 'diploma']
-                works = sorted(full_c.work_experiences, key=lambda x: x.entry_order)
-                
-                max_rows = max(len(undergrads), len(postgrads), len(phds), len(diplomas), len(works), 1)
+                works = sorted(full_c.work_experiences, key=lambda x: x.entry_order if x.entry_order else 1)
+
+                book_links = extract_pub_link_list(full_c, ['book', 'books', 'book chapter', 'books & book chapters'])
+                paper_links = extract_pub_link_list(full_c, ['paper', 'papers', 'journal', 'article', 'peer-reviewed journal papers'])
+                chapter_links = extract_pub_link_list(full_c, ['chapter', 'chapters', 'preprint', 'working paper', 'working papers & preprints'])
+                report_links = extract_pub_link_list(full_c, ['report', 'reports', 'research report', 'research reports & policy briefs'])
+                brief_links = extract_pub_link_list(full_c, ['policy_brief', 'policy_briefs', 'brief', 'briefs', 'commentary', 'newspaper articles & public commentary'])
+
+                max_rows = max(
+                    len(undergrads), len(postgrads), len(phds), len(diplomas), len(works),
+                    len(book_links), len(paper_links), len(chapter_links), len(report_links), len(brief_links), 1
+                )
                 
                 candidate_groups.append((current_r, current_r + max_rows - 1))
                 
@@ -1644,8 +1661,9 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     single_line_rows.append(current_r)
                 
                 if max_rows > 1:
-                    # Merge candidate static metadata columns (1 to 63) and publication columns (68 to 77)
-                    for col in list(range(1, 64)) + list(range(68, 78)):
+                    # Merge candidate static metadata columns (Cols 1-38, 59-63, 68, 70, 72, 74, 76)
+                    merge_cols = list(range(1, 39)) + [59, 60, 61, 62, 63, 68, 70, 72, 74, 76]
+                    for col in merge_cols:
                         merge_ranges.append((current_r, current_r + max_rows - 1, col))
 
                 latest_app = full_c.applications[-1] if getattr(full_c, 'applications', None) else None
@@ -1668,17 +1686,10 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 else:
                     div_dept = pos_applied
 
-                # Publication category links extraction
-                books_links = extract_pub_links(full_c.publications, ['book'])
-                papers_links = extract_pub_links(full_c.publications, ['paper', 'journal', 'article'])
-                chapters_links = extract_pub_links(full_c.publications, ['chapter', 'thesis'])
-                reports_links = extract_pub_links(full_c.publications, ['reports', 'report'])
-                briefs_links = extract_pub_links(full_c.publications, ['policy_briefs', 'policy_brief', 'brief'])
-
                 for i in range(max_rows):
                     row = [""] * len(headers)
                     if i == 0:
-                        # Personal & Contact (0-12 index)
+                        # Personal & Contact (0-12 index -> Cols 1-13)
                         row[0] = full_c.full_name
                         row[1] = full_c.email
                         row[2] = full_c.country_code or "+91"
@@ -1693,19 +1704,19 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[11] = full_c.city or ""
                         row[12] = full_c.pincode or ""
                         
-                        # Application & Source (13-17 index)
+                        # Application & Source (13-17 index -> Cols 14-18)
                         row[13] = pos_applied
                         row[14] = div_dept
                         row[15] = current_stat
                         row[16] = sub_date
                         row[17] = (full_c.links_about.how_heard if full_c.links_about else "") or ""
                         
-                        # Profiles & SOP (18-20 index)
+                        # Profiles & SOP (18-20 index -> Cols 19-21)
                         row[18] = (full_c.links_about.sop if full_c.links_about else "") or ""
                         row[19] = (full_c.links_about.google_scholar if full_c.links_about else "") or ""
                         row[20] = (full_c.links_about.linkedin if full_c.links_about else "") or ""
 
-                        # Boolean Indicator Flags (21-29 index)
+                        # Boolean Indicator Flags (21-29 index -> Cols 22-30)
                         row[21] = "Yes" if works else "No"
                         row[22] = "Yes" if any(w.is_current or not w.end_date for w in works) else "No"
                         row[23] = "Yes" if full_c.higher_education else "No"
@@ -1716,7 +1727,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[28] = "Yes" if diplomas else "No"
                         row[29] = "Yes" if (full_c.publications or (full_c.links_about and (full_c.links_about.pub_books or full_c.links_about.pub_papers or full_c.links_about.pub_chapters or full_c.links_about.pub_reports or full_c.links_about.pub_policy_briefs))) else "No"
 
-                        # Schooling Class X & XII (30-37 index)
+                        # Schooling Class X & XII (30-37 index -> Cols 31-38)
                         row[30] = full_c.schooling.class_x_school if full_c.schooling else ""
                         row[31] = full_c.schooling.class_x_board if full_c.schooling else ""
                         row[32] = format_schooling_score(full_c.schooling, "x")
@@ -1727,26 +1738,22 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[36] = format_schooling_score(full_c.schooling, "xii")
                         row[37] = full_c.schooling.class_xii_year if (full_c.schooling and full_c.schooling.class_xii_year) else ""
 
-                        # Experience & Salary Summary (58-62 index)
+                        # Experience & Salary Summary (58-62 index -> Cols 59-63)
                         row[58] = full_c.years_of_experience if full_c.years_of_experience is not None else 0.0
                         row[59] = full_c.last_salary if full_c.last_salary is not None else ""
                         row[60] = "Yes" if getattr(full_c, 'worked_at_ris', False) else "No"
                         row[61] = getattr(full_c, 'ris_designation', None) or ""
                         row[62] = f"{getattr(full_c, 'ris_start_date', '') or ''} to {'Present' if getattr(full_c, 'ris_is_current', False) else (getattr(full_c, 'ris_end_date', '') or '')}" if getattr(full_c, 'worked_at_ris', False) else ""
 
-                        # Publications Reorganized Count -> Links (67-76 index)
-                        row[67] = (full_c.links_about.pub_books if full_c.links_about else 0) or 0
-                        row[68] = books_links
-                        row[69] = (full_c.links_about.pub_papers if full_c.links_about else 0) or 0
-                        row[70] = papers_links
-                        row[71] = (full_c.links_about.pub_chapters if full_c.links_about else 0) or 0
-                        row[72] = chapters_links
-                        row[73] = (full_c.links_about.pub_reports if full_c.links_about else 0) or 0
-                        row[74] = reports_links
-                        row[75] = (full_c.links_about.pub_policy_briefs if full_c.links_about else 0) or 0
-                        row[76] = briefs_links
-                    
-                    # Graduation details (38-42 index)
+                        # Publications Summary Counts (67, 69, 71, 73, 75 index -> Cols 68, 70, 72, 74, 76)
+                        row[67] = (full_c.links_about.pub_books if full_c.links_about else 0) or len(book_links)
+                        row[69] = (full_c.links_about.pub_papers if full_c.links_about else 0) or len(paper_links)
+                        row[71] = (full_c.links_about.pub_chapters if full_c.links_about else 0) or len(chapter_links)
+                        row[73] = (full_c.links_about.pub_reports if full_c.links_about else 0) or len(report_links)
+                        row[75] = (full_c.links_about.pub_policy_briefs if full_c.links_about else 0) or len(brief_links)
+
+                    # Sub-Row i Specific Values (Unmerged Columns)
+                    # Graduation details (38-42 index -> Cols 39-43)
                     if i < len(undergrads):
                         row[38] = undergrads[i].university or ""
                         row[39] = undergrads[i].degree_name or ""
@@ -1754,7 +1761,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[41] = undergrads[i].grad_year or ""
                         row[42] = "Yes" if undergrads[i].is_pursuing else "No"
                     
-                    # Postgrad details (43-47 index)
+                    # Postgrad details (43-47 index -> Cols 44-48)
                     if i < len(postgrads):
                         row[43] = postgrads[i].university or ""
                         row[44] = postgrads[i].degree_name or ""
@@ -1762,7 +1769,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[46] = postgrads[i].grad_year or ""
                         row[47] = "Yes" if postgrads[i].is_pursuing else "No"
                     
-                    # PhD details (48-52 index)
+                    # PhD details (48-52 index -> Cols 49-53)
                     if i < len(phds):
                         row[48] = phds[i].university or ""
                         row[49] = phds[i].phd_domain or ""
@@ -1770,7 +1777,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[51] = phds[i].grad_year or ""
                         row[52] = "Yes" if phds[i].is_pursuing else "No"
 
-                    # Diploma details (53-57 index)
+                    # Diploma details (53-57 index -> Cols 54-58)
                     if i < len(diplomas):
                         row[53] = diplomas[i].university or ""
                         row[54] = diplomas[i].degree_name or ""
@@ -1778,13 +1785,25 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[56] = diplomas[i].grad_year or ""
                         row[57] = "Yes" if diplomas[i].is_pursuing else "No"
                     
-                    # Work Experience details (60-63 index)
+                    # General Work Experience details (63-66 index -> Cols 64-67)
                     if i < len(works):
-                        row[60] = works[i].company_name or ""
-                        row[61] = works[i].role or ""
-                        row[62] = str(works[i].start_date) if works[i].start_date else ""
-                        row[63] = str(works[i].end_date or "Present") if works[i].start_date else ""
-                    
+                        row[63] = works[i].company_name or ""
+                        row[64] = works[i].role or ""
+                        row[65] = str(works[i].start_date) if works[i].start_date else ""
+                        row[66] = str(works[i].end_date or "Present") if works[i].start_date else ""
+
+                    # Publication Validation Links (Per Sub-Row i)
+                    if i < len(book_links):
+                        row[68] = book_links[i]
+                    if i < len(paper_links):
+                        row[70] = paper_links[i]
+                    if i < len(chapter_links):
+                        row[72] = chapter_links[i]
+                    if i < len(report_links):
+                        row[74] = report_links[i]
+                    if i < len(brief_links):
+                        row[76] = brief_links[i]
+
                     rows_to_write.append(row)
                     current_r += 1
 
@@ -1809,9 +1828,9 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             
             # Styling
             header_fill = PatternFill(start_color='1E3A8A', end_color='1E3A8A', fill_type='solid')
-            header_font = Font(bold=True, color='FFFFFF')
+            header_font = Font(bold=True, color='FFFFFF', size=11)
             
-            divider_cols = [13, 18, 21, 30, 38, 43, 48, 53, 58, 64]
+            divider_cols = [13, 18, 21, 30, 38, 43, 48, 53, 58, 63, 67, 69, 71, 73, 75, 77]
 
             # Write Headers
             for col_idx, header in enumerate(headers, 1):
@@ -1827,11 +1846,11 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     left=Side(style='thin', color='CBD5E1'),
                     right=Side(style=r_style, color=r_color),
                     top=Side(style='thin', color='CBD5E1'),
-                    bottom=Side(style='thin', color='CBD5E1')
+                    bottom=Side(style='medium', color='1E3A8A')
                 )
                 cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
 
-            ws.row_dimensions[1].height = 28
+            ws.row_dimensions[1].height = 40
 
             # Write Data
             for r_idx, row_data in enumerate(rows_to_write, 2):
@@ -1857,7 +1876,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                             cell.alignment = Alignment(horizontal='left', vertical='center')
                     else:
                         # Detailed aligns
-                        if c_idx in [3, 4, 5, 6, 7, 8, 9, 13, 16, 17, 22, 23, 24, 25, 26, 27, 28, 29, 30, 33, 34, 37, 38, 41, 42, 43, 46, 47, 48, 51, 52, 53, 56, 57, 58, 59, 60, 62, 63, 65, 67, 69, 71, 73]:
+                        if c_idx in [3, 4, 5, 6, 7, 8, 9, 13, 16, 17, 22, 23, 24, 25, 26, 27, 28, 29, 30, 33, 34, 37, 38, 41, 42, 43, 46, 47, 48, 51, 52, 53, 56, 57, 58, 59, 60, 61, 63, 66, 67, 68, 70, 72, 74, 76]:
                             cell.alignment = Alignment(horizontal='center', vertical='top', wrap_text=True)
                         else:
                             cell.alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
@@ -1866,7 +1885,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
             if req.report_type == 'detailed':
                 for start_r, end_r, col in merge_ranges:
                     ws.merge_cells(start_row=start_r, start_column=col, end_row=end_r, end_column=col)
-                    h_align = 'center' if col in [3, 4, 5, 6, 7, 8, 9, 13, 16, 17, 22, 23, 24, 25, 26, 27, 28, 29, 30, 33, 34, 37, 38, 65, 67, 69, 71, 73] else 'left'
+                    h_align = 'center' if col in [3, 4, 5, 6, 7, 8, 9, 13, 16, 17, 22, 23, 24, 25, 26, 27, 28, 29, 30, 33, 34, 37, 38, 59, 60, 61, 63, 68, 70, 72, 74, 76] else 'left'
                     ws.cell(row=start_r, column=col).alignment = Alignment(vertical='top', horizontal=h_align, wrap_text=True)
 
                 # Set bottom boundaries borders for groups (preserving vertical dividers)
@@ -1895,7 +1914,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     if cell.value:
                         for line in str(cell.value).split('\n'):
                             max_len = max(max_len, len(str(line)))
-                ws.column_dimensions[col_letter].width = min(max(max_len + 4, 14), 55)
+                ws.column_dimensions[col_letter].width = min(max(max_len + 4, 16), 65)
 
             wb.save(output)
             output.seek(0)
