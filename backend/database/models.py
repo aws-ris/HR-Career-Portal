@@ -97,6 +97,11 @@ class CandidateMetadata(Base):
     international_address    = Column(Text,        nullable=True)
     years_of_experience  = Column(Float,       nullable=True)
     last_salary          = Column(Float,       nullable=True)
+    worked_at_ris        = Column(Boolean,     nullable=False, default=False)
+    ris_designation      = Column(String(200), nullable=True)
+    ris_start_date       = Column(Date,        nullable=True)
+    ris_end_date         = Column(Date,        nullable=True)
+    ris_is_current       = Column(Boolean,     nullable=False, default=False)
 
 
     @validates('dob')
@@ -198,6 +203,7 @@ class CandidateHigherEducation(Base):
     level        = Column(String(20),  nullable=False)   # 'undergrad', 'postgrad', 'phd'
     university   = Column(String(200), nullable=True)
     degree_name  = Column(String(200), nullable=True)
+    phd_domain   = Column(String(255), nullable=True)
     score_type   = Column(String(20),  nullable=True)    # 'Percentage', 'CGPA'
     score_value    = Column(Float,       nullable=True)
     grad_year      = Column(Integer,     nullable=True)

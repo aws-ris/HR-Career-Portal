@@ -67,8 +67,8 @@ export default function FilterCenter({ job_id, onFilterChange }) {
     switch(catId) {
       case 'bio': return filters.states.length + filters.genders.length + (filters.min_age > 18 || filters.max_age < 65 ? 1 : 0);
       case 'schooling': return (filters.min_x_score ? 1 : 0) + (filters.min_xii_score ? 1 : 0);
-      case 'higher_edu': return (filters.ug_uni ? 1 : 0) + (filters.min_ug_score ? 1 : 0) + (filters.pg_uni ? 1 : 0) + (filters.pg_min_score ? 1 : 0) + (filters.phd_uni ? 1 : 0) + (filters.phd_min_score ? 1 : 0);
-      case 'professional': return (filters.min_experience_years > 0 ? 1 : 0) + (filters.role_keyword ? 1 : 0) + (filters.company_keyword ? 1 : 0);
+      case 'higher_edu': return (filters.ug_uni ? 1 : 0) + (filters.min_ug_score ? 1 : 0) + (filters.pg_uni ? 1 : 0) + (filters.pg_min_score ? 1 : 0) + (filters.phd_uni ? 1 : 0) + (filters.phd_domain ? 1 : 0) + (filters.phd_thesis ? 1 : 0);
+      case 'professional': return (filters.min_experience_years > 0 ? 1 : 0) + (filters.role_keyword ? 1 : 0) + (filters.company_keyword ? 1 : 0) + (filters.worked_at_ris ? 1 : 0);
       case 'scholarly': return (filters.min_papers > 0 ? 1 : 0) + (filters.min_books > 0 ? 1 : 0) + (filters.min_chapters > 0 ? 1 : 0) + (filters.min_reports > 0 ? 1 : 0) + (filters.min_policy_briefs > 0 ? 1 : 0);
       default: return 0;
     }
@@ -289,12 +289,8 @@ export default function FilterCenter({ job_id, onFilterChange }) {
               <div style={{ background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <div style={{ fontSize: '10px', fontWeight: '900', color: '#8b5cf6', marginBottom: '10px', textTransform: 'uppercase' }}>Doctorate (PhD)</div>
                 <input type="text" placeholder="University..." value={filters.phd_uni} onChange={(e) => { updateFilter('phd_uni', e.target.value); fetchSuggestions('university', e.target.value); }} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', marginBottom: '10px', fontSize: '12px' }} />
-                <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
-                  {[{ label: '%', val: 'Percentage' }, { label: 'CGPA (10)', val: 'CGPA (Out of 10)' }, { label: 'CGPA (4)', val: 'CGPA (Out of 4)' }].map(t => (
-                    <button key={t.val} onClick={() => updateFilter('phd_score_type', filters.phd_score_type === t.val ? null : t.val)} style={{ flex: 1, padding: '4px 2px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', border: '1px solid', borderColor: filters.phd_score_type === t.val ? '#8b5cf6' : '#e2e8f0', background: filters.phd_score_type === t.val ? '#f5f3ff' : 'white', color: filters.phd_score_type === t.val ? '#7c3aed' : '#94a3b8', cursor: 'pointer' }}>{t.label}</button>
-                  ))}
-                </div>
-                <input type="number" placeholder={`Min Score (${filters.phd_score_type?.includes('4') ? '≤4' : filters.phd_score_type?.includes('10') ? '≤10' : 'Score'})`} value={filters.phd_min_score || ''} onChange={(e) => updateFilter('phd_min_score', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
+                <input type="text" placeholder="PhD Main Domain (e.g. Economics)..." value={filters.phd_domain || ''} onChange={(e) => updateFilter('phd_domain', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', marginBottom: '10px', fontSize: '12px' }} />
+                <input type="text" placeholder="Thesis Title Keyword..." value={filters.phd_thesis || ''} onChange={(e) => updateFilter('phd_thesis', e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #f1f5f9', fontSize: '12px' }} />
               </div>
             </div>
           )}
@@ -323,9 +319,22 @@ export default function FilterCenter({ job_id, onFilterChange }) {
                   )}
                 </div>
               </div>
-              <div style={{ background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '15px', textTransform: 'uppercase' }}>Min Experience: {filters.min_experience_years} Yrs</label>
-                <input type="range" min="0" max="25" value={filters.min_experience_years} onChange={(e) => updateFilter('min_experience_years', e.target.value)} style={{ width: '100%', accentColor: '#f43f5e' }} />
+              <div style={{ background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '15px', textTransform: 'uppercase' }}>Min Experience: {filters.min_experience_years} Yrs</label>
+                  <input type="range" min="0" max="25" value={filters.min_experience_years} onChange={(e) => updateFilter('min_experience_years', e.target.value)} style={{ width: '100%', accentColor: '#f43f5e' }} />
+                </div>
+                <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: '800', color: '#0369a1', cursor: 'pointer', margin: 0 }}>
+                    <input 
+                      type="checkbox" 
+                      checked={filters.worked_at_ris || false} 
+                      onChange={(e) => updateFilter('worked_at_ris', e.target.checked)} 
+                      style={{ width: '16px', height: '16px', accentColor: '#0284c7' }} 
+                    />
+                    Worked for RIS Before
+                  </label>
+                </div>
               </div>
             </div>
           )}

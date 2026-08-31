@@ -61,6 +61,20 @@ const PUBLICATION_CATEGORIES = [
   }
 ];
 
+const PHD_DOMAINS = [
+  'Economics & Development Policy',
+  'International Trade & Finance',
+  'Public Policy & Governance',
+  'International Relations & Foreign Policy',
+  'Development Studies & Social Policy',
+  'Environmental Studies & Climate Change',
+  'Science, Technology & Innovation Policy',
+  'Public Health & Healthcare Policy',
+  'Management & Business Administration',
+  'Data Science, AI & Statistics',
+  'Social Sciences & Sociology'
+];
+
 const SearchableCountryCodeInput = ({ required, value, onChange, placeholder, className }) => {
   const [inputValue, setInputValue] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -512,7 +526,7 @@ export default function ApplicationForm() {
   ]);
 
   const [doctorates, setDoctorates] = useState([
-    { university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '', is_pursuing: false }
+    { university: '', thesis_title: '', phd_domain_select: '', phd_domain_custom: '', grad_year: '', is_pursuing: false }
   ]);
   const [diplomas, setDiplomas] = useState([
     { university: '', degree_name: '', degree_select: '', degree_custom: '', degree_spec: '', is_pursuing: false, score_type: 'Percentage', score_value: '', grad_year: '' }
@@ -582,6 +596,17 @@ export default function ApplicationForm() {
   const [expYears, setExpYears] = useState('');
   const [expMonths, setExpMonths] = useState('');
   const [lastSalary, setLastSalary] = useState('');
+  
+  // Prior RIS Work Experience state
+  const [workedAtRis, setWorkedAtRis] = useState(false);
+  const [risDesignation, setRisDesignation] = useState('');
+  const [risStartDate, setRisStartDate] = useState('');
+  const [risEndDate, setRisEndDate] = useState('');
+  const [risIsCurrent, setRisIsCurrent] = useState(false);
+
+  // Mandatory Submission Declaration state
+  const [declarationAccepted, setDeclarationAccepted] = useState(false);
+
   const [resumeFile, setResumeFile] = useState(null);
   const MAX_RESUME_FILE_SIZE_BYTES = 5 * 1024 * 1024;
   const RESUME_ACCEPT = ".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -911,23 +936,18 @@ export default function ApplicationForm() {
         }
       });
       doctorates.forEach((g, i) => {
-        if (g.university || g.thesis_title || g.score_value || g.grad_year) {
+        if (g.university || g.thesis_title || g.phd_domain_select || g.grad_year) {
           if (!g.university.trim()) errors.push(`Doctorate #${i + 1}: University is required.`);
-          if (!g.thesis_title.trim()) errors.push(`Doctorate #${i + 1}: Thesis Title is required.`);
-          const score = parseFloat(g.score_value);
-          if (isNaN(score) || score < 0) {
-            errors.push(`Doctorate #${i + 1}: Valid Score is required.`);
-          } else if (g.score_type === 'Percentage' && score > 100) {
-            errors.push(`Doctorate #${i + 1}: Percentage score cannot exceed 100.`);
-          } else if (g.score_type === 'CGPA' && score > 10) {
-            errors.push(`Doctorate #${i + 1}: CGPA score cannot exceed 10.`);
+          if (!g.thesis_title.trim()) errors.push(`Doctorate #${i + 1}: Thesis Title / Specialization is required.`);
+          if (g.phd_domain_select === 'Other' && (!g.phd_domain_custom || !g.phd_domain_custom.trim())) {
+            errors.push(`Doctorate #${i + 1}: Please specify the PhD Main Domain.`);
           }
-          if (!g.grad_year) {
-            errors.push(`Doctorate #${i + 1}: Year of Passing is required.`);
-          } else {
+          if (!g.is_pursuing && !g.grad_year) {
+            errors.push(`Doctorate #${i + 1}: Year of Award is required.`);
+          } else if (g.grad_year) {
             const yr = parseInt(g.grad_year, 10);
-            if (isNaN(yr) || yr < 1950 || yr > 2030) {
-              errors.push(`Doctorate #${i + 1}: Year of Passing must be a number between 1950 and 2030.`);
+            if (isNaN(yr) || yr < 1950 || yr > 2035) {
+              errors.push(`Doctorate #${i + 1}: Year of Award must be a number between 1950 and 2035.`);
             }
           }
         }
@@ -1275,6 +1295,21 @@ export default function ApplicationForm() {
         return;
       }
 
+      if (workedAtRis) {
+        if (!risDesignation.trim()) {
+          alert("Please specify your Designation / Position at RIS.");
+          return;
+        }
+        if (!risStartDate) {
+          alert("Please select your Start Date at RIS.");
+          return;
+        }
+        if (!risIsCurrent && !risEndDate) {
+          alert("Please select your End Date at RIS (or check 'Currently Working at RIS').");
+          return;
+        }
+      }
+
       // Only validate detailed work entries if candidate has prior experience or typed work details
       const hasTypedWorkDetails = workExps.some(w => w.company_name && w.company_name.trim() !== '');
       if (yrs > 0 || mths > 0 || hasTypedWorkDetails) {
@@ -1334,7 +1369,20 @@ export default function ApplicationForm() {
     let eduOrder = 1;
     grads.forEach(g => { if(g.university) educations.push({...g, level: 'undergrad', entry_order: eduOrder++}) });
     postGrads.forEach(g => { if(g.university) educations.push({...g, level: 'postgrad', entry_order: eduOrder++}) });
-    doctorates.forEach(g => { if(g.university) educations.push({...g, level: 'phd', entry_order: eduOrder++}) });
+    doctorates.forEach(g => { 
+      if (g.university) {
+        const domainVal = g.phd_domain_select === 'Other' ? (g.phd_domain_custom || 'Other') : g.phd_domain_select;
+        educations.push({
+          ...g,
+          level: 'phd',
+          degree_name: g.thesis_title,
+          phd_domain: domainVal || null,
+          score_type: null,
+          score_value: null,
+          entry_order: eduOrder++
+        });
+      } 
+    });
     diplomas.forEach(g => { if(g.university) educations.push({...g, level: 'diploma', entry_order: eduOrder++}) });
 
     let works = [];
@@ -1378,6 +1426,11 @@ export default function ApplicationForm() {
       international_address: isInternationalAddress ? internationalAddress.trim() : null,
       years_of_experience: totalYrs,
       last_salary: lastSalary ? parseFloat(lastSalary) : null,
+      worked_at_ris: workedAtRis,
+      ris_designation: workedAtRis ? risDesignation.trim() : null,
+      ris_start_date: workedAtRis ? (risStartDate || null) : null,
+      ris_end_date: (workedAtRis && !risIsCurrent) ? (risEndDate || null) : null,
+      ris_is_current: workedAtRis ? risIsCurrent : false,
 
       position_applied, 
       admin_department: position_applied === 'Admin' ? admin_department : null,
@@ -2385,9 +2438,35 @@ export default function ApplicationForm() {
                           <Trash2 size={13} /> Delete Entry
                         </button>
                       </div>
-                      <div className="form-group col-6"><label className="form-label">University</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setDoctorates, doctorates, i, 'university', val)} placeholder="Search university..." /></div>
-                      <div className="form-group col-6"><label className="form-label">Thesis Title</label><input className="form-input" value={g.thesis_title} onChange={e => updateEntry(setDoctorates, doctorates, i, 'thesis_title', e.target.value)} /></div>
-                      <div className="form-group col-3" style={{ display: 'flex', alignItems: 'center', paddingTop: '1.25rem' }}>
+                      <div className="form-group col-6"><label className="form-label">University / Institution</label><UniversityAutocomplete className="form-input" value={g.university} onChange={val => updateEntry(setDoctorates, doctorates, i, 'university', val)} placeholder="Search university..." /></div>
+                      <div className="form-group col-6">
+                        <label className="form-label">Main Domain of PhD</label>
+                        <select 
+                          className="form-input" 
+                          value={g.phd_domain_select || ''} 
+                          onChange={e => updateEntry(setDoctorates, doctorates, i, 'phd_domain_select', e.target.value)}
+                        >
+                          <option value="">-- Select Main Domain --</option>
+                          {PHD_DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      {g.phd_domain_select === 'Other' && (
+                        <div className="form-group col-6">
+                          <label className="form-label">Specify Other Domain</label>
+                          <input 
+                            className="form-input" 
+                            placeholder="Enter custom PhD domain..."
+                            value={g.phd_domain_custom || ''} 
+                            onChange={e => updateEntry(setDoctorates, doctorates, i, 'phd_domain_custom', e.target.value)} 
+                          />
+                        </div>
+                      )}
+                      <div className={`form-group ${g.phd_domain_select === 'Other' ? 'col-6' : 'col-12'}`}>
+                        <label className="form-label">Thesis Title / Area of Specialization</label>
+                        <input className="form-input" placeholder="e.g. Econometric Analysis of Trade Flows" value={g.thesis_title} onChange={e => updateEntry(setDoctorates, doctorates, i, 'thesis_title', e.target.value)} />
+                      </div>
+                      <div className="form-group col-6" style={{ display: 'flex', alignItems: 'center', paddingTop: '1.25rem' }}>
                         <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', fontWeight: 700, color: '#002147', cursor: 'pointer', margin: 0 }}>
                           <input 
                             type="checkbox" 
@@ -2398,12 +2477,10 @@ export default function ApplicationForm() {
                           Currently Pursuing
                         </label>
                       </div>
-                      <div className="form-group col-3"><label className="form-label">{g.is_pursuing ? 'Expected Completion Year' : 'Year of Passing'}</label><input required={!g.is_pursuing && (!!g.university || !!g.thesis_title || !!g.score_value)} type="number" min={g.is_pursuing ? new Date().getFullYear() : 1950} max="2035" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setDoctorates, doctorates, i, 'grad_year', e.target.value)} /></div>
-                      <div className="form-group col-3"><label className="form-label">Score Type</label><select className="form-input" value={g.score_type} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_type', e.target.value)}><option>Percentage</option><option>CGPA (Out of 10)</option><option>CGPA (Out of 4)</option></select></div>
-                      <div className="form-group col-3"><label className="form-label">{g.is_pursuing ? 'Current Score (Optional)' : `Score (<= ${g.score_type==='Percentage' ? '100' : g.score_type==='CGPA (Out of 4)' ? '4' : '10'})`}</label><input type="number" step="0.01" max={g.score_type === 'CGPA (Out of 10)' ? '10' : g.score_type === 'CGPA (Out of 4)' ? '4' : '100'} className="form-input" value={g.score_value} onChange={e => updateEntry(setDoctorates, doctorates, i, 'score_value', e.target.value)} /></div>
+                      <div className="form-group col-6"><label className="form-label">{g.is_pursuing ? 'Expected Year of Award' : 'Year of Award'}</label><input required={!g.is_pursuing && (!!g.university || !!g.thesis_title)} type="number" min={g.is_pursuing ? new Date().getFullYear() : 1950} max="2035" placeholder="YYYY" className="form-input" value={g.grad_year || ''} onChange={e => updateEntry(setDoctorates, doctorates, i, 'grad_year', e.target.value)} /></div>
                     </div>
                   ))}
-                  <button type="button" className="btn-secondary" disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3, { university: '', thesis_title: '', score_type: 'Percentage', score_value: '', grad_year: '', is_pursuing: false })}>
+                  <button type="button" className="btn-secondary" disabled={doctorates.length>=3} onClick={() => addEntry(setDoctorates, doctorates, 3, { university: '', thesis_title: '', phd_domain_select: '', phd_domain_custom: '', grad_year: '', is_pursuing: false })}>
                     {doctorates.length > 0 ? '+ Add Another Doctorate / Ph.D.' : '+ Add Doctorate / Ph.D.'}
                   </button>
                 </>
@@ -2678,6 +2755,71 @@ export default function ApplicationForm() {
                     onChange={e => setLastSalary(e.target.value)} 
                   />
                 </div>
+              </div>
+
+              {/* Prior RIS Work Experience Section */}
+              <div style={{
+                marginBottom: '2rem', 
+                background: 'linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%)', 
+                padding: '1.25rem', 
+                borderRadius: '12px', 
+                border: '1.5px solid #0284c7',
+                boxShadow: '0 4px 12px rgba(2, 132, 199, 0.06)'
+              }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', fontSize: '0.92rem', fontWeight: 700, color: '#0369a1', cursor: 'pointer', margin: 0 }}>
+                  <input 
+                    type="checkbox" 
+                    checked={workedAtRis} 
+                    onChange={e => setWorkedAtRis(e.target.checked)} 
+                    style={{ width: '18px', height: '18px', accentColor: '#0284c7', cursor: 'pointer' }}
+                  />
+                  Have you worked for RIS (Research and Information System for Developing Countries) before?
+                </label>
+
+                {workedAtRis && (
+                  <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px dashed #7dd3fc' }} className="form-grid">
+                    <div className="form-group col-6">
+                      <label className="form-label">Position / Designation at RIS <span style={{ color: '#ef4444' }}>*</span></label>
+                      <input 
+                        type="text" 
+                        className={`form-input ${(triedSubmit && !risDesignation.trim()) ? 'faulty-input' : ''}`}
+                        placeholder="e.g. Research Assistant / Consultant" 
+                        value={risDesignation} 
+                        onChange={e => setRisDesignation(e.target.value)} 
+                      />
+                    </div>
+                    <div className="form-group col-6" style={{ display: 'flex', alignItems: 'center', paddingTop: '1.25rem' }}>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700, color: '#0369a1', cursor: 'pointer', margin: 0 }}>
+                        <input 
+                          type="checkbox" 
+                          checked={risIsCurrent} 
+                          onChange={e => setRisIsCurrent(e.target.checked)} 
+                          style={{ width: '16px', height: '16px', accentColor: '#0284c7' }}
+                        />
+                        Currently Working at RIS
+                      </label>
+                    </div>
+                    <div className="form-group col-6">
+                      <label className="form-label">Start Date at RIS <span style={{ color: '#ef4444' }}>*</span></label>
+                      <input 
+                        type="date" 
+                        className={`form-input ${(triedSubmit && !risStartDate) ? 'faulty-input' : ''}`}
+                        value={risStartDate} 
+                        onChange={e => setRisStartDate(e.target.value)} 
+                      />
+                    </div>
+                    <div className="form-group col-6">
+                      <label className="form-label">{risIsCurrent ? 'End Date (N/A - Currently Working)' : 'End Date at RIS *'}</label>
+                      <input 
+                        type="date" 
+                        disabled={risIsCurrent}
+                        className={`form-input ${(triedSubmit && !risIsCurrent && !risEndDate) ? 'faulty-input' : ''}`}
+                        value={risIsCurrent ? '' : risEndDate} 
+                        onChange={e => setRisEndDate(e.target.value)} 
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div style={{marginBottom: '2rem'}}>
@@ -3483,11 +3625,13 @@ export default function ApplicationForm() {
                       {doctorates.map((g, i) => g.university && (
                         <tr key={`phd-${i}`}>
                           <td>
-                            <span className="resume-item-title">Doctorate Degree (Ph.D) {g.grad_year && `(${g.grad_year})`}</span>
-                            <div className="resume-item-subtitle">Thesis: {g.thesis_title}</div>
+                            <span className="resume-item-title">Doctorate Degree (Ph.D) {g.is_pursuing ? '(Currently Pursuing)' : (g.grad_year ? `(Awarded ${g.grad_year})` : '')}</span>
+                            <div className="resume-item-subtitle">
+                              {(g.phd_domain_select || g.phd_domain) ? `Domain: ${g.phd_domain_select === 'Other' ? g.phd_domain_custom : (g.phd_domain_select || g.phd_domain)} | ` : ''}Thesis: {g.thesis_title}
+                            </div>
                           </td>
                           <td>{g.university}</td>
-                          <td>{g.score_value} ({g.score_type === 'Percentage' ? '%' : 'CGPA'})</td>
+                          <td>{g.is_pursuing ? 'Pursuing' : (g.grad_year ? `Awarded ${g.grad_year}` : 'Completed')}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -3617,6 +3761,11 @@ export default function ApplicationForm() {
                   <div>
                     <p style={{ fontSize: '0.95rem', marginBottom: '1rem' }}>
                       💼 <strong>Total Experience:</strong> {expYears || 0} Years, {expMonths || 0} Months
+                      {workedAtRis && (
+                        <span style={{ marginLeft: '1rem', color: '#0369a1', fontWeight: '700', background: '#e0f2fe', padding: '4px 10px', borderRadius: '6px' }}>
+                          🏛️ Prior RIS Experience: {risDesignation} ({risStartDate || 'N/A'} to {risIsCurrent ? 'Present' : (risEndDate || 'N/A')})
+                        </span>
+                      )}
                       {resumeFile && <span style={{ marginLeft: '1.5rem', color: 'var(--brand-primary)', fontWeight: '600' }}>📄 Attachment: {resumeFile.name}</span>}
                     </p>
 
@@ -3812,6 +3961,35 @@ export default function ApplicationForm() {
                   )}
                 </div>
               </div>
+
+              {/* Mandatory Candidate Declaration Box */}
+              <div style={{
+                background: 'linear-gradient(135deg, #fffbeb 0%, #ffffff 100%)',
+                border: '2px solid #f59e0b',
+                borderRadius: '16px',
+                padding: '1.5rem',
+                marginTop: '1.5rem',
+                marginBottom: '2rem',
+                boxShadow: '0 4px 16px rgba(245, 158, 11, 0.1)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                  <input 
+                    type="checkbox" 
+                    id="declarationCheckbox"
+                    checked={declarationAccepted}
+                    onChange={(e) => setDeclarationAccepted(e.target.checked)}
+                    style={{ width: '20px', height: '20px', marginTop: '2px', accentColor: '#002147', cursor: 'pointer', flexShrink: 0 }}
+                  />
+                  <label htmlFor="declarationCheckbox" style={{ fontSize: '0.88rem', fontWeight: 600, color: '#1e293b', lineHeight: 1.5, cursor: 'pointer' }}>
+                    By submitting the above details, I certify that all publication data, IDs, and verification links provided are accurate and true. I understand that providing false or misleading academic information will lead to the immediate rejection of my application or dismissal from the selection process. <span style={{ color: '#ef4444', fontWeight: 700 }}>*</span>
+                  </label>
+                </div>
+                {triedSubmit && !declarationAccepted && (
+                  <div className="error-text" style={{ fontSize: '0.82rem', color: '#ef4444', marginTop: '8px', fontWeight: '700', paddingLeft: '32px' }}>
+                    ⚠️ You must accept the mandatory declaration to submit your application.
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="resume-actions-container no-print">
@@ -3842,6 +4020,10 @@ export default function ApplicationForm() {
                   }
                   if ((howHeard === 'Friend / Colleague' || howHeard === 'Others') && !howHeardDetails.trim()) {
                     alert(`Please specify details for "${howHeard}".`);
+                    return;
+                  }
+                  if (!declarationAccepted) {
+                    alert("Please check and accept the mandatory declaration certifying that all your details and publication links are accurate and true.");
                     return;
                   }
                   executeFinalSubmit();

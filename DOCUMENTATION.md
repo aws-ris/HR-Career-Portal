@@ -216,11 +216,19 @@ erDiagram
 | Date of Birth | `candidate_metadata` | `dob` | `DATE` | Mandatory |
 | Calculated Age | `candidate_metadata` | `age` | `INTEGER` | Auto-calculated from DOB |
 | Gender | `candidate_metadata` | `gender` | `VARCHAR(30)` | Male / Female / Other |
-| City | `candidate_metadata` | `city` | `VARCHAR(100)` | City of residence |
-| State | `candidate_metadata` | `state` | `VARCHAR(100)` | State of residence |
-| Pincode | `candidate_metadata` | `pincode` | `VARCHAR(20)` | Postal PIN code |
+| Nationality | `candidate_metadata` | `nationality` | `VARCHAR(100)` | Default `Indian` |
+| Is International Address? | `candidate_metadata` | `is_international_address` | `BOOLEAN` | Checkbox toggle for overseas candidates |
+| International Address | `candidate_metadata` | `international_address` | `TEXT` | Free-text overseas address |
+| City | `candidate_metadata` | `city` | `VARCHAR(100)` | City of residence (Indian) |
+| State | `candidate_metadata` | `state` | `VARCHAR(100)` | State of residence (Indian) |
+| Pincode | `candidate_metadata` | `pincode` | `VARCHAR(20)` | Postal PIN code (Indian) |
 | Total Work Experience | `candidate_metadata` | `years_of_experience` | `FLOAT` | Total experience in years |
 | Current / Last Salary | `candidate_metadata` | `last_salary` | `FLOAT` | Optional financial field |
+| Worked for RIS Before? | `candidate_metadata` | `worked_at_ris` | `BOOLEAN` | Prior RIS employment flag |
+| RIS Designation | `candidate_metadata` | `ris_designation` | `VARCHAR(200)` | Role at RIS |
+| RIS Start Date | `candidate_metadata` | `ris_start_date` | `DATE` | Start date at RIS |
+| RIS End Date | `candidate_metadata` | `ris_end_date` | `DATE` | End date at RIS |
+| Currently Working at RIS | `candidate_metadata` | `ris_is_current` | `BOOLEAN` | Ongoing RIS employee flag |
 
 #### 2. Schooling Information (`candidate_schooling`)
 *Stores Class X & Class XII secondary education records (1:1 with candidate).*
@@ -229,12 +237,12 @@ erDiagram
 |---|---|---|---|---|
 | Class X School Name | `candidate_schooling` | `class_x_school` | `VARCHAR(250)` | School name |
 | Class X Education Board | `candidate_schooling` | `class_x_board` | `VARCHAR(100)` | CBSE, ICSE, State Board, etc. |
-| Class X Score Type | `candidate_schooling` | `class_x_score_type` | `VARCHAR(20)` | `Percentage` or `CGPA` |
+| Class X Score Type | `candidate_schooling` | `class_x_score_type` | `VARCHAR(20)` | `Percentage`, `CGPA (Out of 10)`, `CGPA (Out of 4)` |
 | Class X Score Value | `candidate_schooling` | `class_x_score_value` | `FLOAT` | Score numerical value |
 | Class X Year of Passing | `candidate_schooling` | `class_x_year` | `INTEGER` | e.g. `2007` |
 | Class XII School Name | `candidate_schooling` | `class_xii_school` | `VARCHAR(250)` | School name |
 | Class XII Education Board | `candidate_schooling` | `class_xii_board` | `VARCHAR(100)` | Board name |
-| Class XII Score Type | `candidate_schooling` | `class_xii_score_type` | `VARCHAR(20)` | `Percentage` or `CGPA` |
+| Class XII Score Type | `candidate_schooling` | `class_xii_score_type` | `VARCHAR(20)` | `Percentage`, `CGPA (Out of 10)`, `CGPA (Out of 4)` |
 | Class XII Score Value | `candidate_schooling` | `class_xii_score_value` | `FLOAT` | Score numerical value |
 | Class XII Year of Passing | `candidate_schooling` | `class_xii_year` | `INTEGER` | e.g. `2009` |
 
@@ -245,10 +253,11 @@ erDiagram
 |---|---|---|---|---|
 | Education Level | `candidate_higher_education` | `level` | `VARCHAR(20)` | `undergrad`, `postgrad`, `phd`, `diploma` |
 | University / Institution | `candidate_higher_education` | `university` | `VARCHAR(200)` | University name |
-| Degree Name & Discipline | `candidate_higher_education` | `degree_name` | `VARCHAR(200)` | e.g. *BA Economics*, *MA International Trade* |
-| Score Marking System | `candidate_higher_education` | `score_type` | `VARCHAR(20)` | `Percentage`, `CGPA (Out of 10)`, `CGPA (Out of 4)` |
-| Score Value | `candidate_higher_education` | `score_value` | `FLOAT` | Percentage / CGPA value |
-| Graduation Year | `candidate_higher_education` | `grad_year` | `INTEGER` | Passing year |
+| Degree Name & Discipline | `candidate_higher_education` | `degree_name` | `VARCHAR(200)` | e.g. *BA Economics*, *MA International Trade*, or Thesis Title for PhD |
+| PhD Main Domain | `candidate_higher_education` | `phd_domain` | `VARCHAR(255)` | Dropdown or custom specified domain for PhD |
+| Score Marking System | `candidate_higher_education` | `score_type` | `VARCHAR(20)` | `Percentage`, `CGPA (Out of 10)`, `CGPA (Out of 4)` (N/A for PhD) |
+| Score Value | `candidate_higher_education` | `score_value` | `FLOAT` | Percentage / CGPA value (N/A for PhD) |
+| Graduation / Award Year | `candidate_higher_education` | `grad_year` | `INTEGER` | Year of Passing (UG/PG) / Year of Award (PhD) |
 | Is Pursuing Status | `candidate_higher_education` | `is_pursuing` | `BOOLEAN` | `True` if ongoing |
 | Course Duration | `candidate_higher_education` | `duration_value` | `INTEGER` | e.g. `3` |
 | Duration Unit | `candidate_higher_education` | `duration_unit` | `VARCHAR(10)` | `Years` / `Months` |

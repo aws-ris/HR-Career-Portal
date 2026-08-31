@@ -133,6 +133,7 @@ class HigherEducationCreate(BaseModel):
     level:          EducationLevel
     university:     Optional[str]       = None
     degree_name:    Optional[str]       = None
+    phd_domain:     Optional[str]       = None
     score_type:     Optional[ScoreType] = None
     score_value:    Optional[float]     = Field(None, ge=0)
     grad_year:      Optional[int]       = Field(None, ge=1950, le=2035)
@@ -276,6 +277,11 @@ class CandidateCreate(BaseModel):
     international_address:    Optional[str]   = None
     years_of_experience: Optional[float]      = Field(None, ge=0)
     last_salary:         Optional[float]      = Field(None, ge=0)
+    worked_at_ris:       Optional[bool]       = False
+    ris_designation:     Optional[str]        = None
+    ris_start_date:      Optional[date]       = None
+    ris_end_date:        Optional[date]       = None
+    ris_is_current:      Optional[bool]       = False
 
 
     # Links & about (goes to candidate_links_about)

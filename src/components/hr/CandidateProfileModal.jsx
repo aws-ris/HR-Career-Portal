@@ -580,6 +580,34 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
 
               </div>
 
+              {data.worked_at_ris && (
+                <div style={{
+                  background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                  border: '1.5px solid #0284c7',
+                  borderRadius: '12px',
+                  padding: '14px 20px',
+                  marginBottom: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '16px',
+                  boxShadow: '0 2px 8px rgba(2, 132, 199, 0.08)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '20px' }}>🏛️</span>
+                    <div>
+                      <span style={{ fontSize: '11px', fontWeight: '800', color: '#0369a1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prior RIS Experience</span>
+                      <div style={{ fontSize: '15px', fontWeight: '800', color: '#0c4a6e', marginTop: '2px' }}>
+                        {data.ris_designation || 'Former RIS Staff'}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#0284c7', background: '#ffffff', padding: '6px 12px', borderRadius: '6px', border: '1px solid #bae6fd' }}>
+                    Period: {data.ris_start_date || 'N/A'} - {data.ris_is_current ? 'Present (Currently Working)' : (data.ris_end_date || 'N/A')}
+                  </div>
+                </div>
+              )}
+
               {/* Education & Experience Columns */}
               <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '40px' }}>
                 {/* Academic Profile */}
@@ -591,15 +619,19 @@ export default function CandidateProfileModal({ candidateId, jobId, onClose }) {
                       <div key={`phd-${i}`} style={{ padding: '20px', background: '#f5f3ff', borderLeft: '4px solid #7c3aed', borderRadius: '8px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <span style={{ fontWeight: '800', color: '#7c3aed', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Doctorate (Ph.D)</span>
-                          {d.grad_year && <span style={{ fontSize: '12px', fontWeight: '600', color: '#7c3aed', background: '#e9e3ff', padding: '2px 8px', borderRadius: '4px' }}>Graduated {d.grad_year}</span>}
+                          {d.is_pursuing ? (
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#7c3aed', background: '#e9e3ff', padding: '2px 8px', borderRadius: '4px' }}>Currently Pursuing</span>
+                          ) : d.grad_year ? (
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#7c3aed', background: '#e9e3ff', padding: '2px 8px', borderRadius: '4px' }}>Year of Award: {d.grad_year}</span>
+                          ) : null}
                         </div>
                         <div style={{ fontWeight: '800', color: '#1e293b', fontSize: '16px', margin: '6px 0' }}>{d.university}</div>
-                        <div style={{ fontSize: '14px', fontStyle: 'italic', color: '#475569', marginBottom: '8px' }}>Thesis: "{d.thesis_title}"</div>
-                        {d.score_value && (
-                          <div style={{ display: 'inline-block', fontSize: '12px', fontWeight: '700', color: '#7c3aed', background: '#f3f0ff', padding: '4px 8px', borderRadius: '4px', border: '1px solid #d8ccff' }}>
-                            Score: {d.score_value} {d.score_type}
+                        {d.phd_domain && (
+                          <div style={{ fontSize: '13px', fontWeight: '700', color: '#6d28d9', marginBottom: '4px' }}>
+                            Main Domain: {d.phd_domain}
                           </div>
                         )}
+                        <div style={{ fontSize: '14px', fontStyle: 'italic', color: '#475569' }}>Thesis / Specialization: "{d.thesis_title}"</div>
                       </div>
                     ))}
 

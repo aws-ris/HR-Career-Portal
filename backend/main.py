@@ -228,6 +228,13 @@ def startup_migration():
             ("candidate_metadata", "city", "VARCHAR(100)"),
             ("candidate_metadata", "last_salary", "FLOAT"),
 
+            ("candidate_higher_education", "phd_domain", "VARCHAR(255)"),
+            ("candidate_metadata", "worked_at_ris", "BOOLEAN DEFAULT FALSE"),
+            ("candidate_metadata", "ris_designation", "VARCHAR(200)"),
+            ("candidate_metadata", "ris_start_date", "DATE"),
+            ("candidate_metadata", "ris_end_date", "DATE"),
+            ("candidate_metadata", "ris_is_current", "BOOLEAN DEFAULT FALSE"),
+
             
             ("candidate_links_about", "about", "TEXT"),
             ("candidate_links_about", "sop", "TEXT"),
@@ -482,6 +489,11 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
             candidate.international_address = getattr(payload, 'international_address', None)
             candidate.years_of_experience = payload.years_of_experience
             candidate.last_salary = payload.last_salary
+            candidate.worked_at_ris = getattr(payload, 'worked_at_ris', False) or False
+            candidate.ris_designation = getattr(payload, 'ris_designation', None)
+            candidate.ris_start_date = getattr(payload, 'ris_start_date', None)
+            candidate.ris_end_date = getattr(payload, 'ris_end_date', None)
+            candidate.ris_is_current = getattr(payload, 'ris_is_current', False) or False
             
             # Clean up old relations to prevent duplicates
             if candidate.schooling:
@@ -510,7 +522,12 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
                 is_international_address = getattr(payload, 'is_international_address', False) or False,
                 international_address = getattr(payload, 'international_address', None),
                 years_of_experience = payload.years_of_experience,
-                last_salary         = payload.last_salary
+                last_salary         = payload.last_salary,
+                worked_at_ris       = getattr(payload, 'worked_at_ris', False) or False,
+                ris_designation     = getattr(payload, 'ris_designation', None),
+                ris_start_date      = getattr(payload, 'ris_start_date', None),
+                ris_end_date        = getattr(payload, 'ris_end_date', None),
+                ris_is_current      = getattr(payload, 'ris_is_current', False) or False
             )
 
             db.add(candidate)
@@ -1002,6 +1019,11 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
             if candidate.dob else None
         ),
         "years_of_experience": candidate.years_of_experience,
+        "worked_at_ris": getattr(candidate, "worked_at_ris", False) or False,
+        "ris_designation": getattr(candidate, "ris_designation", None),
+        "ris_start_date": candidate.ris_start_date.isoformat() if getattr(candidate, "ris_start_date", None) else None,
+        "ris_end_date": candidate.ris_end_date.isoformat() if getattr(candidate, "ris_end_date", None) else None,
+        "ris_is_current": getattr(candidate, "ris_is_current", False) or False,
         "profile_score": score_res["total_score"],
         "profile_score_breakdown": score_res["breakdown"],
         "about": candidate.links_about.about if candidate.links_about else None,
@@ -1016,7 +1038,7 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
         "schooling": schooling_data,
         "graduation": [{"degree_name": g.degree_name, "university": g.university, "score_type": g.score_type, "score_value": g.score_value, "grad_year": g.grad_year} for g in grad],
         "postgraduate": [{"degree_name": p.degree_name, "university": p.university, "score_type": p.score_type, "score_value": p.score_value, "grad_year": p.grad_year} for p in postgrad],
-        "doctorate": [{"university": d.university, "thesis_title": d.degree_name, "score_type": d.score_type, "score_value": d.score_value, "grad_year": d.grad_year} for d in phd],
+        "doctorate": [{"university": d.university, "thesis_title": d.degree_name, "phd_domain": getattr(d, "phd_domain", None), "grad_year": d.grad_year, "is_pursuing": getattr(d, "is_pursuing", False)} for d in phd],
         "work_experiences": [{"role": w.role, "company_name": w.company_name, "start_date": w.start_date.isoformat() if w.start_date else None, "end_date": w.end_date.isoformat() if w.end_date else None, "is_current": w.is_current} for w in candidate.work_experiences],
         "publications": [{"pub_type": pub.pub_type, "title": pub.title, "parent_book": pub.parent_book} for pub in candidate.publications],
         "applications": [{
@@ -1333,6 +1355,7 @@ class CandidateFilter(BaseModel):
     phd_thesis: Optional[str] = None
     phd_min_score: Optional[float] = None
     min_experience_years: Optional[float] = None
+    worked_at_ris: Optional[bool] = None
     min_papers: Optional[int] = None
     min_books: Optional[int] = None
     min_chapters: Optional[int] = None
@@ -1348,6 +1371,7 @@ class CandidateFilter(BaseModel):
     ug_score_type: Optional[str] = None    # 'Percentage' or 'CGPA'
     pg_score_type: Optional[str] = None
     phd_score_type: Optional[str] = None
+    phd_domain: Optional[str] = None
     x_score_type: Optional[str] = None
     xii_score_type: Optional[str] = None
 
@@ -1445,10 +1469,10 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 "Full Name", "Date of Birth", "Age", "Email", "Mobile No", "Gender", "Nationality",
                 "Is International Address?", "International Address", "City / State / Pin",
                 "Position Applied", "Division / Department", "Current Status", "Submitted Date", "Source",
-                "LinkedIn Link", "Class X Score", "Class X Year", "Class XII Score", "Class XII Year", 
+                "LinkedIn Link", "Worked for RIS Before?", "Class X Score", "Class X Year", "Class XII Score", "Class XII Year", 
                 "Bachelors (UG)", "Bachelors Score", "Bachelors Year",
                 "Masters (PG)", "Masters Score", "Masters Year",
-                "Doctorate (PhD)", "Doctorate Score", "Doctorate Year",
+                "Doctorate (PhD) Thesis Title", "PhD Main Domain", "Doctorate Year of Award",
                 "Total Exp (Yrs)", "Latest Employment"
             ]
             
@@ -1470,6 +1494,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 ug_text = f"{ug.degree_name} ({ug.university})" if (ug and ug.university) else (ug.degree_name if ug else "")
                 pg_text = f"{pg.degree_name} ({pg.university})" if (pg and pg.university) else (pg.degree_name if pg else "")
                 phd_text = f"{phd.degree_name} ({phd.university})" if (phd and phd.university) else (phd.degree_name if phd else "")
+                phd_domain_text = (phd.phd_domain if phd else "") or ""
+                phd_year_text = (phd.grad_year if phd else "") or ""
                 
                 latest_work_text = f"{latest_work.role} ({latest_work.company_name})" if latest_work else ""
                 
@@ -1502,6 +1528,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     parts = [p for p in [full_c.city, full_c.state, full_c.pincode] if p]
                     location_str = " - ".join(parts) if parts else ""
 
+                ris_exp_str = f"Yes ({full_c.ris_designation or 'Worked at RIS'}: {str(full_c.ris_start_date or '')[:7]} to {'Present' if full_c.ris_is_current else str(full_c.ris_end_date or '')[:7]})" if getattr(full_c, 'worked_at_ris', False) else "No"
+
                 row = [
                     full_c.full_name,
                     str(full_c.dob) if full_c.dob else "",
@@ -1519,6 +1547,7 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     sub_date,
                     (full_c.links_about.how_heard if full_c.links_about else "") or "",
                     (full_c.links_about.linkedin if full_c.links_about else "") or "",
+                    ris_exp_str,
                     format_schooling_score(full_c.schooling, "x"),
                     full_c.schooling.class_x_year if (full_c.schooling and full_c.schooling.class_x_year) else "",
                     format_schooling_score(full_c.schooling, "xii"),
@@ -1530,8 +1559,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     format_score(pg.score_value, pg.score_type) if pg else "",
                     pg.grad_year if pg else "",
                     phd_text,
-                    format_score(phd.score_value, phd.score_type) if phd else "",
-                    phd.grad_year if phd else "",
+                    phd_domain_text,
+                    phd_year_text,
                     full_c.years_of_experience or 0.0,
                     latest_work_text
                 ]
@@ -1561,12 +1590,12 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 # Postgrad (44-48)
                 "Postgrad Univ", "Postgrad Degree", "Postgrad Score", "Postgrad Year", "Postgrad Pursuing",
                 # PhD (49-53)
-                "PhD Univ", "PhD Thesis / Spec", "PhD Score", "PhD Year", "PhD Pursuing",
+                "PhD Univ", "PhD Main Domain", "PhD Thesis Title / Spec", "PhD Year of Award", "PhD Pursuing",
                 # Diploma (54-58)
                 "Diploma Institute", "Diploma Degree / Type", "Diploma Score", "Diploma Year", "Diploma Pursuing",
-                # Experience & Salary (59-64)
-                "Total Exp (Yrs)", "Last Salary (LPA)", "Work Organization", "Work Designation", "Work Start Date", "Work End Date",
-                # Publications Reorganized Count -> Links (65-74)
+                # Experience & Salary (59-67)
+                "Total Exp (Yrs)", "Last Salary (LPA)", "Worked for RIS Before?", "RIS Position / Role", "RIS Employment Period", "Work Organization", "Work Designation", "Work Start Date", "Work End Date",
+                # Publications Reorganized Count -> Links (68-77)
                 "Books & Book Chapters Count", "Books & Book Chapters Validation Links",
                 "Peer-Reviewed Papers Count", "Peer-Reviewed Papers Validation Links",
                 "Preprints & Chapters Count", "Preprints & Chapters Validation Links",
@@ -1603,8 +1632,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     single_line_rows.append(current_r)
                 
                 if max_rows > 1:
-                    # Merge candidate static metadata columns (1 to 38) and publication columns (65 to 74)
-                    for col in list(range(1, 39)) + list(range(65, 75)):
+                    # Merge candidate static metadata columns (1 to 63) and publication columns (68 to 77)
+                    for col in list(range(1, 64)) + list(range(68, 78)):
                         merge_ranges.append((current_r, current_r + max_rows - 1, col))
 
                 latest_app = full_c.applications[-1] if getattr(full_c, 'applications', None) else None
@@ -1686,21 +1715,24 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         row[36] = format_schooling_score(full_c.schooling, "xii")
                         row[37] = full_c.schooling.class_xii_year if (full_c.schooling and full_c.schooling.class_xii_year) else ""
 
-                        # Experience & Salary Summary (58-59 index)
+                        # Experience & Salary Summary (58-62 index)
                         row[58] = full_c.years_of_experience if full_c.years_of_experience is not None else 0.0
                         row[59] = full_c.last_salary if full_c.last_salary is not None else ""
+                        row[60] = "Yes" if getattr(full_c, 'worked_at_ris', False) else "No"
+                        row[61] = getattr(full_c, 'ris_designation', None) or ""
+                        row[62] = f"{getattr(full_c, 'ris_start_date', '') or ''} to {'Present' if getattr(full_c, 'ris_is_current', False) else (getattr(full_c, 'ris_end_date', '') or '')}" if getattr(full_c, 'worked_at_ris', False) else ""
 
-                        # Publications Reorganized Count -> Links (64-73 index)
-                        row[64] = (full_c.links_about.pub_books if full_c.links_about else 0) or 0
-                        row[65] = books_links
-                        row[66] = (full_c.links_about.pub_papers if full_c.links_about else 0) or 0
-                        row[67] = papers_links
-                        row[68] = (full_c.links_about.pub_chapters if full_c.links_about else 0) or 0
-                        row[69] = chapters_links
-                        row[70] = (full_c.links_about.pub_reports if full_c.links_about else 0) or 0
-                        row[71] = reports_links
-                        row[72] = (full_c.links_about.pub_policy_briefs if full_c.links_about else 0) or 0
-                        row[73] = briefs_links
+                        # Publications Reorganized Count -> Links (67-76 index)
+                        row[67] = (full_c.links_about.pub_books if full_c.links_about else 0) or 0
+                        row[68] = books_links
+                        row[69] = (full_c.links_about.pub_papers if full_c.links_about else 0) or 0
+                        row[70] = papers_links
+                        row[71] = (full_c.links_about.pub_chapters if full_c.links_about else 0) or 0
+                        row[72] = chapters_links
+                        row[73] = (full_c.links_about.pub_reports if full_c.links_about else 0) or 0
+                        row[74] = reports_links
+                        row[75] = (full_c.links_about.pub_policy_briefs if full_c.links_about else 0) or 0
+                        row[76] = briefs_links
                     
                     # Graduation details (38-42 index)
                     if i < len(undergrads):
@@ -1721,8 +1753,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     # PhD details (48-52 index)
                     if i < len(phds):
                         row[48] = phds[i].university or ""
-                        row[49] = phds[i].degree_name or ""
-                        row[50] = format_score(phds[i].score_value, phds[i].score_type) if phds[i].score_value else ""
+                        row[49] = phds[i].phd_domain or ""
+                        row[50] = phds[i].degree_name or ""
                         row[51] = phds[i].grad_year or ""
                         row[52] = "Yes" if phds[i].is_pursuing else "No"
 
@@ -1990,14 +2022,12 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
             ).subquery()
             id_query = id_query.filter(models.CandidateMetadata.id.in_(sub))
 
-        if filters.phd_min_score is not None:
+        if filters.phd_domain:
             sub = db.query(models.CandidateHigherEducation.candidate_id).filter(
                 models.CandidateHigherEducation.level == 'phd',
-                models.CandidateHigherEducation.score_value >= float(filters.phd_min_score)
-            )
-            if filters.phd_score_type:
-                sub = apply_score_type_filter(sub, models.CandidateHigherEducation.score_type, filters.phd_score_type)
-            id_query = id_query.filter(models.CandidateMetadata.id.in_(sub.subquery()))
+                models.CandidateHigherEducation.phd_domain.ilike(f"%{filters.phd_domain}%")
+            ).subquery()
+            id_query = id_query.filter(models.CandidateMetadata.id.in_(sub))
 
         # Academic Schooling Filters
         if filters.min_x_score is not None:
@@ -2024,6 +2054,9 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
         if filters.company_keyword:
             sub = db.query(models.CandidateWorkExperience.candidate_id).filter(models.CandidateWorkExperience.company_name.ilike(f"%{filters.company_keyword}%")).subquery()
             id_query = id_query.filter(models.CandidateMetadata.id.in_(sub))
+
+        if filters.worked_at_ris:
+            id_query = id_query.filter(models.CandidateMetadata.worked_at_ris == True)
 
         # Publication Filters (now tracked in CandidateLinksAbout)
         if any(v is not None and v > 0 for v in [filters.min_papers, filters.min_books, filters.min_chapters, filters.min_reports, filters.min_policy_briefs]):
@@ -2106,7 +2139,7 @@ def filter_job_candidates(job_id: str, filters: CandidateFilter, db: Session = D
                 "profile_score_breakdown": profile_score_breakdown,
                 "graduation": [{"degree_name": g.degree_name, "university": g.university, "score": f"{g.score_value} {g.score_type}"} for g in grad],
                 "postgraduate": [{"degree_name": p.degree_name, "university": p.university, "score": f"{p.score_value} {p.score_type}"} for p in postgrad],
-                "doctorate": [{"university": d.university, "thesis_title": d.degree_name, "score": f"{d.score_value} {d.score_type}"} for d in phd],
+                "doctorate": [{"university": d.university, "thesis_title": d.degree_name, "phd_domain": getattr(d, "phd_domain", None), "grad_year": d.grad_year, "is_pursuing": getattr(d, "is_pursuing", False)} for d in phd],
                 "work_experiences": [{"role": w.role, "company_name": w.company_name} for w in c.work_experiences],
                 "books_count": books_ct,
                 "papers_count": papers_ct,
@@ -2227,7 +2260,7 @@ def get_job_candidates(job_id: str, db: Session = Depends(get_db)):
             "ai_match_score": None,
             "graduation": [{"degree_name": g.degree_name, "university": g.university, "score": f"{g.score_value} {g.score_type}"} for g in grad],
             "postgraduate": [{"degree_name": p.degree_name, "university": p.university, "score": f"{p.score_value} {p.score_type}"} for p in postgrad],
-            "doctorate": [{"university": d.university, "thesis_title": d.degree_name, "score": f"{d.score_value} {d.score_type}"} for d in phd],
+            "doctorate": [{"university": d.university, "thesis_title": d.degree_name, "phd_domain": getattr(d, "phd_domain", None), "grad_year": d.grad_year, "is_pursuing": getattr(d, "is_pursuing", False)} for d in phd],
             "work_experiences": [{"role": w.role, "company_name": w.company_name} for w in c.work_experiences],
             "books_count": books_ct,
             "papers_count": papers_ct,
