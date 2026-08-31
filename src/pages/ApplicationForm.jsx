@@ -30,6 +30,7 @@ const DIPLOMA_TYPES = [
 ];
 
 const PASSING_YEARS = Array.from({ length: 61 }, (_, i) => 2030 - i); // 2030 down to 1970
+const dividerStyle = { border: '0', borderTop: '1px solid var(--border-color)', margin: '2rem 0' };
 
 const PUBLICATION_CATEGORIES = [
   {
