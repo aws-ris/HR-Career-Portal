@@ -266,7 +266,7 @@ export default function CreateJobModal({ job, onClose, onSave }) {
             <label className="hr-form-label">Key Terms</label>
             <RichTextEditor
               minHeight="110px"
-              placeholder="Specify key appointment terms, age limit, tenure, and remuneration details..."
+              placeholder=""
               value={form.key_terms}
               onChange={val => set('key_terms', val)}
             />
