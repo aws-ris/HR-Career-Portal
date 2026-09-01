@@ -263,13 +263,10 @@ export default function CreateJobModal({ job, onClose, onSave }) {
 
           {/* 0. Key Terms (Free Text Box for Age, Emoluments, Tenure) */}
           <div className="hr-form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-              <label className="hr-form-label" style={{ margin: 0 }}>Key Terms</label>
-              <span className="hr-form-hint">Important Age limits, Consolidated Emoluments, and Duration clauses</span>
-            </div>
+            <label className="hr-form-label">Key Terms</label>
             <RichTextEditor
               minHeight="110px"
-              placeholder="Specify key terms (e.g. Consolidated Emoluments, Age Limit: Not more than 30 Years, Duration: Purely Contractual for 1 Year)..."
+              placeholder="Specify key appointment terms, age limit, tenure, and remuneration details..."
               value={form.key_terms}
               onChange={val => set('key_terms', val)}
             />
