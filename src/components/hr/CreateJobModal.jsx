@@ -66,6 +66,7 @@ const EMPTY = {
   title: '',
   position: 'Professor',
   division: 'RIS',
+  key_terms: '',
   description: '',
   requirements: '',
   deadline: '',
@@ -101,6 +102,7 @@ export default function CreateJobModal({ job, onClose, onSave }) {
         title:          job.title || '',
         position:       job.position || 'Professor',
         division:       job.division || 'RIS',
+        key_terms:      job.key_terms || '',
         description:    job.description || '',
         requirements:   job.requirements || '',
         deadline:       job.deadline ? job.deadline.substring(0, 10) : '',
@@ -133,6 +135,7 @@ export default function CreateJobModal({ job, onClose, onSave }) {
       title:          form.title.trim(),
       position:       form.position,
       division:       form.division,
+      key_terms:      form.key_terms ? form.key_terms.trim() : null,
       description:    form.description.trim(),
       requirements:   form.requirements ? form.requirements.trim() : null,
       deadline:       form.deadline || null,
@@ -256,6 +259,20 @@ export default function CreateJobModal({ job, onClose, onSave }) {
                 {DIVISIONS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
+          </div>
+
+          {/* 0. Key Terms (Free Text Box for Age, Emoluments, Tenure) */}
+          <div className="hr-form-group">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <label className="hr-form-label" style={{ margin: 0 }}>Key Terms</label>
+              <span className="hr-form-hint">Important Age limits, Consolidated Emoluments, and Duration clauses</span>
+            </div>
+            <RichTextEditor
+              minHeight="110px"
+              placeholder="Specify key terms (e.g. Consolidated Emoluments, Age Limit: Not more than 30 Years, Duration: Purely Contractual for 1 Year)..."
+              value={form.key_terms}
+              onChange={val => set('key_terms', val)}
+            />
           </div>
 
           {/* 1. Job Description (Visual In-Place Rich Text Box) */}

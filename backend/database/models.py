@@ -45,6 +45,7 @@ class JobPosting(Base):
     position       = Column(String(50),  nullable=True)
     division       = Column(String(50),  nullable=False)
     description    = Column(Text,        nullable=False)
+    key_terms      = Column(Text,        nullable=True)
     requirements   = Column(Text,        nullable=True)
     keywords       = Column(ArrayText,   nullable=True)
     status         = Column(String(20),  nullable=False, default='draft')

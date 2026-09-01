@@ -356,6 +356,7 @@ class JobPostingCreate(BaseModel):
     position:       Optional[str]     = None
     division:       Optional[str]     = None
     description:    str
+    key_terms:      Optional[str]     = None
     requirements:   Optional[str]     = None
     keywords:       Optional[List[str]] = None
     status:         JobStatus         = JobStatus.draft

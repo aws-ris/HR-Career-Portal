@@ -78,6 +78,15 @@ def get_current_admin(
 # create_all is safe here — it only creates tables that don't exist yet
 Base.metadata.create_all(bind=engine)
 
+# Auto-migration: ensure key_terms column exists in job_postings table
+try:
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS key_terms TEXT;"))
+        conn.commit()
+except Exception as _e:
+    print(f"⚠️ Auto-migration key_terms: {_e}")
+
 # Ensure default admin user exists in PostgreSQL DB
 try:
     from utils.auth import hash_password

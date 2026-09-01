@@ -37,6 +37,7 @@ export default function DraftPreviewModal({ job, onClose, onEdit, onPublish }) {
           <Field label="POSITION"      value={job.position} />
           <Field label="DIVISION"      value={job.division} />
           <div className="hr-contract-divider" />
+          {job.key_terms && <Field label="KEY TERMS" value={job.key_terms} />}
           <Field label="DESCRIPTION"   value={job.description} />
           <Field label="REQUIREMENTS"  value={job.requirements} />
           <div className="hr-contract-divider" />
