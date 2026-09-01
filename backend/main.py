@@ -102,9 +102,9 @@ try:
             )
             _db.add(_admin_rec)
             _db.commit()
-            print(f"✅ Seeded default admin user '{_admin_user_env}' in PostgreSQL database")
+            print(f"[Admin Seed] Seeded default admin user '{_admin_user_env}' in database")
 except Exception as _e:
-    print(f"⚠️ Warning initializing admin user: {_e}")
+    print(f"[Admin Seed Warning] Warning initializing admin user: {_e}")
 
 app = FastAPI(title="RIS Hiring Portal API", version="2.0.0")
 
