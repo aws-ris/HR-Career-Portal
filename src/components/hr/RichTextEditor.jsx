@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { decodeHtmlEntities } from '../../utils/formatText';
 
 export default function RichTextEditor({ value, onChange, placeholder, minHeight = '180px', className = '', style = {} }) {
   const editorRef = useRef(null);
@@ -16,7 +17,11 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
   const handleInput = () => {
     if (editorRef.current) {
       const html = editorRef.current.innerHTML;
-      const cleanHtml = (html === '<br>' || html === '<div><br></div>') ? '' : html;
+      let cleanHtml = (html === '<br>' || html === '<div><br></div>') ? '' : html;
+      // If cleanHtml contains no HTML tags, decode &amp; and entity sequences
+      if (!/<[a-z][\s\S]*>/i.test(cleanHtml)) {
+        cleanHtml = decodeHtmlEntities(cleanHtml);
+      }
       onChange(cleanHtml);
     }
   };
