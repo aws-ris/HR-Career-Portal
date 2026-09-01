@@ -82,10 +82,10 @@ Base.metadata.create_all(bind=engine)
 try:
     from sqlalchemy import text
     with engine.connect() as conn:
-        conn.execute(text("ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS key_terms TEXT;"))
+        conn.execute(text("ALTER TABLE job_postings ADD COLUMN key_terms TEXT;"))
         conn.commit()
-except Exception as _e:
-    print(f"⚠️ Auto-migration key_terms: {_e}")
+except Exception:
+    pass
 
 # Ensure default admin user exists in PostgreSQL DB
 try:
