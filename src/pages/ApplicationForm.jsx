@@ -4,6 +4,7 @@ import { API_BASE as API } from '../api';
 import { CheckCircle2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import COUNTRY_CODES from '../data/countryCodes.json';
 import nationalities from '../data/nationalities.json';
+import FormattedText from '../utils/formatText';
 
 const UG_DEGREES = [
   'B.A.', 'B.Sc.', 'B.Com', 'B.Tech', 'B.E.', 'B.B.A.', 'B.C.A.', 'LL.B.', 'MBBS', 'B.Arch', 'B.Ed.',
@@ -1728,13 +1729,13 @@ export default function ApplicationForm() {
               
               <div style={{ marginBottom: '16px' }}>
                 <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#002147', marginBottom: '6px' }}>Job Scope & Description</h3>
-                <p style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.65, whiteSpace: 'pre-wrap', margin: 0 }}>{jobDetail.description}</p>
+                <FormattedText text={jobDetail.description} style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.65, margin: 0 }} />
               </div>
 
               {jobDetail.requirements && (
                 <div>
                   <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#002147', marginBottom: '6px' }}>Requirements & Qualifications</h3>
-                  <p style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.65, whiteSpace: 'pre-wrap', margin: 0 }}>{jobDetail.requirements}</p>
+                  <FormattedText text={jobDetail.requirements} style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.65, margin: 0 }} />
                 </div>
               )}
             </div>

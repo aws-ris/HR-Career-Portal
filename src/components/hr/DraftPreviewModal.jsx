@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Edit2, Send } from 'lucide-react';
+import FormattedText from '../../utils/formatText';
 
 function fmt(dateStr) {
   if (!dateStr) return 'Not set';
@@ -10,7 +11,11 @@ function Field({ label, value }) {
   return (
     <div className="hr-contract-field">
       <p className="hr-contract-label">{label}</p>
-      <p className="hr-contract-value">{value || '—'}</p>
+      {typeof value === 'string' ? (
+        <FormattedText text={value || '—'} className="hr-contract-value" />
+      ) : (
+        <p className="hr-contract-value">{value || '—'}</p>
+      )}
     </div>
   );
 }

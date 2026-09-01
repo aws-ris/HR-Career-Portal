@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Calendar, MapPin, Users, Briefcase } from 'lucide-react';
+import FormattedText from '../../utils/formatText';
 
 function Info({ icon: Icon, label, value }) {
   return (
@@ -38,12 +39,12 @@ export default function JobViewModal({ job, onClose }) {
           <div className="hr-view-content-grid">
             <section>
               <h3 className="hr-view-section-title">Job Description</h3>
-              <div className="hr-view-text">{job.description}</div>
+              <FormattedText text={job.description} className="hr-view-text" />
             </section>
             
             <section>
               <h3 className="hr-view-section-title">Internal Requirements</h3>
-              <div className="hr-view-text">{job.requirements || 'No specific requirements listed.'}</div>
+              <FormattedText text={job.requirements || 'No specific requirements listed.'} className="hr-view-text" />
             </section>
           </div>
         </div>
