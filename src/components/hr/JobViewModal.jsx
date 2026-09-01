@@ -38,8 +38,8 @@ export default function JobViewModal({ job, onClose }) {
 
           <div className="hr-view-content-grid">
             {job.key_terms && (
-              <section style={{ gridColumn: '1 / -1', background: '#f8fafc', padding: '14px 16px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                <h3 className="hr-view-section-title" style={{ color: '#002147', marginBottom: '8px' }}>Key Terms & Eligibility</h3>
+              <section style={{ gridColumn: '1 / -1' }}>
+                <h3 className="hr-view-section-title">Key Terms</h3>
                 <FormattedText text={job.key_terms} className="hr-view-text" />
               </section>
             )}

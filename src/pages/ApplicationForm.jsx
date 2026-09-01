@@ -1728,9 +1728,9 @@ export default function ApplicationForm() {
               </div>
 
               {jobDetail.key_terms && (
-                <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '14px 16px', marginBottom: '20px' }}>
-                  <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: '#002147', marginTop: 0, marginBottom: '6px' }}>Key Terms & Eligibility</h3>
-                  <FormattedText text={jobDetail.key_terms} style={{ fontSize: '0.9rem', color: '#1e293b', lineHeight: 1.65, margin: 0 }} />
+                <div style={{ marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#002147', marginBottom: '6px' }}>Key Terms</h3>
+                  <FormattedText text={jobDetail.key_terms} style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.65, margin: 0 }} />
                 </div>
               )}
               
@@ -1740,7 +1740,7 @@ export default function ApplicationForm() {
               </div>
 
               {jobDetail.requirements && (
-                <div>
+                <div style={{ marginBottom: '16px' }}>
                   <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#002147', marginBottom: '6px' }}>Requirements & Qualifications</h3>
                   <FormattedText text={jobDetail.requirements} style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.65, margin: 0 }} />
                 </div>

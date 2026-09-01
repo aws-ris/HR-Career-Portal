@@ -277,7 +277,7 @@ export default function CreateJobModal({ job, onClose, onSave }) {
             <label className="hr-form-label">Job Description <span className="hr-required">*</span></label>
             <RichTextEditor
               minHeight="220px"
-              placeholder="Paste or write full job description here... (Highlight text & press Ctrl+B to embolden)"
+              placeholder=""
               value={form.description}
               onChange={val => set('description', val)}
             />
@@ -288,7 +288,7 @@ export default function CreateJobModal({ job, onClose, onSave }) {
             <label className="hr-form-label">Requirements and Qualification</label>
             <RichTextEditor
               minHeight="160px"
-              placeholder="Specify degree requirements, mandatory technical skills, certifications, and prerequisites... (Highlight text & press Ctrl+B to embolden)"
+              placeholder=""
               value={form.requirements}
               onChange={val => set('requirements', val)}
             />
