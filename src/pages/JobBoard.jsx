@@ -3,6 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import { Briefcase, MapPin, Calendar, ArrowRight, Search, Shield, ExternalLink, Filter, CheckCircle, Clock } from 'lucide-react';
 import { API_BASE as API } from '../api';
 
+function formatPublishedDateIST(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+
+  const weekday = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long' }).format(date);
+  const day = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric' }).format(date);
+  const month = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', month: 'long' }).format(date);
+  const year = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', year: 'numeric' }).format(date);
+
+  return `Published On: ${weekday}, ${day} ${month}, ${year}`;
+}
+
+function formatDateFullMonth(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+
+  const day = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric' }).format(date);
+  const month = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', month: 'long' }).format(date);
+  const year = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', year: 'numeric' }).format(date);
+
+  return `${day} ${month} ${year}`;
+}
+
 export default function JobBoard() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -204,15 +229,22 @@ export default function JobBoard() {
                 }}
               >
                 
-                {/* Card Top Meta (Last Date only) */}
-                {job.deadline && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+                {/* Card Top Meta (Published On + Last Date) */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                  {job.created_at ? (
+                    <div style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <Clock size={13} style={{ color: '#002147' }} />
+                      <span>{formatPublishedDateIST(job.created_at)}</span>
+                    </div>
+                  ) : <div />}
+
+                  {job.deadline && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#c62828', fontSize: '0.78rem', fontWeight: 700, background: '#fef2f2', border: '1px solid #fecaca', padding: '4px 10px', borderRadius: '6px' }}>
                       <Calendar size={13} />
-                      Last Date: {new Date(job.deadline).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      Last Date: {formatDateFullMonth(job.deadline)}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {/* Job Title / Main Heading */}
                 <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '14px', lineHeight: 1.3 }}>

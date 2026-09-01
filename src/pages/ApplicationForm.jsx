@@ -6,6 +6,31 @@ import COUNTRY_CODES from '../data/countryCodes.json';
 import nationalities from '../data/nationalities.json';
 import FormattedText from '../utils/formatText';
 
+function formatPublishedDateIST(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+
+  const weekday = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long' }).format(date);
+  const day = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric' }).format(date);
+  const month = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', month: 'long' }).format(date);
+  const year = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', year: 'numeric' }).format(date);
+
+  return `Published On: ${weekday}, ${day} ${month}, ${year}`;
+}
+
+function formatDateFullMonth(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+
+  const day = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric' }).format(date);
+  const month = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', month: 'long' }).format(date);
+  const year = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', year: 'numeric' }).format(date);
+
+  return `${day} ${month} ${year}`;
+}
+
 const UG_DEGREES = [
   'B.A.', 'B.Sc.', 'B.Com', 'B.Tech', 'B.E.', 'B.B.A.', 'B.C.A.', 'LL.B.', 'MBBS', 'B.Arch', 'B.Ed.',
   'Integrated B.S. - M.S.', 'Integrated B.Sc. - M.Sc.', 'BS-MS (Dual Degree)',
@@ -1708,12 +1733,19 @@ export default function ApplicationForm() {
             {/* Appended Job Details & Full Description */}
             <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '20px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#002147', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '3px 10px', borderRadius: '4px', textTransform: 'uppercase' }}>
-                  {jobDetail.division || 'Research Division'}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#002147', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '3px 10px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                    {jobDetail.division || 'Research Division'}
+                  </span>
+                  {jobDetail.created_at && (
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569' }}>
+                      {formatPublishedDateIST(jobDetail.created_at)}
+                    </span>
+                  )}
+                </div>
                 {jobDetail.deadline && (
                   <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#c62828', background: '#fef2f2', border: '1px solid #fecaca', padding: '3px 10px', borderRadius: '4px' }}>
-                    Last date: {new Date(jobDetail.deadline).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    Last date: {formatDateFullMonth(jobDetail.deadline)}
                   </span>
                 )}
               </div>

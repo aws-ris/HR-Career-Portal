@@ -408,7 +408,8 @@ def get_public_jobs(db: Session = Depends(get_db)):
         "min_experience": j.min_experience,
         "max_experience": j.max_experience,
         "contract_period": j.contract_period,
-        "job_mode": j.job_mode
+        "job_mode": j.job_mode,
+        "created_at": j.created_at.isoformat() if j.created_at else None
     } for j in jobs]
 
 @app.get("/api/v1/public/jobs/{job_id}")
@@ -446,7 +447,8 @@ def get_public_job_detail(job_id: str, db: Session = Depends(get_db)):
         "min_experience": job.min_experience,
         "max_experience": job.max_experience,
         "contract_period": job.contract_period,
-        "job_mode": job.job_mode
+        "job_mode": job.job_mode,
+        "created_at": job.created_at.isoformat() if job.created_at else None
     }
 
 
