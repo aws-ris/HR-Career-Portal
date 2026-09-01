@@ -229,22 +229,15 @@ export default function JobBoard() {
                 }}
               >
                 
-                {/* Card Top Meta (Published On + Last Date) */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-                  {job.created_at ? (
-                    <div style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <Clock size={13} style={{ color: '#002147' }} />
-                      <span>{formatPublishedDateIST(job.created_at)}</span>
-                    </div>
-                  ) : <div />}
-
-                  {job.deadline && (
+                {/* Card Top Meta (Last Date only) */}
+                {job.deadline && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#c62828', fontSize: '0.78rem', fontWeight: 700, background: '#fef2f2', border: '1px solid #fecaca', padding: '4px 10px', borderRadius: '6px' }}>
                       <Calendar size={13} />
                       Last Date: {formatDateFullMonth(job.deadline)}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {/* Job Title / Main Heading */}
                 <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '14px', lineHeight: 1.3 }}>
@@ -252,7 +245,7 @@ export default function JobBoard() {
                 </h4>
                 
                 {/* Clean Multi-Line Metadata Layout */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
                   {/* Line 1: Designation / Position Tag */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155', fontSize: '0.88rem', fontWeight: 600 }}>
                     <Briefcase size={16} style={{ color: '#002147' }} />
@@ -272,12 +265,18 @@ export default function JobBoard() {
                   </div>
                 </div>
 
-                <div style={{ fontSize: '0.78rem', color: '#64748b', fontStyle: 'italic', marginBottom: '20px' }}>
+                <div style={{ fontSize: '0.78rem', color: '#64748b', fontStyle: 'italic', marginBottom: '16px' }}>
                   * Number of vacancies may vary.
                 </div>
 
-                {/* Action Button: Apply Now only */}
-                <div style={{ paddingTop: '16px', borderTop: '1px solid #f1f5f9', marginTop: 'auto' }}>
+                {/* Bottom Section: Published On Date + Apply Now button */}
+                <div style={{ paddingTop: '12px', borderTop: '1px solid #f1f5f9', marginTop: 'auto' }}>
+                  {job.created_at && (
+                    <div style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600, marginBottom: '10px', textAlign: 'center' }}>
+                      {formatPublishedDateIST(job.created_at)}
+                    </div>
+                  )}
+
                   <button 
                     onClick={() => navigate(`/apply/${job.id}`)}
                     style={{ width: '100%', padding: '12px', background: '#c62828', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'background 0.2s', boxShadow: '0 2px 4px rgba(198,40,40,0.2)' }}
