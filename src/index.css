@@ -2176,3 +2176,26 @@ textarea.form-input {
   background: #fee2e2;
   color: #b91c1c;
 }
+
+/* Lightweight In-Place Visual Rich Text Editor */
+.hr-rich-editor {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #1e293b;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.hr-rich-editor:focus {
+  border-color: #002147;
+  box-shadow: 0 0 0 3px rgba(0, 33, 71, 0.1);
+}
+
+.hr-rich-editor:empty:before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  pointer-events: none;
+  display: block;
+}

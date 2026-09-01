@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import RichTextEditor from './RichTextEditor';
 
 import { API_BASE as API } from '../../api';
 
@@ -117,49 +118,6 @@ export default function CreateJobModal({ job, onClose, onSave }) {
   }, [job]);
 
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }));
-
-  const applyBold = (fieldName, textareaElement) => {
-    if (!textareaElement) return;
-    const start = textareaElement.selectionStart;
-    const end = textareaElement.selectionEnd;
-    const currentVal = form[fieldName] || '';
-    const selectedText = currentVal.substring(start, end);
-
-    let newText = '';
-    let newStart = 0;
-    let newEnd = 0;
-
-    if (selectedText.startsWith('**') && selectedText.endsWith('**') && selectedText.length >= 4) {
-      const unbolded = selectedText.slice(2, -2);
-      newText = currentVal.substring(0, start) + unbolded + currentVal.substring(end);
-      newStart = start;
-      newEnd = start + unbolded.length;
-    } else {
-      const replacement = `**${selectedText}**`;
-      newText = currentVal.substring(0, start) + replacement + currentVal.substring(end);
-      if (selectedText.length > 0) {
-        newStart = start;
-        newEnd = start + replacement.length;
-      } else {
-        newStart = start + 2;
-        newEnd = start + 2;
-      }
-    }
-
-    setForm(f => ({ ...f, [fieldName]: newText }));
-
-    setTimeout(() => {
-      textareaElement.focus();
-      textareaElement.setSelectionRange(newStart, newEnd);
-    }, 0);
-  };
-
-  const handleKeyDown = (e, fieldName) => {
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
-      e.preventDefault();
-      applyBold(fieldName, e.target);
-    }
-  };
 
   const submit = async (publishNow = false) => {
     if (!form.title.trim() || !form.description.trim()) {
@@ -300,87 +258,25 @@ export default function CreateJobModal({ job, onClose, onSave }) {
             </div>
           </div>
 
-          {/* 1. Job Description (Enlarged Box for Full JD) */}
+          {/* 1. Job Description (Visual In-Place Rich Text Box) */}
           <div className="hr-form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <label className="hr-form-label" style={{ margin: 0 }}>Job Description <span className="hr-required">*</span></label>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    const group = e.currentTarget.closest('.hr-form-group');
-                    const ta = group.querySelector('textarea');
-                    applyBold('description', ta);
-                  }}
-                  style={{
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    border: '1px solid #cbd5e1',
-                    background: '#ffffff',
-                    fontWeight: 800,
-                    fontSize: '11px',
-                    cursor: 'pointer',
-                    color: '#002147',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
-                  title="Highlight text & click or press Ctrl+B to bold"
-                >
-                  <strong style={{ fontSize: '13px' }}>B</strong> Bold (Ctrl+B)
-                </button>
-              </div>
-              <span className="hr-form-hint">Highlight & press <b>Ctrl+B</b> to embolden text</span>
-            </div>
-            <textarea
-              className="hr-form-input hr-textarea"
-              style={{ minHeight: '220px', resize: 'vertical', lineHeight: '1.6' }}
-              placeholder="Paste full job description here... Use Ctrl+B to embolden important headers or text."
+            <label className="hr-form-label">Job Description <span className="hr-required">*</span></label>
+            <RichTextEditor
+              minHeight="220px"
+              placeholder="Paste or write full job description here... (Highlight text & press Ctrl+B to embolden)"
               value={form.description}
-              onChange={e => set('description', e.target.value)}
-              onKeyDown={e => handleKeyDown(e, 'description')}
+              onChange={val => set('description', val)}
             />
           </div>
 
           {/* 2. Requirements and Qualification Box */}
           <div className="hr-form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <label className="hr-form-label" style={{ margin: 0 }}>Requirements and Qualification</label>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    const group = e.currentTarget.closest('.hr-form-group');
-                    const ta = group.querySelector('textarea');
-                    applyBold('requirements', ta);
-                  }}
-                  style={{
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    border: '1px solid #cbd5e1',
-                    background: '#ffffff',
-                    fontWeight: 800,
-                    fontSize: '11px',
-                    cursor: 'pointer',
-                    color: '#002147',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
-                  title="Highlight text & click or press Ctrl+B to bold"
-                >
-                  <strong style={{ fontSize: '13px' }}>B</strong> Bold (Ctrl+B)
-                </button>
-              </div>
-              <span className="hr-form-hint">Highlight & press <b>Ctrl+B</b> to embolden key criteria</span>
-            </div>
-            <textarea
-              className="hr-form-input hr-textarea"
-              style={{ minHeight: '160px', resize: 'vertical', lineHeight: '1.6' }}
-              placeholder="Specify degree requirements, mandatory technical skills, certifications, and candidate prerequisites... Use Ctrl+B to embolden key terms."
+            <label className="hr-form-label">Requirements and Qualification</label>
+            <RichTextEditor
+              minHeight="160px"
+              placeholder="Specify degree requirements, mandatory technical skills, certifications, and prerequisites... (Highlight text & press Ctrl+B to embolden)"
               value={form.requirements}
-              onChange={e => set('requirements', e.target.value)}
-              onKeyDown={e => handleKeyDown(e, 'requirements')}
+              onChange={val => set('requirements', val)}
             />
           </div>
 
