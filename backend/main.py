@@ -1496,269 +1496,308 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 pass
 
         def generate_docx_committee_brief(job, candidates):
-            from docx import Document
-            from docx.shared import Inches, Pt, RGBColor
-            from docx.enum.section import WD_ORIENT
-            from docx.enum.text import WD_ALIGN_PARAGRAPH
-            from docx.enum.table import WD_TABLE_ALIGNMENT
-            from docx.oxml import parse_xml
-            from docx.oxml.ns import nsdecls
-            from io import BytesIO
-            import datetime
-
-            doc = Document()
-            
-            # Set Landscape Orientation A4
-            section = doc.sections[0]
-            section.orientation = WD_ORIENT.LANDSCAPE
-            section.page_width = Inches(11.69)
-            section.page_height = Inches(8.27)
-            section.top_margin = Inches(0.4)
-            section.bottom_margin = Inches(0.4)
-            section.left_margin = Inches(0.4)
-            section.right_margin = Inches(0.4)
-            
-            # Document Header Title
-            title_p = doc.add_paragraph()
-            title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            job_title_text = job.title if job and hasattr(job, 'title') and job.title else "Position"
-            title_run = title_p.add_run(f"Brief of Applicants for {job_title_text}")
-            title_run.font.name = 'Arial'
-            title_run.font.size = Pt(13)
-            title_run.font.bold = True
-            title_run.font.color.rgb = RGBColor(0, 33, 71)
-            title_p.paragraph_format.space_after = Pt(10)
-            
-            # 8-Column Table
-            headers = [
-                "S. No.", 
-                "Basic Info", 
-                "X / XII", 
-                "Higher Education", 
-                "Work Experience", 
-                "Last Salary", 
-                "Publications", 
-                "Remarks"
-            ]
-            
-            col_widths = [
-                Inches(0.5),  # S. No.
-                Inches(1.8),  # Basic Info
-                Inches(1.3),  # X / XII
-                Inches(2.1),  # Higher Education
-                Inches(2.1),  # Work Experience
-                Inches(0.8),  # Last Salary
-                Inches(1.1),  # Publications
-                Inches(1.1)   # Remarks
-            ]
-            
-            table = doc.add_table(rows=1, cols=8)
-            table.alignment = WD_TABLE_ALIGNMENT.CENTER
-            
             try:
-                trPr = table.rows[0]._tr.get_or_add_trPr()
-                trPr.append(parse_xml(r'<w:tblHeader %s/>' % nsdecls('w')))
-            except Exception:
-                pass
-            
-            hdr_cells = table.rows[0].cells
-            for i, header_text in enumerate(headers):
-                hdr_cells[i].width = col_widths[i]
-                p = hdr_cells[i].paragraphs[0]
-                p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                run = p.add_run(header_text)
-                run.font.name = 'Arial'
-                run.font.size = Pt(9)
-                run.font.bold = True
-                run.font.color.rgb = RGBColor(255, 255, 255)
+                from docx import Document
+                from docx.shared import Inches, Pt, RGBColor
+                from docx.enum.section import WD_ORIENT
+                from docx.enum.text import WD_ALIGN_PARAGRAPH
+                from docx.enum.table import WD_TABLE_ALIGNMENT
+                from docx.oxml import parse_xml
+                from docx.oxml.ns import nsdecls
+                from io import BytesIO
+                import datetime
+
+                doc = Document()
+                
+                # Set Landscape Orientation A4
+                section = doc.sections[0]
+                section.orientation = WD_ORIENT.LANDSCAPE
+                section.page_width = Inches(11.69)
+                section.page_height = Inches(8.27)
+                section.top_margin = Inches(0.4)
+                section.bottom_margin = Inches(0.4)
+                section.left_margin = Inches(0.4)
+                section.right_margin = Inches(0.4)
+                
+                # Document Header Title
+                title_p = doc.add_paragraph()
+                title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                job_title_text = job.title if job and hasattr(job, 'title') and job.title else "Position"
+                title_run = title_p.add_run(f"Brief of Applicants for {job_title_text}")
+                title_run.font.name = 'Arial'
+                title_run.font.size = Pt(13)
+                title_run.font.bold = True
+                title_run.font.color.rgb = RGBColor(0, 33, 71)
+                title_p.paragraph_format.space_after = Pt(10)
+                
+                # 8-Column Table
+                headers = [
+                    "S. No.", 
+                    "Basic Info", 
+                    "X / XII", 
+                    "Higher Education", 
+                    "Work Experience", 
+                    "Last Salary", 
+                    "Publications", 
+                    "Remarks"
+                ]
+                
+                col_widths = [
+                    Inches(0.5),  # S. No.
+                    Inches(1.8),  # Basic Info
+                    Inches(1.3),  # X / XII
+                    Inches(2.1),  # Higher Education
+                    Inches(2.1),  # Work Experience
+                    Inches(0.8),  # Last Salary
+                    Inches(1.1),  # Publications
+                    Inches(1.1)   # Remarks
+                ]
+                
+                table = doc.add_table(rows=1, cols=8)
+                table.alignment = WD_TABLE_ALIGNMENT.CENTER
                 
                 try:
-                    shd = parse_xml(r'<w:shd %s w:fill="002147"/>' % nsdecls('w'))
-                    hdr_cells[i]._tc.get_or_add_tcPr().append(shd)
-                except Exception:
-                    pass
-                set_cell_border(hdr_cells[i])
-
-            for s_idx, cand in enumerate(candidates, 1):
-                row = table.add_row()
-                row_cells = row.cells
-                
-                try:
-                    trPr = row._tr.get_or_add_trPr()
-                    trPr.append(parse_xml(r'<w:cantSplit %s/>' % nsdecls('w')))
+                    trPr = table.rows[0]._tr.get_or_add_trPr()
+                    trPr.append(parse_xml(r'<w:tblHeader %s/>' % nsdecls('w')))
                 except Exception:
                     pass
                 
-                # Col 0: S. No.
-                p0 = row_cells[0].paragraphs[0]
-                r0 = p0.add_run(f"{s_idx}.")
-                r0.font.name = 'Arial'
-                r0.font.size = Pt(8.5)
-                r0.font.bold = True
-                
-                # Col 1: Basic Info
-                salutation = (cand.salutation + " ") if getattr(cand, 'salutation', None) else ""
-                full_name = f"{salutation}{cand.full_name or ''}".strip()
-                
-                if getattr(cand, 'is_international_address', False) and getattr(cand, 'international_address', None):
-                    addr_str = cand.international_address
-                else:
-                    parts = [p for p in [getattr(cand, 'city', None), getattr(cand, 'state', None), getattr(cand, 'pincode', None)] if p]
-                    addr_str = ", ".join(parts) if parts else "N/A"
+                hdr_cells = table.rows[0].cells
+                for i, header_text in enumerate(headers):
+                    hdr_cells[i].width = col_widths[i]
+                    p = hdr_cells[i].paragraphs[0]
+                    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+                    run = p.add_run(header_text)
+                    run.font.name = 'Arial'
+                    run.font.size = Pt(9)
+                    run.font.bold = True
+                    run.font.color.rgb = RGBColor(255, 255, 255)
                     
-                mobile_str = f"{cand.country_code or '+91'} {cand.mobile_no or 'N/A'}"
-                email_str = cand.email or 'N/A'
-                
-                dob_str = ""
-                age_str = ""
-                if cand.dob:
-                    dob_str = cand.dob.strftime("%d-%m-%Y") if hasattr(cand.dob, 'strftime') else str(cand.dob)[:10]
-                    today = datetime.date.today()
-                    if hasattr(cand.dob, 'year'):
-                        age = today.year - cand.dob.year - ((today.month, today.day) < (cand.dob.month, cand.dob.day))
-                        age_str = f" (Age: {age} yrs)"
-                dob_age_line = f"DOB: {dob_str}{age_str}" if dob_str else ""
+                    try:
+                        shd = parse_xml(r'<w:shd %s w:fill="002147"/>' % nsdecls('w'))
+                        hdr_cells[i]._tc.get_or_add_tcPr().append(shd)
+                    except Exception:
+                        pass
+                    set_cell_border(hdr_cells[i])
 
-                p1 = row_cells[1].paragraphs[0]
-                p1.paragraph_format.space_after = Pt(2)
-                r1_name = p1.add_run(f"{full_name}\n")
-                r1_name.font.name = 'Arial'
-                r1_name.font.size = Pt(8.5)
-                r1_name.font.bold = True
-                r1_name.font.color.rgb = RGBColor(0, 33, 71)
-                
-                r1_details = p1.add_run(f"{addr_str}\n{mobile_str}\n{email_str}\n{dob_age_line}".strip())
-                r1_details.font.name = 'Arial'
-                r1_details.font.size = Pt(8)
-                
-                # Col 2: X / XII
-                sch = cand.schooling
-                p2 = row_cells[2].paragraphs[0]
-                p2.paragraph_format.space_after = Pt(2)
-                
-                x_xii_lines = []
-                if sch and (sch.class_xii_school or sch.class_xii_board or sch.class_xii_year):
-                    xii_score = f"{sch.class_xii_percentage}%" if sch.class_xii_percentage else (sch.class_xii_grade or "")
-                    x_xii_lines.append(f"• XII: {sch.class_xii_school or ''}, {sch.class_xii_board or ''}, {sch.class_xii_year or ''} ({xii_score})".strip())
-                if sch and (sch.class_x_school or sch.class_x_board or sch.class_x_year):
-                    x_score = f"{sch.class_x_percentage}%" if sch.class_x_percentage else (sch.class_x_grade or "")
-                    x_xii_lines.append(f"• X: {sch.class_x_school or ''}, {sch.class_x_board or ''}, {sch.class_x_year or ''} ({x_score})".strip())
-                    
-                r2 = p2.add_run("\n".join(x_xii_lines) if x_xii_lines else "N/A")
-                r2.font.name = 'Arial'
-                r2.font.size = Pt(8)
+                for s_idx, cand in enumerate(candidates, 1):
+                    try:
+                        row = table.add_row()
+                        row_cells = row.cells
+                        
+                        try:
+                            trPr = row._tr.get_or_add_trPr()
+                            trPr.append(parse_xml(r'<w:cantSplit %s/>' % nsdecls('w')))
+                        except Exception:
+                            pass
+                        
+                        # Col 0: S. No.
+                        p0 = row_cells[0].paragraphs[0]
+                        r0 = p0.add_run(f"{s_idx}.")
+                        r0.font.name = 'Arial'
+                        r0.font.size = Pt(8.5)
+                        r0.font.bold = True
+                        
+                        # Col 1: Basic Info
+                        salutation = ""
+                        full_name = cand.full_name or ""
+                        
+                        if getattr(cand, 'is_international_address', False) and getattr(cand, 'international_address', None):
+                            addr_str = cand.international_address
+                        else:
+                            parts = [p for p in [getattr(cand, 'city', None), getattr(cand, 'state', None), getattr(cand, 'pincode', None)] if p]
+                            addr_str = ", ".join(parts) if parts else "N/A"
+                            
+                        mobile_str = f"{cand.country_code or '+91'} {cand.mobile_no or 'N/A'}"
+                        email_str = cand.email or 'N/A'
+                        
+                        dob_str = ""
+                        age_str = ""
+                        if getattr(cand, 'dob', None):
+                            dob_str = cand.dob.strftime("%d-%m-%Y") if hasattr(cand.dob, 'strftime') else str(cand.dob)[:10]
+                            today = datetime.date.today()
+                            if hasattr(cand.dob, 'year'):
+                                age = today.year - cand.dob.year - ((today.month, today.day) < (cand.dob.month, cand.dob.day))
+                                age_str = f" (Age: {age} yrs)"
+                            elif getattr(cand, 'age', None):
+                                age_str = f" (Age: {cand.age} yrs)"
+                        dob_age_line = f"DOB: {dob_str}{age_str}" if dob_str else ""
 
-                # Col 3: Higher Education (Diploma, Bachelors, Masters, Ph.D.)
-                hedus = cand.higher_education or []
-                p3 = row_cells[3].paragraphs[0]
-                p3.paragraph_format.space_after = Pt(2)
-                
-                hedu_lines = []
-                for h in hedus:
-                    degree = h.degree_name or h.degree_type or 'Degree'
-                    inst = h.institution_name or h.university_name or ''
-                    year = "Pursuing" if getattr(h, 'is_pursuing', False) else (str(h.passing_year) if getattr(h, 'passing_year', None) else '')
-                    marks = f"{h.marks_percentage}%" if getattr(h, 'marks_percentage', None) else (f"CGPA: {h.cgpa}" if getattr(h, 'cgpa', None) else '')
-                    
-                    line = f"• {degree} - {inst} ({year}) {marks}".strip()
-                    if getattr(h, 'degree_type', '') == 'PhD' or getattr(h, 'level', '') == 'phd':
-                        if getattr(h, 'phd_domain', None):
-                            line += f"\n  Domain: {h.phd_domain}"
-                        if getattr(h, 'thesis_title', None):
-                            line += f"\n  Thesis: {h.thesis_title}"
-                    hedu_lines.append(line)
-                    
-                r3 = p3.add_run("\n".join(hedu_lines) if hedu_lines else "N/A")
-                r3.font.name = 'Arial'
-                r3.font.size = Pt(8)
+                        p1 = row_cells[1].paragraphs[0]
+                        p1.paragraph_format.space_after = Pt(2)
+                        r1_name = p1.add_run(f"{full_name}\n")
+                        r1_name.font.name = 'Arial'
+                        r1_name.font.size = Pt(8.5)
+                        r1_name.font.bold = True
+                        r1_name.font.color.rgb = RGBColor(0, 33, 71)
+                        
+                        r1_details = p1.add_run(f"{addr_str}\n{mobile_str}\n{email_str}\n{dob_age_line}".strip())
+                        r1_details.font.name = 'Arial'
+                        r1_details.font.size = Pt(8)
+                        
+                        # Col 2: X / XII
+                        sch = getattr(cand, 'schooling', None)
+                        p2 = row_cells[2].paragraphs[0]
+                        p2.paragraph_format.space_after = Pt(2)
+                        
+                        x_xii_lines = []
+                        if sch:
+                            xii_sch = getattr(sch, 'class_xii_school', '') or ''
+                            xii_brd = getattr(sch, 'class_xii_board', '') or ''
+                            xii_yr = getattr(sch, 'class_xii_year', '') or ''
+                            xii_val = getattr(sch, 'class_xii_score_value', 0.0)
+                            xii_stype = getattr(sch, 'class_xii_score_type', '')
+                            xii_score = format_score(xii_val, xii_stype) if xii_val else ""
+                            if xii_sch or xii_brd or xii_yr:
+                                x_xii_lines.append(f"• XII: {xii_sch}, {xii_brd}, {xii_yr} ({xii_score})".strip(" ,()"))
 
-                # Col 4: Work Experience + RIS Experience Tag
-                works = cand.work_experiences or []
-                p4 = row_cells[4].paragraphs[0]
-                p4.paragraph_format.space_after = Pt(2)
-                
-                total_months = 0
-                for w in works:
-                    s = w.start_date
-                    e = w.end_date or datetime.date.today()
-                    if s and e:
-                        total_months += (e.year - s.year) * 12 + (e.month - s.month)
-                
-                yrs = total_months // 12
-                mos = total_months % 12
-                exp_summary = f"Total Exp: {yrs} yrs {mos} mos\n" if total_months > 0 else "Total Exp: 0 yrs\n"
-                
-                r4_head = p4.add_run(exp_summary)
-                r4_head.font.name = 'Arial'
-                r4_head.font.size = Pt(8)
-                r4_head.font.bold = True
+                            x_sch = getattr(sch, 'class_x_school', '') or ''
+                            x_brd = getattr(sch, 'class_x_board', '') or ''
+                            x_yr = getattr(sch, 'class_x_year', '') or ''
+                            x_val = getattr(sch, 'class_x_score_value', 0.0)
+                            x_stype = getattr(sch, 'class_x_score_type', '')
+                            x_score = format_score(x_val, x_stype) if x_val else ""
+                            if x_sch or x_brd or x_yr:
+                                x_xii_lines.append(f"• X: {x_sch}, {x_brd}, {x_yr} ({x_score})".strip(" ,()"))
+                            
+                        r2 = p2.add_run("\n".join(x_xii_lines) if x_xii_lines else "N/A")
+                        r2.font.name = 'Arial'
+                        r2.font.size = Pt(8)
 
-                # Check if candidate worked at RIS before
-                if getattr(cand, 'worked_at_ris', False):
-                    ris_desig = cand.ris_designation or "Prior Role"
-                    ris_dates = ""
-                    if cand.ris_start_date:
-                        s_str = cand.ris_start_date.strftime("%b %Y") if hasattr(cand.ris_start_date, 'strftime') else str(cand.ris_start_date)[:7]
-                        e_str = "Present" if cand.ris_is_current else (cand.ris_end_date.strftime("%b %Y") if hasattr(cand.ris_end_date, 'strftime') else str(cand.ris_end_date)[:7])
-                        ris_dates = f" ({s_str} – {e_str})"
-                    
-                    r4_ris = p4.add_run(f"★ Prior RIS Experience: {ris_desig}{ris_dates}\n")
-                    r4_ris.font.name = 'Arial'
-                    r4_ris.font.size = Pt(8)
-                    r4_ris.font.bold = True
-                    r4_ris.font.color.rgb = RGBColor(198, 40, 40)
-                    
-                work_lines = []
-                for w in sorted(works, key=lambda x: x.start_date or datetime.date(1900, 1, 1), reverse=True):
-                    role = w.role or w.designation or 'Role'
-                    company = w.company_name or ''
-                    s_str = w.start_date.strftime("%b %Y") if hasattr(w.start_date, 'strftime') else ''
-                    e_str = "Present" if getattr(w, 'is_current', False) else (w.end_date.strftime("%b %Y") if hasattr(w.end_date, 'strftime') else '')
-                    dates_str = f" ({s_str} – {e_str})" if s_str else ''
-                    work_lines.append(f"• {role} at {company}{dates_str}")
-                    
-                r4_works = p4.add_run("\n".join(work_lines) if work_lines else "None")
-                r4_works.font.name = 'Arial'
-                r4_works.font.size = Pt(8)
+                        # Col 3: Higher Education (Diploma, Bachelors, Masters, Ph.D.)
+                        hedus = getattr(cand, 'higher_education', []) or []
+                        p3 = row_cells[3].paragraphs[0]
+                        p3.paragraph_format.space_after = Pt(2)
+                        
+                        hedu_lines = []
+                        for h in hedus:
+                            degree = getattr(h, 'degree_name', None) or getattr(h, 'degree_type', None) or 'Degree'
+                            inst = getattr(h, 'university', '') or ''
+                            year = "Pursuing" if getattr(h, 'is_pursuing', False) else (str(h.grad_year) if getattr(h, 'grad_year', None) else '')
+                            
+                            val = getattr(h, 'score_value', None)
+                            stype = getattr(h, 'score_type', '')
+                            marks = format_score(val, stype) if val else ""
+                            
+                            line = f"• {degree} - {inst} ({year}) {marks}".strip()
+                            if getattr(h, 'level', '') == 'phd' or getattr(h, 'degree_type', '') == 'PhD':
+                                if getattr(h, 'phd_domain', None):
+                                    line += f"\n  Domain: {h.phd_domain}"
+                                if getattr(h, 'thesis_title', None):
+                                    line += f"\n  Thesis: {h.thesis_title}"
+                            hedu_lines.append(line)
+                            
+                        r3 = p3.add_run("\n".join(hedu_lines) if hedu_lines else "N/A")
+                        r3.font.name = 'Arial'
+                        r3.font.size = Pt(8)
 
-                # Col 5: Last Salary (LPA)
-                p5 = row_cells[5].paragraphs[0]
-                p5.paragraph_format.space_after = Pt(2)
-                last_sal = cand.last_drawn_salary if getattr(cand, 'last_drawn_salary', None) else "N/A"
-                r5 = p5.add_run(str(last_sal))
-                r5.font.name = 'Arial'
-                r5.font.size = Pt(8)
+                        # Col 4: Work Experience + RIS Experience Tag
+                        works = getattr(cand, 'work_experiences', []) or []
+                        p4 = row_cells[4].paragraphs[0]
+                        p4.paragraph_format.space_after = Pt(2)
+                        
+                        total_months = 0
+                        for w in works:
+                            s = getattr(w, 'start_date', None)
+                            e = getattr(w, 'end_date', None) or datetime.date.today()
+                            if s and e:
+                                total_months += (e.year - s.year) * 12 + (e.month - s.month)
+                        
+                        yrs = total_months // 12
+                        mos = total_months % 12
+                        exp_summary = f"Total Exp: {yrs} yrs {mos} mos\n" if total_months > 0 else "Total Exp: 0 yrs\n"
+                        
+                        r4_head = p4.add_run(exp_summary)
+                        r4_head.font.name = 'Arial'
+                        r4_head.font.size = Pt(8)
+                        r4_head.font.bold = True
 
-                # Col 6: Publications
-                pubs = cand.publications or []
-                p6 = row_cells[6].paragraphs[0]
-                p6.paragraph_format.space_after = Pt(2)
-                
-                pub_counts = {}
-                for pub in pubs:
-                    ptype = pub.pub_type or pub.publication_type or "Publication"
-                    pub_counts[ptype] = pub_counts.get(ptype, 0) + 1
-                    
-                pub_lines = [f"• {k}: {v}" for k, v in pub_counts.items() if v > 0]
-                r6 = p6.add_run("\n".join(pub_lines) if pub_lines else "None")
-                r6.font.name = 'Arial'
-                r6.font.size = Pt(8)
+                        # Check if candidate worked at RIS before
+                        if getattr(cand, 'worked_at_ris', False):
+                            ris_desig = getattr(cand, 'ris_designation', None) or "Prior Role"
+                            ris_dates = ""
+                            s_d = getattr(cand, 'ris_start_date', None)
+                            e_d = getattr(cand, 'ris_end_date', None)
+                            if s_d:
+                                s_str = s_d.strftime("%b %Y") if hasattr(s_d, 'strftime') else str(s_d)[:7]
+                                e_str = "Present" if getattr(cand, 'ris_is_current', False) else (e_d.strftime("%b %Y") if (e_d and hasattr(e_d, 'strftime')) else (str(e_d)[:7] if e_d else ''))
+                                ris_dates = f" ({s_str} – {e_str})"
+                            
+                            r4_ris = p4.add_run(f"★ Prior RIS Experience: {ris_desig}{ris_dates}\n")
+                            r4_ris.font.name = 'Arial'
+                            r4_ris.font.size = Pt(8)
+                            r4_ris.font.bold = True
+                            r4_ris.font.color.rgb = RGBColor(198, 40, 40)
+                            
+                        work_lines = []
+                        for w in sorted(works, key=lambda x: getattr(x, 'start_date', None) or datetime.date(1900, 1, 1), reverse=True):
+                            role = getattr(w, 'role', None) or getattr(w, 'designation', None) or 'Role'
+                            company = getattr(w, 'company_name', None) or ''
+                            s_d = getattr(w, 'start_date', None)
+                            e_d = getattr(w, 'end_date', None)
+                            s_str = s_d.strftime("%b %Y") if (s_d and hasattr(s_d, 'strftime')) else ''
+                            e_str = "Present" if getattr(w, 'is_current', False) else (e_d.strftime("%b %Y") if (e_d and hasattr(e_d, 'strftime')) else '')
+                            dates_str = f" ({s_str} – {e_str})" if s_str else ''
+                            work_lines.append(f"• {role} at {company}{dates_str}")
+                            
+                        r4_works = p4.add_run("\n".join(work_lines) if work_lines else "None")
+                        r4_works.font.name = 'Arial'
+                        r4_works.font.size = Pt(8)
 
-                # Col 7: Remarks
-                p7 = row_cells[7].paragraphs[0]
-                p7.paragraph_format.space_after = Pt(2)
-                r7 = p7.add_run("• ")
-                r7.font.name = 'Arial'
-                r7.font.size = Pt(8)
-                
-                for i in range(8):
-                    row_cells[i].width = col_widths[i]
-                    set_cell_border(row_cells[i])
+                        # Col 5: Last Salary (LPA)
+                        p5 = row_cells[5].paragraphs[0]
+                        p5.paragraph_format.space_after = Pt(2)
+                        last_sal = getattr(cand, 'last_salary', None)
+                        sal_display = f"₹ {last_sal} LPA" if last_sal else "N/A"
+                        r5 = p5.add_run(sal_display)
+                        r5.font.name = 'Arial'
+                        r5.font.size = Pt(8)
 
-            docx_io = BytesIO()
-            doc.save(docx_io)
-            docx_io.seek(0)
-            return docx_io
+                        # Col 6: Publications
+                        pubs = getattr(cand, 'publications', []) or []
+                        p6 = row_cells[6].paragraphs[0]
+                        p6.paragraph_format.space_after = Pt(2)
+                        
+                        pub_counts = {}
+                        for pub in pubs:
+                            ptype = getattr(pub, 'pub_type', None) or getattr(pub, 'publication_type', None) or "Publication"
+                            pub_counts[ptype] = pub_counts.get(ptype, 0) + 1
+                            
+                        pub_lines = [f"• {k.capitalize()}: {v}" for k, v in pub_counts.items() if v > 0]
+                        r6 = p6.add_run("\n".join(pub_lines) if pub_lines else "None")
+                        r6.font.name = 'Arial'
+                        r6.font.size = Pt(8)
+
+                        # Col 7: Remarks
+                        p7 = row_cells[7].paragraphs[0]
+                        p7.paragraph_format.space_after = Pt(2)
+                        r7 = p7.add_run("• ")
+                        r7.font.name = 'Arial'
+                        r7.font.size = Pt(8)
+                        
+                        for i in range(8):
+                            row_cells[i].width = col_widths[i]
+                            set_cell_border(row_cells[i])
+                    except Exception as _row_e:
+                        print(f"Error rendering row {s_idx} for candidate {getattr(cand, 'id', 'unknown')}: {_row_e}")
+                        continue
+
+                docx_io = BytesIO()
+                doc.save(docx_io)
+                docx_io.seek(0)
+                return docx_io
+            except Exception as _doc_e:
+                print(f"Error in generate_docx_committee_brief: {_doc_e}")
+                # Fallback to minimal valid document
+                from docx import Document
+                from io import BytesIO
+                err_doc = Document()
+                err_doc.add_heading("Committee Brief Error", 0)
+                err_doc.add_paragraph(f"Failed to generate brief: {str(_doc_e)}")
+                err_io = BytesIO()
+                err_doc.save(err_io)
+                err_io.seek(0)
+                return err_io
 
         # 2. Fetch job if applicable
         job_obj = db.query(models.JobPosting).filter(models.JobPosting.id == job_id).first() if job_id != 'all' else None
