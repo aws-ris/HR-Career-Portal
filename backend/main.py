@@ -1524,13 +1524,13 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                 title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 job_title_text = job.title if job and hasattr(job, 'title') and job.title else "Position"
                 title_run = title_p.add_run(f"Brief of Applicants for {job_title_text}")
-                title_run.font.name = 'Arial'
-                title_run.font.size = Pt(13)
+                title_run.font.name = 'Times New Roman'
+                title_run.font.size = Pt(14)
                 title_run.font.bold = True
                 title_run.font.color.rgb = RGBColor(0, 33, 71)
-                title_p.paragraph_format.space_after = Pt(10)
+                title_p.paragraph_format.space_after = Pt(12)
                 
-                # 8-Column Table
+                # 7-Column Table
                 headers = [
                     "S. No.", 
                     "Basic Info", 
@@ -1538,22 +1538,20 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     "Higher Education", 
                     "Work Experience", 
                     "Last Salary", 
-                    "Publications", 
-                    "Remarks"
+                    "Publications"
                 ]
                 
                 col_widths = [
                     Inches(0.5),  # S. No.
-                    Inches(1.8),  # Basic Info
-                    Inches(1.3),  # X / XII
-                    Inches(2.1),  # Higher Education
-                    Inches(2.1),  # Work Experience
-                    Inches(0.8),  # Last Salary
-                    Inches(1.1),  # Publications
-                    Inches(1.1)   # Remarks
+                    Inches(2.1),  # Basic Info
+                    Inches(1.5),  # X / XII
+                    Inches(2.5),  # Higher Education
+                    Inches(2.5),  # Work Experience
+                    Inches(0.9),  # Last Salary
+                    Inches(1.3)   # Publications
                 ]
                 
-                table = doc.add_table(rows=1, cols=8)
+                table = doc.add_table(rows=1, cols=7)
                 table.alignment = WD_TABLE_ALIGNMENT.CENTER
                 
                 try:
@@ -1568,8 +1566,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                     p = hdr_cells[i].paragraphs[0]
                     p.alignment = WD_ALIGN_PARAGRAPH.LEFT
                     run = p.add_run(header_text)
-                    run.font.name = 'Arial'
-                    run.font.size = Pt(9)
+                    run.font.name = 'Times New Roman'
+                    run.font.size = Pt(9.5)
                     run.font.bold = True
                     run.font.color.rgb = RGBColor(255, 255, 255)
                     
@@ -1594,12 +1592,11 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         # Col 0: S. No.
                         p0 = row_cells[0].paragraphs[0]
                         r0 = p0.add_run(f"{s_idx}.")
-                        r0.font.name = 'Arial'
-                        r0.font.size = Pt(8.5)
+                        r0.font.name = 'Times New Roman'
+                        r0.font.size = Pt(9)
                         r0.font.bold = True
                         
                         # Col 1: Basic Info
-                        salutation = ""
                         full_name = cand.full_name or ""
                         
                         if getattr(cand, 'is_international_address', False) and getattr(cand, 'international_address', None):
@@ -1626,14 +1623,14 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         p1 = row_cells[1].paragraphs[0]
                         p1.paragraph_format.space_after = Pt(2)
                         r1_name = p1.add_run(f"{full_name}\n")
-                        r1_name.font.name = 'Arial'
-                        r1_name.font.size = Pt(8.5)
+                        r1_name.font.name = 'Times New Roman'
+                        r1_name.font.size = Pt(9)
                         r1_name.font.bold = True
                         r1_name.font.color.rgb = RGBColor(0, 33, 71)
                         
                         r1_details = p1.add_run(f"{addr_str}\n{mobile_str}\n{email_str}\n{dob_age_line}".strip())
-                        r1_details.font.name = 'Arial'
-                        r1_details.font.size = Pt(8)
+                        r1_details.font.name = 'Times New Roman'
+                        r1_details.font.size = Pt(8.5)
                         
                         # Col 2: X / XII
                         sch = getattr(cand, 'schooling', None)
@@ -1661,8 +1658,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                                 x_xii_lines.append(f"• X: {x_sch}, {x_brd}, {x_yr} ({x_score})".strip(" ,()"))
                             
                         r2 = p2.add_run("\n".join(x_xii_lines) if x_xii_lines else "N/A")
-                        r2.font.name = 'Arial'
-                        r2.font.size = Pt(8)
+                        r2.font.name = 'Times New Roman'
+                        r2.font.size = Pt(8.5)
 
                         # Col 3: Higher Education (Diploma, Bachelors, Masters, Ph.D.)
                         hedus = getattr(cand, 'higher_education', []) or []
@@ -1673,7 +1670,17 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         for h in hedus:
                             degree = getattr(h, 'degree_name', None) or getattr(h, 'degree_type', None) or 'Degree'
                             inst = getattr(h, 'university', '') or ''
-                            year = "Pursuing" if getattr(h, 'is_pursuing', False) else (str(h.grad_year) if getattr(h, 'grad_year', None) else '')
+                            
+                            is_p = getattr(h, 'is_pursuing', False)
+                            g_yr = getattr(h, 'grad_year', None)
+                            if is_p and g_yr:
+                                year = f"Pursuing - Exp. {g_yr}"
+                            elif is_p:
+                                year = "Pursuing"
+                            elif g_yr:
+                                year = str(g_yr)
+                            else:
+                                year = ""
                             
                             val = getattr(h, 'score_value', None)
                             stype = getattr(h, 'score_type', '')
@@ -1688,8 +1695,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                             hedu_lines.append(line)
                             
                         r3 = p3.add_run("\n".join(hedu_lines) if hedu_lines else "N/A")
-                        r3.font.name = 'Arial'
-                        r3.font.size = Pt(8)
+                        r3.font.name = 'Times New Roman'
+                        r3.font.size = Pt(8.5)
 
                         # Col 4: Work Experience + RIS Experience Tag
                         works = getattr(cand, 'work_experiences', []) or []
@@ -1708,8 +1715,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         exp_summary = f"Total Exp: {yrs} yrs {mos} mos\n" if total_months > 0 else "Total Exp: 0 yrs\n"
                         
                         r4_head = p4.add_run(exp_summary)
-                        r4_head.font.name = 'Arial'
-                        r4_head.font.size = Pt(8)
+                        r4_head.font.name = 'Times New Roman'
+                        r4_head.font.size = Pt(8.5)
                         r4_head.font.bold = True
 
                         # Check if candidate worked at RIS before
@@ -1724,8 +1731,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                                 ris_dates = f" ({s_str} – {e_str})"
                             
                             r4_ris = p4.add_run(f"★ Prior RIS Experience: {ris_desig}{ris_dates}\n")
-                            r4_ris.font.name = 'Arial'
-                            r4_ris.font.size = Pt(8)
+                            r4_ris.font.name = 'Times New Roman'
+                            r4_ris.font.size = Pt(8.5)
                             r4_ris.font.bold = True
                             r4_ris.font.color.rgb = RGBColor(198, 40, 40)
                             
@@ -1741,8 +1748,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                             work_lines.append(f"• {role} at {company}{dates_str}")
                             
                         r4_works = p4.add_run("\n".join(work_lines) if work_lines else "None")
-                        r4_works.font.name = 'Arial'
-                        r4_works.font.size = Pt(8)
+                        r4_works.font.name = 'Times New Roman'
+                        r4_works.font.size = Pt(8.5)
 
                         # Col 5: Last Salary (LPA)
                         p5 = row_cells[5].paragraphs[0]
@@ -1750,8 +1757,8 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                         last_sal = getattr(cand, 'last_salary', None)
                         sal_display = f"₹ {last_sal} LPA" if last_sal else "N/A"
                         r5 = p5.add_run(sal_display)
-                        r5.font.name = 'Arial'
-                        r5.font.size = Pt(8)
+                        r5.font.name = 'Times New Roman'
+                        r5.font.size = Pt(8.5)
 
                         # Col 6: Publications
                         pubs = getattr(cand, 'publications', []) or []
@@ -1765,17 +1772,10 @@ def export_job_candidates(job_id: str, req: ExportRequest, db: Session = Depends
                             
                         pub_lines = [f"• {k.capitalize()}: {v}" for k, v in pub_counts.items() if v > 0]
                         r6 = p6.add_run("\n".join(pub_lines) if pub_lines else "None")
-                        r6.font.name = 'Arial'
-                        r6.font.size = Pt(8)
-
-                        # Col 7: Remarks
-                        p7 = row_cells[7].paragraphs[0]
-                        p7.paragraph_format.space_after = Pt(2)
-                        r7 = p7.add_run("• ")
-                        r7.font.name = 'Arial'
-                        r7.font.size = Pt(8)
+                        r6.font.name = 'Times New Roman'
+                        r6.font.size = Pt(8.5)
                         
-                        for i in range(8):
+                        for i in range(7):
                             row_cells[i].width = col_widths[i]
                             set_cell_border(row_cells[i])
                     except Exception as _row_e:
