@@ -1790,8 +1790,12 @@ textarea.form-input {
   color: #16a34a;
 }
 
-.export-dropdown-item-title.xlsx-standard {
+.export-dropdown-item-title.docx-brief {
   color: #002147;
+}
+
+.export-dropdown-item-title.xlsx-standard {
+  color: #0d9488;
 }
 
 /* ── Bloomberg Responsive Mobile & Multi-Layout Utilities ── */

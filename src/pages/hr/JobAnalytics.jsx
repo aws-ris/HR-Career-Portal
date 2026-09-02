@@ -324,6 +324,13 @@ export default function JobAnalytics() {
                   <span className="export-dropdown-item-desc">Grouped candidate rows with merged metadata</span>
                 </button>
                 <button
+                  onClick={() => { handleExport('docx', 'brief'); setExportDropdownOpen(false); }}
+                  className="export-dropdown-item"
+                >
+                  <span className="export-dropdown-item-title docx-brief">Committee Brief (.docx)</span>
+                  <span className="export-dropdown-item-desc">A4 Landscape Word dossier for interview panel</span>
+                </button>
+                <button
                   onClick={() => { handleExport('xlsx', 'standardized'); setExportDropdownOpen(false); }}
                   className="export-dropdown-item"
                 >
