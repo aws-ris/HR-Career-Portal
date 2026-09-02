@@ -1097,6 +1097,87 @@ def get_full_profile(candidate_id: str, job_id: Optional[str] = None, db: Sessio
     return res_profile
 
 
+@app.get("/api/v1/hr/candidates/lookup", dependencies=[Depends(get_current_admin)])
+def lookup_candidates(q: str, db: Session = Depends(get_db)):
+    if not q or not q.strip():
+        return []
+        
+    query_str = q.strip().lower()
+    
+    # Query candidates matching id (UUID/prefix), email, full_name, or mobile_no
+    candidates = db.query(models.CandidateMetadata).options(
+        joinedload(models.CandidateMetadata.higher_education),
+        joinedload(models.CandidateMetadata.work_experiences),
+        joinedload(models.CandidateMetadata.applications).joinedload(models.ApplicationTracking.job)
+    ).filter(
+        or_(
+            func.lower(models.CandidateMetadata.id).like(f"%{query_str}%"),
+            func.lower(models.CandidateMetadata.email).like(f"%{query_str}%"),
+            func.lower(models.CandidateMetadata.full_name).like(f"%{query_str}%"),
+            func.lower(models.CandidateMetadata.mobile_no).like(f"%{query_str}%")
+        )
+    ).limit(20).all()
+    
+    # If no direct metadata match, search by ApplicationTracking.id
+    if not candidates:
+        app_tracks = db.query(models.ApplicationTracking).filter(
+            func.lower(models.ApplicationTracking.id).like(f"%{query_str}%")
+        ).limit(20).all()
+        cand_ids = [a.candidate_id for a in app_tracks if a.candidate_id]
+        if cand_ids:
+            candidates = db.query(models.CandidateMetadata).options(
+                joinedload(models.CandidateMetadata.higher_education),
+                joinedload(models.CandidateMetadata.work_experiences),
+                joinedload(models.CandidateMetadata.applications).joinedload(models.ApplicationTracking.job)
+            ).filter(models.CandidateMetadata.id.in_(cand_ids)).all()
+
+    results = []
+    for c in candidates:
+        latest_app = c.applications[-1] if (c.applications and len(c.applications) > 0) else None
+        job_obj = latest_app.job if (latest_app and hasattr(latest_app, 'job') and latest_app.job) else None
+        
+        pos_applied = (latest_app.position_applied if latest_app else None) or "Candidate"
+        job_title = (job_obj.title if job_obj else pos_applied) or pos_applied
+        
+        submitted_at_str = ""
+        if latest_app and latest_app.submitted_at:
+            submitted_at_str = latest_app.submitted_at.strftime("%d-%m-%Y %H:%M IST") if hasattr(latest_app.submitted_at, 'strftime') else str(latest_app.submitted_at)[:16]
+            
+        top_edu = ""
+        hedus = c.higher_education or []
+        phds = [e for e in hedus if getattr(e, 'level', '') == 'phd']
+        pgs = [e for e in hedus if getattr(e, 'level', '') == 'postgrad']
+        ugs = [e for e in hedus if getattr(e, 'level', '') == 'undergrad']
+        
+        if phds:
+            top_edu = f"Ph.D. ({phds[0].university or 'University'})"
+        elif pgs:
+            top_edu = f"{pgs[0].degree_name or 'Masters'} ({pgs[0].university or 'University'})"
+        elif ugs:
+            top_edu = f"{ugs[0].degree_name or 'Bachelors'} ({ugs[0].university or 'University'})"
+
+        results.append({
+            "candidate_id": c.id,
+            "application_id": latest_app.id if latest_app else c.id,
+            "full_name": c.full_name,
+            "email": c.email,
+            "mobile_no": f"{c.country_code or '+91'} {c.mobile_no or ''}".strip(),
+            "city_state": f"{c.city or ''}, {c.state or ''}".strip(" ,") if not c.is_international_address else (c.international_address or "International"),
+            "dob_age": f"{c.dob.strftime('%d-%m-%Y') if (c.dob and hasattr(c.dob, 'strftime')) else str(c.dob or '')[:10]} (Age: {c.age or 'N/A'})" if c.dob else "",
+            "position_applied": pos_applied,
+            "job_title": job_title,
+            "admin_department": latest_app.admin_department if latest_app else "",
+            "job_id": latest_app.job_id if latest_app else None,
+            "submitted_at": submitted_at_str,
+            "total_exp": f"{c.years_of_experience or 0.0} yrs",
+            "top_edu": top_edu,
+            "worked_at_ris": getattr(c, 'worked_at_ris', False) or False,
+            "ris_designation": getattr(c, 'ris_designation', None)
+        })
+        
+    return results
+
+
 @app.post("/api/v1/candidates/{candidate_id}/ai_evaluate", dependencies=[Depends(get_current_admin)])
 async def ai_evaluate_candidate(candidate_id: str, job_id: Optional[str] = None, db: Session = Depends(get_db)):
     candidate = db.query(models.CandidateMetadata).options(

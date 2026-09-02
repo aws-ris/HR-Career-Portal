@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Briefcase, BarChart2, Settings, ChevronRight, LogOut } from 'lucide-react';
+import { Briefcase, BarChart2, Search, Settings, ChevronRight, LogOut } from 'lucide-react';
 
 export default function HRLayout() {
   const navigate = useNavigate();
@@ -38,6 +38,10 @@ export default function HRLayout() {
             <Briefcase size={18} />
             <span>Job Postings</span>
             <ChevronRight size={14} className="hr-nav-chevron" />
+          </NavLink>
+          <NavLink to="/hr/candidate-lookup" className={({ isActive }) => `hr-nav-item ${isActive ? 'active' : ''}`}>
+            <Search size={18} />
+            <span>Candidate Lookup</span>
           </NavLink>
           <NavLink to="/hr/analytics" className={({ isActive }) => `hr-nav-item ${isActive ? 'active' : ''}`}>
             <BarChart2 size={18} />
