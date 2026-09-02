@@ -1140,8 +1140,11 @@ def lookup_candidates(q: str, db: Session = Depends(get_db)):
         job_title = (job_obj.title if job_obj else pos_applied) or pos_applied
         
         submitted_at_str = ""
-        if latest_app and latest_app.submitted_at:
-            submitted_at_str = latest_app.submitted_at.strftime("%d-%m-%Y %H:%M IST") if hasattr(latest_app.submitted_at, 'strftime') else str(latest_app.submitted_at)[:16]
+        if latest_app:
+            raw_ts = latest_app.updated_at or latest_app.submitted_at
+            if raw_ts:
+                ist_ts = raw_ts + datetime.timedelta(hours=5, minutes=30)
+                submitted_at_str = ist_ts.strftime("%d-%m-%Y %H:%M IST")
             
         top_edu = ""
         hedus = c.higher_education or []
@@ -1156,6 +1159,8 @@ def lookup_candidates(q: str, db: Session = Depends(get_db)):
         elif ugs:
             top_edu = f"{ugs[0].degree_name or 'Bachelors'} ({ugs[0].university or 'University'})"
 
+        exp_val = round(float(c.years_of_experience), 1) if c.years_of_experience else 0.0
+
         results.append({
             "candidate_id": c.id,
             "application_id": latest_app.id if latest_app else c.id,
@@ -1169,7 +1174,7 @@ def lookup_candidates(q: str, db: Session = Depends(get_db)):
             "admin_department": latest_app.admin_department if latest_app else "",
             "job_id": latest_app.job_id if latest_app else None,
             "submitted_at": submitted_at_str,
-            "total_exp": f"{c.years_of_experience or 0.0} yrs",
+            "total_exp": f"{exp_val} yrs",
             "top_edu": top_edu,
             "worked_at_ris": getattr(c, 'worked_at_ris', False) or False,
             "ris_designation": getattr(c, 'ris_designation', None)

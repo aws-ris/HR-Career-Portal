@@ -54,22 +54,7 @@ export default function CandidateLookup() {
       {/* ── Page Header ── */}
       <div className="hr-page-header">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <h1 className="hr-page-title">Candidate Lookup</h1>
-            <span style={{ 
-              background: 'rgba(0, 33, 71, 0.08)', 
-              color: '#002147', 
-              fontSize: '0.75rem', 
-              fontWeight: 700, 
-              padding: '2px 8px', 
-              borderRadius: '4px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}>
-              <ShieldCheck size={12} /> HR Protected
-            </span>
-          </div>
+          <h1 className="hr-page-title">Candidate Lookup</h1>
           <p className="hr-page-subtitle">Search candidates by Reference ID (UUID), Email, Name, or Mobile Number</p>
         </div>
       </div>
@@ -152,7 +137,7 @@ export default function CandidateLookup() {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(560px, 1fr))', gap: '24px' }}>
             {results.map((c) => (
               <div 
                 key={c.candidate_id}
