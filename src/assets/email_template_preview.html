@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Application Received - RIS Career Portal</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+      background-color: #f4f6f9;
+      margin: 0;
+      padding: 30px 15px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 33, 71, 0.08);
+      border: 1px solid #e2e8f0;
+    }
+    .header-banner {
+      background: linear-gradient(135deg, #002147 0%, #001229 100%);
+      padding: 28px 25px;
+      text-align: center;
+    }
+    .logo-img {
+      max-height: 70px;
+      width: auto;
+      margin-bottom: 12px;
+      border-radius: 4px;
+      background: #ffffff;
+      padding: 6px 14px;
+    }
+    .header-title {
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: 0.3px;
+      line-height: 1.3;
+    }
+    .body-content {
+      padding: 35px 30px;
+      color: #334155;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .greeting {
+      font-size: 17px;
+      font-weight: 700;
+      color: #002147;
+      margin-top: 0;
+      margin-bottom: 16px;
+    }
+    .reference-box {
+      background-color: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 5px solid #002147;
+      border-radius: 6px;
+      padding: 18px 20px;
+      margin: 24px 0;
+    }
+    .reference-box-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+    }
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .detail-table td {
+      padding: 5px 0;
+      font-size: 14px;
+      vertical-align: top;
+    }
+    .detail-label {
+      color: #64748b;
+      width: 140px;
+      font-weight: 500;
+    }
+    .detail-value {
+      color: #0f172a;
+      font-weight: 600;
+    }
+    .uuid-badge {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #e2e8f0;
+      color: #002147;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: inline-block;
+      word-break: break-all;
+    }
+    .grievance-notice {
+      background-color: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: #1e40af;
+      margin-top: 24px;
+      line-height: 1.5;
+    }
+    .footer-section {
+      background-color: #f1f5f9;
+      padding: 20px 25px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      border-top: 1px solid #e2e8f0;
+      line-height: 1.5;
+    }
+    .footer-section strong {
+      color: #334155;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="email-container">
+    
+    <!-- HEADER -->
+    <div class="header-banner">
+      <!-- RIS Logo -->
+      <img src="ris-logo-brand.jpg" alt="RIS Logo" class="logo-img" />
+      <h1 class="header-title">Research and Information System for Developing Countries</h1>
+    </div>
+
+    <!-- BODY -->
+    <div class="body-content">
+      <p class="greeting">Dear {{ $json.body.candidate_name }},</p>
+      
+      <p>Thank you for applying for a career opportunity with <strong>Research and Information System for Developing Countries (RIS)</strong>. We appreciate the time and effort you invested in submitting your application.</p>
+      
+      <p>Your application has been received successfully. Please find your submission summary below:</p>
+
+      <!-- APPLICATION SUMMARY BOX -->
+      <div class="reference-box">
+        <div class="reference-box-title">Application Reference Summary</div>
+        <table class="detail-table">
+          <tr>
+            <td class="detail-label">Position Applied:</td>
+            <td class="detail-value">{{ $json.body.position_applied }}</td>
+          </tr>
+          <tr>
+            <td class="detail-label">Submitted On:</td>
+            <td class="detail-value">{{ $json.body.submitted_at }}</td>
+          </tr>
+          <tr>
+            <td class="detail-label">Reference ID (UUID):</td>
+            <td class="detail-value"><span class="uuid-badge">{{ $json.body.application_id }}</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- GRIEVANCE & SUPPORT NOTICE -->
+      <div class="grievance-notice">
+        📌 <strong>Important Reference Note:</strong> Please save your <strong>Reference ID (UUID)</strong> shown above. In case of any future queries, status updates, or grievances regarding your application, please quote this Reference ID when emailing our HR team at <strong><a href="mailto:recruitments@ris.org.in" style="color: #1d4ed8; text-decoration: underline;">recruitments@ris.org.in</a></strong>.
+      </div>
+
+      <p style="margin-top: 28px; margin-bottom: 0;">
+        Warm regards,<br />
+        <strong style="color: #002147; font-size: 16px;">HR Division</strong><br />
+        <span style="color: #64748b; font-size: 13px;">Research and Information System for Developing Countries (RIS)</span>
+      </p>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer-section">
+      <p style="margin: 0 0 4px 0;"><strong>Research and Information System for Developing Countries (RIS)</strong></p>
+      <p style="margin: 0 0 6px 0;">Core IV-B, Fourth Floor, India Habitat Centre, Lodhi Road, New Delhi – 110003, India</p>
+      <p style="margin: 0; color: #94a3b8; font-size: 11px;">This is an automated confirmation sent from <strong>recruitments@ris.org.in</strong> upon application submission.</p>
+    </div>
+
+  </div>
+
+</body>
+</html>
