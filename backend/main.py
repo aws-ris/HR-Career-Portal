@@ -675,16 +675,19 @@ def create_application(payload: schemas.CandidateCreate, background_tasks: Backg
         background_tasks.add_task(async_score_candidate_bg, candidate.id, app_tracking.id, payload.job_id)
         background_tasks.add_task(tokenize_candidate_bg, candidate.id, payload.job_id)
         
-        # 10. Trigger n8n webhook event in background
+        # 10. Trigger n8n webhook event in background (asynchronous non-blocking)
         from utils.webhooks import trigger_n8n_event
+        submitted_at_formatted = datetime.datetime.now().strftime("%d-%m-%Y")
         trigger_n8n_event(background_tasks, "candidate-applied", {
             "candidate_id": candidate.id,
+            "application_id": app_tracking.id if app_tracking else candidate.id,
             "full_name": candidate.full_name,
             "email": candidate.email,
             "mobile_no": candidate.mobile_no,
             "position_applied": payload.position_applied,
             "admin_department": payload.admin_department,
             "job_id": payload.job_id,
+            "submitted_at": submitted_at_formatted,
             "how_heard": getattr(payload, 'how_heard', None)
         })
 
