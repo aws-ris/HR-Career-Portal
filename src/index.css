@@ -345,39 +345,45 @@ textarea.form-input {
 }
 
 .hr-sidebar-brand {
-  padding: 1.25rem 1.5rem 1.15rem;
+  padding: 1.5rem 1.25rem 1.25rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
-  align-items: center;
-  gap: 0.85rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
 }
 
 .hr-sidebar-logo {
-  width: 48px;
-  height: 48px;
+  width: 100%;
+  max-width: 210px;
+  height: auto;
+  min-height: 52px;
   border-radius: 10px;
   overflow: hidden;
-  background: white;
+  background: #ffffff;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2px;
+  padding: 6px 12px;
 }
 
 .hr-sidebar-logo img {
   width: 100%;
-  height: 100%;
+  height: auto;
+  max-height: 56px;
   object-fit: contain;
 }
 
 .hr-sidebar-label {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #ffffff;
+  opacity: 0.95;
+  padding-left: 2px;
 }
 
 .hr-sidebar-nav {
@@ -1866,27 +1872,31 @@ textarea.form-input {
 
 .hr-sidebar-brand {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 12px;
-  padding-bottom: 24px;
+  padding-bottom: 20px;
   border-bottom: 1px solid #1e293b;
   margin-bottom: 24px;
 }
 
 .hr-sidebar-logo img {
-  height: 48px;
-  width: 48px;
+  height: auto;
+  max-height: 56px;
+  width: 100%;
+  max-width: 210px;
   object-fit: contain;
   border-radius: 10px;
   background: #ffffff;
-  padding: 2px;
+  padding: 6px 12px;
 }
 
 .hr-sidebar-label {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: #ffffff;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .hr-sidebar-nav {
